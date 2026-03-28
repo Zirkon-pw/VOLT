@@ -1,7 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '@app/providers/I18nProvider';
 import { useTheme } from '@app/providers/ThemeProvider';
+import { listPlugins, setPluginEnabled } from '@api/plugin';
+import type { PluginInfo } from '@api/plugin';
+import { loadSinglePlugin, unloadSinglePlugin } from '@app/plugins/pluginLoader';
+import { usePluginLogStore } from '@app/plugins/pluginLogStore';
+import { useWorkspaceStore } from '@app/stores/workspaceStore';
+import { PermissionDialog } from '@widgets/permission-dialog/PermissionDialog';
 import { Icon } from '@uikit/icon';
 import styles from './SettingsPage.module.scss';
 
@@ -9,12 +15,71 @@ const IMAGE_DIR_KEY = 'volt-image-dir';
 
 type SettingsTab = 'general' | 'plugins' | 'about';
 
-export function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+interface SettingsPageProps {
+  initialTab?: SettingsTab;
+}
+
+export function SettingsPage({ initialTab = 'general' }: SettingsPageProps) {
+  const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const { t, selectedLocale, availableLocales, setLocale, refreshLocalization } = useI18n();
+  const { workspaces, activeWorkspaceId } = useWorkspaceStore();
+  const pluginLogEntries = usePluginLogStore((state) => state.entries);
+  const clearPluginLog = usePluginLogStore((state) => state.clearAll);
   const [imageDir, setImageDir] = useState(() => localStorage.getItem(IMAGE_DIR_KEY) || 'attachments');
+  const [plugins, setPlugins] = useState<PluginInfo[]>([]);
+  const [confirmPlugin, setConfirmPlugin] = useState<PluginInfo | null>(null);
+  const activeWorkspace = workspaces.find((workspace) => workspace.voltId === activeWorkspaceId) ?? null;
+
+  const fetchPlugins = useCallback(async () => {
+    try {
+      const list = await listPlugins();
+      setPlugins(list);
+    } catch (err) {
+      console.error('Failed to load plugins:', err);
+    }
+  }, []);
+
+  const applyPluginToggle = useCallback(async (plugin: PluginInfo, nextEnabled: boolean) => {
+    try {
+      await setPluginEnabled(plugin.manifest.id, nextEnabled);
+      setPlugins((prev) =>
+        prev.map((p) =>
+          p.manifest.id === plugin.manifest.id ? { ...p, enabled: nextEnabled } : p,
+        ),
+      );
+
+      if (nextEnabled) {
+        if (activeWorkspace?.voltPath) {
+          await loadSinglePlugin(plugin.manifest.id, activeWorkspace.voltPath);
+        }
+      } else {
+        unloadSinglePlugin(plugin.manifest.id);
+      }
+    } catch (err) {
+      console.error('Failed to toggle plugin:', err);
+    }
+  }, [activeWorkspace?.voltPath]);
+
+  const handleTogglePlugin = useCallback(async (plugin: PluginInfo) => {
+    if (!plugin.enabled && plugin.manifest.permissions.length > 0) {
+      setConfirmPlugin(plugin);
+      return;
+    }
+
+    await applyPluginToggle(plugin, !plugin.enabled);
+  }, [applyPluginToggle]);
+
+  useEffect(() => {
+    if (activeTab === 'plugins') {
+      void fetchPlugins();
+    }
+  }, [activeTab, fetchPlugins]);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   useEffect(() => {
     void refreshLocalization().catch(() => undefined);
@@ -93,7 +158,52 @@ export function SettingsPage() {
           {activeTab === 'plugins' && (
             <div className={styles.section}>
               <h2>{t('settings.plugins.title')}</h2>
-              <p style={{ color: 'var(--color-text-secondary)' }}>{t('settings.plugins.description')}</p>
+              <p style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-4)' }}>{t('settings.plugins.description')}</p>
+              {plugins.length === 0 ? (
+                <p style={{ color: 'var(--color-text-tertiary)' }}>{t('settings.plugins.empty')}</p>
+              ) : (
+                <div className={styles.pluginList}>
+                  {plugins.map((p) => (
+                    <div key={p.manifest.id} className={styles.pluginItem}>
+                      <div className={styles.pluginInfo}>
+                        <div className={styles.pluginName}>
+                          {p.manifest.name}
+                          <span className={styles.pluginVersion}>v{p.manifest.version}</span>
+                        </div>
+                        {p.manifest.description && (
+                          <div className={styles.pluginDescription}>{p.manifest.description}</div>
+                        )}
+                      </div>
+                      <button
+                        className={`${styles.toggle} ${p.enabled ? styles.toggleOn : ''}`}
+                        onClick={() => void handleTogglePlugin(p)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+              {pluginLogEntries.length > 0 && (
+                <div className={styles.logSection}>
+                  <div className={styles.logHeader}>
+                    <h3>{t('settings.plugins.logTitle')}</h3>
+                    <button type="button" className={styles.clearLogsButton} onClick={clearPluginLog}>
+                      {t('settings.plugins.logClear')}
+                    </button>
+                  </div>
+                  <div className={styles.logList}>
+                    {[...pluginLogEntries].reverse().map((entry) => (
+                      <div key={entry.id} className={styles.logItem}>
+                        <div className={styles.logMeta}>
+                          <span className={styles.logPlugin}>{entry.pluginId}</span>
+                          <span className={styles.logLevel}>{entry.level}</span>
+                          <span>{new Date(entry.timestamp).toLocaleString()}</span>
+                        </div>
+                        <div className={styles.logMessage}>{entry.message}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
           {activeTab === 'about' && (
@@ -105,6 +215,18 @@ export function SettingsPage() {
           )}
         </div>
       </div>
+      <PermissionDialog
+        isOpen={confirmPlugin != null}
+        plugin={confirmPlugin}
+        onCancel={() => setConfirmPlugin(null)}
+        onConfirm={() => {
+          const plugin = confirmPlugin;
+          setConfirmPlugin(null);
+          if (plugin) {
+            void applyPluginToggle(plugin, true);
+          }
+        }}
+      />
     </div>
   );
 }

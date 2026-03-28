@@ -6,7 +6,6 @@ import {
   useState,
 } from 'react';
 import { Icon } from '@uikit/icon';
-import type { IconName } from '@uikit/icon';
 import type { SlashCommandItem } from './slashCommand';
 import styles from './SlashCommandMenu.module.scss';
 
@@ -71,7 +70,7 @@ export const SlashCommandMenu = forwardRef<
           type="button"
         >
           <div className={styles.iconWrap}>
-            <Icon name={item.icon as IconName} size={18} />
+            <Icon name={item.icon} size={18} />
           </div>
           <div className={styles.text}>
             <span className={styles.title}>{item.title}</span>

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { HomePage } from '@pages/home/HomePage';
+import { PluginRoutePage } from '@pages/workspace/PluginRoutePage';
 import { WorkspacePage } from '@pages/workspace/WorkspacePage';
 import { PluginSettingsPage } from '@pages/settings/PluginSettingsPage';
 import { SettingsPage } from '@pages/settings/SettingsPage';
@@ -13,6 +14,7 @@ function AppLayout() {
       <div className={styles.content}>
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/workspace/:voltId/plugin/:pageId" element={<PluginRoutePage />} />
           <Route path="/workspace/:voltId" element={<WorkspacePage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/settings/plugins" element={<PluginSettingsPage />} />

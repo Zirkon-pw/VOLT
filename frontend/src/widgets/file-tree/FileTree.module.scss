@@ -131,7 +131,8 @@
 }
 
 .menu-item {
-  display: block;
+  display: flex;
+  align-items: center;
   width: 100%;
   padding: var(--space-1) var(--space-3);
   border: none;
@@ -146,6 +147,12 @@
   &:hover {
     background-color: var(--color-bg-hover);
   }
+}
+
+.menu-item-content {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .menu-item-danger {

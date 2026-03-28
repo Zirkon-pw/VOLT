@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import type { Editor } from '@tiptap/react';
 import { saveNote } from '@api/note/noteApi';
 import { useTabStore } from '@app/stores/tabStore';
+import { emit } from '@app/plugins/pluginEventBus';
 
 interface UseAutoSaveOptions {
   editor: Editor | null;
@@ -35,6 +36,7 @@ export function useAutoSave({
       }
       await saveNote(voltPath, filePath, markdown);
       setDirty(voltId, filePath, false);
+      emit('file-save', filePath);
     } catch (e) {
       console.error('Auto-save failed:', e);
     }
@@ -45,6 +47,7 @@ export function useAutoSave({
 
     const handleUpdate = () => {
       setDirty(voltId, filePath, true);
+      emit('editor-change');
 
       if (timerRef.current) {
         clearTimeout(timerRef.current);

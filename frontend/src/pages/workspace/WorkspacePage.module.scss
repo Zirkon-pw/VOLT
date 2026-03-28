@@ -11,3 +11,17 @@
   min-width: 0;
   overflow: hidden;
 }
+
+.content {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.plugin-page {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}

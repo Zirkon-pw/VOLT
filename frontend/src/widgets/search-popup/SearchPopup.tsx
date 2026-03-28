@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { searchFiles } from '@api/search';
 import type { SearchResult } from '@api/search';
+import { usePluginRegistryStore } from '@app/plugins/pluginRegistry';
 import { useI18n } from '@app/providers/I18nProvider';
+import { useFileTreeStore } from '@app/stores/fileTreeStore';
 import { useTabStore } from '@app/stores/tabStore';
-import { Icon } from '@uikit/icon';
+import { Icon, type IconName } from '@uikit/icon';
 import styles from './SearchPopup.module.scss';
 
 interface SearchPopupProps {
@@ -11,10 +14,27 @@ interface SearchPopupProps {
   onClose: () => void;
   voltId: string;
   voltPath: string;
+  onToggleSidebar: () => void;
 }
 
-export function SearchPopup({ isOpen, onClose, voltId, voltPath }: SearchPopupProps) {
+interface CommandPaletteItem {
+  id: string;
+  title: string;
+  hotkey?: string;
+  icon: IconName;
+  subtitle?: string;
+  callback: () => void;
+}
+
+export function SearchPopup({
+  isOpen,
+  onClose,
+  voltId,
+  voltPath,
+  onToggleSidebar,
+}: SearchPopupProps) {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -22,6 +42,11 @@ export function SearchPopup({ isOpen, onClose, voltId, voltPath }: SearchPopupPr
   const resultsRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const openTab = useTabStore((s) => s.openTab);
+  const openGraphTab = useTabStore((s) => s.openGraphTab);
+  const startCreate = useFileTreeStore((state) => state.startCreate);
+  const pluginCommands = usePluginRegistryStore((state) => state.commands);
+  const isCommandMode = query.startsWith('>');
+  const commandQuery = query.slice(1).trim().toLowerCase();
 
   // Reset state when opening
   useEffect(() => {
@@ -42,7 +67,7 @@ export function SearchPopup({ isOpen, onClose, voltId, voltPath }: SearchPopupPr
       clearTimeout(debounceRef.current);
     }
 
-    if (!query.trim()) {
+    if (!query.trim() || isCommandMode) {
       setResults([]);
       setActiveIndex(0);
       return;
@@ -63,7 +88,7 @@ export function SearchPopup({ isOpen, onClose, voltId, voltPath }: SearchPopupPr
         clearTimeout(debounceRef.current);
       }
     };
-  }, [query, voltPath, isOpen]);
+  }, [query, voltPath, isOpen, isCommandMode]);
 
   const handleSelect = useCallback(
     (result: SearchResult) => {
@@ -73,25 +98,100 @@ export function SearchPopup({ isOpen, onClose, voltId, voltPath }: SearchPopupPr
     [voltId, openTab, onClose],
   );
 
+  const handleCommandSelect = useCallback(
+    (command: CommandPaletteItem) => {
+      command.callback();
+      onClose();
+    },
+    [onClose],
+  );
+
+  const builtInCommands = useMemo<CommandPaletteItem[]>(() => [
+    {
+      id: 'builtin:new-file',
+      title: t('search.command.newFile'),
+      hotkey: 'Mod+N',
+      icon: 'plus',
+      callback: () => startCreate(voltId, '', false),
+    },
+    {
+      id: 'builtin:toggle-sidebar',
+      title: t('search.command.toggleSidebar'),
+      hotkey: 'Mod+B',
+      icon: 'panelLeft',
+      callback: onToggleSidebar,
+    },
+    {
+      id: 'builtin:open-graph',
+      title: t('search.command.openGraph'),
+      icon: 'graph',
+      callback: () => openGraphTab(voltId),
+    },
+    {
+      id: 'builtin:settings',
+      title: t('search.command.settings'),
+      icon: 'settings',
+      callback: () => navigate('/settings'),
+    },
+  ], [navigate, onToggleSidebar, openGraphTab, startCreate, t, voltId]);
+
+  const commandResults = useMemo<CommandPaletteItem[]>(() => {
+    if (!isCommandMode) {
+      return [];
+    }
+
+    const items = [
+      ...builtInCommands,
+      ...pluginCommands.map((command) => ({
+        id: command.id,
+        title: command.name,
+        hotkey: command.hotkey,
+        icon: 'hash' as IconName,
+        subtitle: command.pluginId,
+        callback: command.callback,
+      })),
+    ];
+
+    if (!commandQuery) {
+      return items;
+    }
+
+    return items.filter((item) => (
+      item.title.toLowerCase().includes(commandQuery) ||
+      item.hotkey?.toLowerCase().includes(commandQuery) ||
+      item.subtitle?.toLowerCase().includes(commandQuery)
+    ));
+  }, [builtInCommands, commandQuery, isCommandMode, pluginCommands]);
+
+  useEffect(() => {
+    if (isCommandMode) {
+      setActiveIndex(0);
+    }
+  }, [commandQuery, isCommandMode]);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      const itemsCount = isCommandMode ? commandResults.length : results.length;
+
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setActiveIndex((prev) => Math.min(prev + 1, results.length - 1));
+        setActiveIndex((prev) => Math.min(prev + 1, Math.max(itemsCount - 1, 0)));
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         setActiveIndex((prev) => Math.max(prev - 1, 0));
       } else if (e.key === 'Enter') {
         e.preventDefault();
-        if (results[activeIndex]) {
+        if (isCommandMode && commandResults[activeIndex]) {
+          handleCommandSelect(commandResults[activeIndex]);
+        } else if (!isCommandMode && results[activeIndex]) {
           handleSelect(results[activeIndex]);
         }
       }
     },
-    [results, activeIndex, handleSelect, onClose],
+    [activeIndex, commandResults, handleCommandSelect, handleSelect, isCommandMode, onClose, results],
   );
 
   // Scroll active item into view
@@ -112,9 +212,9 @@ export function SearchPopup({ isOpen, onClose, voltId, voltPath }: SearchPopupPr
   );
 
   const highlightedResults = useMemo(() => {
-    if (!query.trim()) return [];
+    if (!query.trim() || isCommandMode) return [];
     return results;
-  }, [results, query]);
+  }, [results, query, isCommandMode]);
 
   if (!isOpen) return null;
 
@@ -126,15 +226,39 @@ export function SearchPopup({ isOpen, onClose, voltId, voltPath }: SearchPopupPr
             ref={inputRef}
             className={styles.input}
             type="text"
-            placeholder={t('search.placeholder')}
+            placeholder={t(isCommandMode ? 'search.commandPlaceholder' : 'search.placeholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
         <div className={styles.results} ref={resultsRef}>
-          {query.trim() && highlightedResults.length === 0 && (
+          {isCommandMode && commandResults.length === 0 && (
+            <div className={styles.empty}>{t('search.commandEmpty')}</div>
+          )}
+          {!isCommandMode && query.trim() && highlightedResults.length === 0 && (
             <div className={styles.empty}>{t('search.empty')}</div>
           )}
+          {isCommandMode && commandResults.map((command, i) => (
+            <div
+              key={command.id}
+              className={`${styles.resultItem} ${i === activeIndex ? styles.active : ''}`}
+              onClick={() => handleCommandSelect(command)}
+              onMouseEnter={() => setActiveIndex(i)}
+            >
+              <span className={styles.resultIcon}>
+                <Icon name={command.icon} size={14} />
+              </span>
+              <div className={styles.resultContent}>
+                <div className={styles.resultHeader}>
+                  <span className={styles.resultFileName}>{command.title}</span>
+                  {command.hotkey && <span className={styles.hotkeyBadge}>{command.hotkey}</span>}
+                </div>
+                {command.subtitle && (
+                  <span className={styles.resultPath}>{command.subtitle}</span>
+                )}
+              </div>
+            </div>
+          ))}
           {highlightedResults.map((result, i) => (
             <div
               key={`${result.filePath}-${result.line}`}

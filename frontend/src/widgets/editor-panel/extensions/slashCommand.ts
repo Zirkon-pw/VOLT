@@ -4,6 +4,8 @@ import Suggestion from '@tiptap/suggestion';
 import { createRoot, type Root } from 'react-dom/client';
 import { createElement, createRef } from 'react';
 import { translate } from '@app/i18n/runtime';
+import { usePluginRegistryStore } from '@app/plugins/pluginRegistry';
+import type { IconName } from '@uikit/icon';
 import {
   SlashCommandMenu,
   type SlashCommandMenuHandle,
@@ -12,7 +14,7 @@ import {
 export interface SlashCommandItem {
   title: string;
   description: string;
-  icon: string;
+  icon: IconName;
   command: (editor: any, range: any) => void;
 }
 
@@ -134,9 +136,21 @@ export const SlashCommand = Extension.create({
           props.command(editor, range);
         },
         items: ({ query }: { query: string }): SlashCommandItem[] => {
-          return getSlashCommandItems().filter((item) =>
-            item.title.toLowerCase().includes(query.toLowerCase()),
-          );
+          const normalizedQuery = query.toLowerCase();
+          const pluginItems = usePluginRegistryStore.getState().slashCommands.map((cmd) => ({
+            title: cmd.title,
+            description: cmd.description,
+            icon: cmd.icon,
+            command: (editor: any, range: any) => {
+              editor.chain().focus().deleteRange(range).run();
+              cmd.callback();
+            },
+          }));
+
+          return [...getSlashCommandItems(), ...pluginItems].filter((item) => (
+            item.title.toLowerCase().includes(normalizedQuery) ||
+            item.description.toLowerCase().includes(normalizedQuery)
+          ));
         },
         render: () => {
           let popup: HTMLDivElement | null = null;

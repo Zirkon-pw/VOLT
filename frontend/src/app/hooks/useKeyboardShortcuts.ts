@@ -1,10 +1,27 @@
 import { useEffect } from 'react';
 import { useFileTreeStore } from '@app/stores/fileTreeStore';
 import { useTabStore } from '@app/stores/tabStore';
+import { usePluginRegistryStore } from '@app/plugins/pluginRegistry';
 
 interface UseKeyboardShortcutsOptions {
   voltId: string;
   voltPath: string;
+}
+
+function matchesHotkey(hotkey: string, e: KeyboardEvent): boolean {
+  const parts = hotkey.toLowerCase().split('+').map((p) => p.trim());
+  const needMod = parts.includes('mod');
+  const needShift = parts.includes('shift');
+  const needAlt = parts.includes('alt');
+  const key = parts.find((p) => p !== 'mod' && p !== 'shift' && p !== 'alt');
+
+  if (!key) return false;
+  if (needMod && !(e.metaKey || e.ctrlKey)) return false;
+  if (!needMod && (e.metaKey || e.ctrlKey)) return false;
+  if (needShift !== e.shiftKey) return false;
+  if (needAlt !== e.altKey) return false;
+
+  return e.key.toLowerCase() === key;
 }
 
 export function useKeyboardShortcuts({ voltId, voltPath }: UseKeyboardShortcutsOptions) {
@@ -19,30 +36,41 @@ export function useKeyboardShortcuts({ voltId, voltPath }: UseKeyboardShortcutsO
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
-      if (!mod) return;
 
-      switch (e.key) {
-        case 's': {
-          e.preventDefault();
-          const tab = getActiveTab();
-          if (tab && tab.type === 'file' && tab.filePath) {
-            // Dispatch a custom event that the editor can listen to for saving
-            window.dispatchEvent(new CustomEvent('volt:save-active-file'));
+      // Built-in shortcuts (take priority)
+      if (mod) {
+        switch (e.key) {
+          case 's': {
+            e.preventDefault();
+            const tab = getActiveTab();
+            if (tab && tab.type === 'file' && tab.filePath) {
+              window.dispatchEvent(new CustomEvent('volt:save-active-file'));
+            }
+            return;
           }
-          break;
-        }
-        case 'w': {
-          e.preventDefault();
-          const tab = getActiveTab();
-          if (tab) {
-            useTabStore.getState().closeTab(voltId, tab.id);
+          case 'w': {
+            e.preventDefault();
+            const tab = getActiveTab();
+            if (tab) {
+              useTabStore.getState().closeTab(voltId, tab.id);
+            }
+            return;
           }
-          break;
+          case 'n': {
+            e.preventDefault();
+            useFileTreeStore.getState().startCreate(voltId, '', false);
+            return;
+          }
         }
-        case 'n': {
+      }
+
+      // Plugin commands
+      const commands = usePluginRegistryStore.getState().commands;
+      for (const cmd of commands) {
+        if (cmd.hotkey && matchesHotkey(cmd.hotkey, e)) {
           e.preventDefault();
-          useFileTreeStore.getState().startCreate(voltId, '', false);
-          break;
+          cmd.callback();
+          return;
         }
       }
     };

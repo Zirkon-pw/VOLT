@@ -6,7 +6,7 @@ import {
 } from '@app/lib/fileTree';
 import { translate } from '@app/i18n/runtime';
 
-export type TabType = 'file' | 'graph';
+export type TabType = 'file' | 'graph' | 'plugin';
 
 export interface FileTab {
   id: string;
@@ -14,6 +14,7 @@ export interface FileTab {
   filePath: string;
   fileName: string;
   isDirty: boolean;
+  pluginPageId?: string;
 }
 
 interface PendingRename {
@@ -27,6 +28,7 @@ interface TabState {
   pendingRenames: Record<string, PendingRename | null>;
   openTab: (voltId: string, filePath: string, fileName: string) => void;
   openGraphTab: (voltId: string) => void;
+  openPluginTab: (voltId: string, pluginPageId: string, title: string) => void;
   closeTab: (voltId: string, tabId: string) => void;
   setActiveTab: (voltId: string, tabId: string) => void;
   setDirty: (voltId: string, tabId: string, dirty: boolean) => void;
@@ -35,6 +37,7 @@ interface TabState {
   replacePathPrefix: (voltId: string, oldPrefix: string, newPrefix: string) => void;
   removePath: (voltId: string, filePath: string) => void;
   removePathPrefix: (voltId: string, prefix: string) => void;
+  removePluginTabs: (pluginId: string) => void;
   consumePendingRename: (voltId: string, newPath?: string) => void;
 }
 
@@ -89,6 +92,40 @@ export const useTabStore = create<TabState>((set, get) => ({
         activeTabs: { ...activeTabs, [voltId]: GRAPH_TAB_ID },
       });
     }
+  },
+
+  openPluginTab: (voltId, pluginPageId, title) => {
+    const tabId = `__plugin__:${pluginPageId}`;
+    const { tabs, activeTabs } = get();
+    const voltTabs = tabs[voltId] ?? [];
+    const exists = voltTabs.find((t) => t.id === tabId);
+
+    if (exists) {
+      set({
+        tabs: {
+          ...tabs,
+          [voltId]: voltTabs.map((tab) => (
+            tab.id === tabId ? { ...tab, fileName: title, pluginPageId } : tab
+          )),
+        },
+        activeTabs: { ...activeTabs, [voltId]: tabId },
+      });
+      return;
+    }
+
+    const newTab: FileTab = {
+      id: tabId,
+      type: 'plugin',
+      filePath: '',
+      fileName: title,
+      isDirty: false,
+      pluginPageId,
+    };
+
+    set({
+      tabs: { ...tabs, [voltId]: [...voltTabs, newTab] },
+      activeTabs: { ...activeTabs, [voltId]: tabId },
+    });
   },
 
   closeTab: (voltId, tabId) => {
@@ -229,6 +266,31 @@ export const useTabStore = create<TabState>((set, get) => ({
       return {
         tabs: { ...state.tabs, [voltId]: filtered },
         activeTabs: { ...state.activeTabs, [voltId]: nextActiveTabId },
+      };
+    });
+  },
+
+  removePluginTabs: (pluginId) => {
+    set((state) => {
+      const nextTabs: Record<string, FileTab[]> = {};
+      const nextActiveTabs = { ...state.activeTabs };
+
+      for (const [voltId, tabs] of Object.entries(state.tabs)) {
+        const filtered = tabs.filter(
+          (tab) => tab.type !== 'plugin' || !tab.pluginPageId?.startsWith(`${pluginId}:`),
+        );
+        nextTabs[voltId] = filtered;
+
+        const activeTabId = nextActiveTabs[voltId] ?? null;
+        const removedActiveTab = activeTabId != null && !filtered.some((tab) => tab.id === activeTabId);
+        if (removedActiveTab) {
+          nextActiveTabs[voltId] = filtered.length > 0 ? filtered[filtered.length - 1].id : null;
+        }
+      }
+
+      return {
+        tabs: nextTabs,
+        activeTabs: nextActiveTabs,
       };
     });
   },

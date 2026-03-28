@@ -15,8 +15,42 @@ export interface VoltPluginAPI {
       id: string;
       name: string;
       hotkey?: string;
-      callback: () => void;
+      callback: () => void | Promise<void>;
     }): void;
+    registerPluginPage(config: {
+      id: string;
+      title: string;
+      mode: 'tab' | 'route';
+      render: (container: HTMLElement) => void;
+      cleanup?: () => void;
+    }): void;
+    registerSlashCommand(config: {
+      id: string;
+      title: string;
+      description: string;
+      icon: string;
+      callback: () => void | Promise<void>;
+    }): void;
+    registerContextMenuItem(config: {
+      id: string;
+      label: string;
+      icon?: string;
+      filter?: (entry: { path: string; isDir: boolean }) => boolean;
+      callback: (entry: { path: string; isDir: boolean }) => void | Promise<void>;
+    }): void;
+    registerToolbarButton(config: {
+      id: string;
+      label: string;
+      icon: string;
+      callback: () => void | Promise<void>;
+    }): void;
+    registerSidebarButton(config: {
+      id: string;
+      label: string;
+      icon: string;
+      callback: () => void | Promise<void>;
+    }): void;
+    openPluginPage(pageId: string): void;
     showNotice(message: string, durationMs?: number): void;
   };
   editor: {
@@ -24,7 +58,7 @@ export interface VoltPluginAPI {
     insertAtCursor(text: string): void;
   };
   events: {
-    on(event: string, callback: (...args: unknown[]) => void): () => void;
+    on(event: string, callback: (...args: unknown[]) => void | Promise<void>): () => void;
   };
   storage: {
     get(key: string): Promise<unknown>;

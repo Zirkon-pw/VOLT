@@ -8,6 +8,8 @@ import { useTabStore } from '@app/stores/tabStore';
 import { useEditorSetup } from './hooks/useEditorSetup';
 import { useAutoSave } from './hooks/useAutoSave';
 import { useImageResolver } from './hooks/useImageResolver';
+import { setEditor } from '@app/plugins/editorBridge';
+import { emit } from '@app/plugins/pluginEventBus';
 import { TableBubbleMenu } from './extensions/TableBubbleMenu';
 import styles from './EditorPanel.module.scss';
 
@@ -42,6 +44,12 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
   });
 
   const { save } = useAutoSave({ editor, voltId, voltPath, filePath, transformMarkdown: unresolveAll });
+
+  // Register editor with plugin bridge
+  useEffect(() => {
+    if (editor) setEditor(editor);
+    return () => { setEditor(null); };
+  }, [editor]);
 
   useEffect(() => {
     if (filePath) {
@@ -78,6 +86,7 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
         if (cancelled) return;
         editor.commands.setContent(content);
         loadedPathRef.current = filePath;
+        emit('file-open', filePath);
       } catch (e) {
         console.error('Failed to load note:', e);
       }

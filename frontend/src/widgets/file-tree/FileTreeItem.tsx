@@ -8,6 +8,7 @@ import {
   isMarkdownName,
   validateMoveTarget,
 } from '@app/lib/fileTree';
+import { usePluginRegistryStore } from '@app/plugins/pluginRegistry';
 import { useFileTreeStore } from '@app/stores/fileTreeStore';
 import { useTabStore } from '@app/stores/tabStore';
 import { Icon } from '@uikit/icon';
@@ -54,6 +55,7 @@ export function FileTreeItem({
   const commitMove = useFileTreeStore((state) => state.commitMove);
   const scheduleHoverExpand = useFileTreeStore((state) => state.scheduleHoverExpand);
   const cancelHoverExpand = useFileTreeStore((state) => state.cancelHoverExpand);
+  const pluginContextMenuItems = usePluginRegistryStore((state) => state.contextMenuItems);
   const openTab = useTabStore((state) => state.openTab);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const expanded = expandedPaths.includes(entry.path);
@@ -67,6 +69,9 @@ export function FileTreeItem({
   const displayName = getEntryDisplayName(entry.name, entry.isDir);
   const iconName = entry.isDir ? (expanded ? 'folderOpen' : 'folder') : (isMarkdownName(entry.name) ? 'fileText' : 'file');
   const isDragDisabled = Boolean(editingItem || pendingCreate);
+  const pluginMenuItems = pluginContextMenuItems.filter((item) => (
+    item.filter ? item.filter({ path: entry.path, isDir: entry.isDir }) : true
+  ));
 
   const handleClick = () => {
     setSelectedPath(voltId, entry.path);
@@ -231,6 +236,21 @@ export function FileTreeItem({
             >
               {t('fileTree.context.delete')}
             </button>
+            {pluginMenuItems.length > 0 && <div className={styles.menuDivider} />}
+            {pluginMenuItems.map((item) => (
+              <button
+                key={item.id}
+                className={styles.menuItem}
+                onClick={() => handleMenuAction(() => item.callback({ path: entry.path, isDir: entry.isDir }))}
+              >
+                {item.icon ? (
+                  <span className={styles.menuItemContent}>
+                    <Icon name={item.icon} size={14} />
+                    <span>{item.label}</span>
+                  </span>
+                ) : item.label}
+              </button>
+            ))}
           </div>
         </>
       )}

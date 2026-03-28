@@ -7,7 +7,9 @@ import { FileTabs } from '@widgets/file-tabs/FileTabs';
 import { EditorPanel } from '@widgets/editor-panel/EditorPanel';
 import { GraphView } from '@widgets/graph-view/GraphView';
 import { ImageViewer } from '@widgets/image-viewer/ImageViewer';
+import { PluginPageHost } from '@widgets/plugin-page/PluginPageHost';
 import { SearchPopup } from '@widgets/search-popup/SearchPopup';
+import { WorkspaceToolbar } from '@widgets/workspace-toolbar/WorkspaceToolbar';
 import { loadAllPlugins, unloadAllPlugins } from '@app/plugins/pluginLoader';
 import { useDoubleShift } from '../../hooks/useDoubleShift';
 import { useKeyboardShortcuts } from '@app/hooks/useKeyboardShortcuts';
@@ -18,6 +20,8 @@ export function WorkspacePage() {
   const navigate = useNavigate();
   const { workspaces, activeWorkspaceId, setActiveWorkspace } = useWorkspaceStore();
   const activeTabs = useTabStore((s) => s.activeTabs);
+  const allTabs = useTabStore((s) => s.tabs);
+  const openTab = useTabStore((s) => s.openTab);
   const [searchOpen, setSearchOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('volt-sidebar-collapsed') === 'true');
 
@@ -80,15 +84,29 @@ export function WorkspacePage() {
     }
   }, [voltId, workspace, activeWorkspaceId, setActiveWorkspace, navigate]);
 
+  useEffect(() => {
+    const handlePluginNavigation = (event: Event) => {
+      const detail = (event as CustomEvent<{ voltId: string; pageId: string }>).detail;
+      if (!detail || detail.voltId !== voltId) {
+        return;
+      }
+
+      navigate(`/workspace/${detail.voltId}/plugin/${encodeURIComponent(detail.pageId)}`);
+    };
+
+    window.addEventListener('volt:navigate-plugin-page', handlePluginNavigation);
+    return () => {
+      window.removeEventListener('volt:navigate-plugin-page', handlePluginNavigation);
+    };
+  }, [navigate, voltId]);
+
   if (!workspace || !voltId) {
     return null;
   }
 
   const activeTabId = activeTabs[voltId] ?? null;
-  const allTabs = useTabStore((s) => s.tabs);
   const voltTabs: FileTab[] = allTabs[voltId] ?? [];
   const activeTab = voltTabs.find((t) => t.id === activeTabId) ?? null;
-  const openTab = useTabStore((s) => s.openTab);
 
   const handleGraphNodeOpen = useCallback(
     (filePath: string) => {
@@ -98,8 +116,9 @@ export function WorkspacePage() {
     [voltId, openTab],
   );
 
+  const isPluginTab = activeTab?.type === 'plugin';
   const isGraphTab = activeTab?.type === 'graph';
-  const activeFilePath = isGraphTab ? null : (activeTabId ?? null);
+  const activeFilePath = activeTab?.type === 'file' ? activeTab.filePath : null;
   const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico'];
   const isImageFile = activeFilePath != null && imageExtensions.some((ext) => activeFilePath.toLowerCase().endsWith(ext));
 
@@ -114,17 +133,25 @@ export function WorkspacePage() {
       />
       <div className={styles.main}>
         <FileTabs voltId={voltId} />
-        {isGraphTab ? (
-          <GraphView voltPath={workspace.voltPath} onNodeOpen={handleGraphNodeOpen} />
-        ) : isImageFile ? (
-          <ImageViewer voltPath={workspace.voltPath} filePath={activeFilePath} />
-        ) : (
-          <EditorPanel
-            voltId={voltId}
-            voltPath={workspace.voltPath}
-            filePath={activeFilePath}
-          />
-        )}
+        <WorkspaceToolbar />
+        <div className={styles.content}>
+          {isPluginTab ? (
+            <PluginPageHost
+              pageId={activeTab?.pluginPageId ?? ''}
+              className={styles.pluginPage}
+            />
+          ) : isGraphTab ? (
+            <GraphView voltPath={workspace.voltPath} onNodeOpen={handleGraphNodeOpen} />
+          ) : isImageFile ? (
+            <ImageViewer voltPath={workspace.voltPath} filePath={activeFilePath} />
+          ) : (
+            <EditorPanel
+              voltId={voltId}
+              voltPath={workspace.voltPath}
+              filePath={activeFilePath}
+            />
+          )}
+        </div>
       </div>
       {searchOpen && (
         <SearchPopup
@@ -132,6 +159,7 @@ export function WorkspacePage() {
           onClose={closeSearch}
           voltId={voltId}
           voltPath={workspace.voltPath}
+          onToggleSidebar={() => setSidebarCollapsed((prev) => !prev)}
         />
       )}
     </div>

@@ -95,6 +95,13 @@
   gap: 2px;
 }
 
+.resultHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
 .resultFileName {
   font-size: var(--font-size-sm);
   font-weight: 400;
@@ -114,6 +121,16 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.hotkeyBadge {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  line-height: 1.2;
 }
 
 .resultSnippet {
