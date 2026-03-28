@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useTheme } from '@app/providers/ThemeProvider';
 import { useTabStore } from '@app/stores/tabStore';
 import { FileTree } from '@widgets/file-tree/FileTree';
+import { Icon } from '@uikit/icon';
 import styles from './Sidebar.module.scss';
 
 const STORAGE_KEY = 'volt-sidebar-width';
@@ -20,10 +20,12 @@ function getInitialWidth(): number {
 interface SidebarProps {
   voltId: string;
   voltPath: string;
+  onSearchClick: () => void;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
-export function Sidebar({ voltId, voltPath }: SidebarProps) {
-  const { theme, toggleTheme } = useTheme();
+export function Sidebar({ voltId, voltPath, onSearchClick, collapsed, onToggleCollapse }: SidebarProps) {
   const openGraphTab = useTabStore((s) => s.openGraphTab);
   const [width, setWidth] = useState(getInitialWidth);
   const dragging = useRef(false);
@@ -62,19 +64,29 @@ export function Sidebar({ voltId, voltPath }: SidebarProps) {
   }, [width]);
 
   return (
-    <aside className={styles.sidebar} style={{ width, minWidth: width }}>
-      <div className={styles.treeContainer}>
-        <FileTree voltId={voltId} voltPath={voltPath} />
-      </div>
-      <div className={styles.bottom}>
-        <button className={styles.themeToggle} onClick={() => openGraphTab(voltId)}>
-          Graph
+    <aside className={collapsed ? styles.collapsed : styles.sidebar} style={!collapsed ? { width, minWidth: width } : undefined}>
+      <div className={styles.topBar}>
+        <button className={styles.iconButton} onClick={onSearchClick} title="Search">
+          <Icon name="search" size={18} />
         </button>
-        <button className={styles.themeToggle} onClick={toggleTheme}>
-          {theme === 'light' ? '\u{263E} Dark mode' : '\u{2600} Light mode'}
+        <div style={{ flex: 1 }} />
+        <button className={styles.iconButton} onClick={onToggleCollapse} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+          <Icon name="panelLeft" size={18} />
         </button>
       </div>
-      <div className={styles.resizeHandle} onMouseDown={onMouseDown} />
+      {!collapsed && (
+        <>
+          <div className={styles.treeContainer}>
+            <FileTree voltId={voltId} voltPath={voltPath} />
+          </div>
+          <div className={styles.bottom}>
+            <button className={styles.themeToggle} onClick={() => openGraphTab(voltId)}>
+              <Icon name="graph" size={16} /> Graph
+            </button>
+          </div>
+          <div className={styles.resizeHandle} onMouseDown={onMouseDown} />
+        </>
+      )}
     </aside>
   );
 }

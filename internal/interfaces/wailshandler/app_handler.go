@@ -12,15 +12,17 @@ type AppHandler struct {
 	searchHandler *SearchHandler
 	graphHandler  *GraphHandler
 	pluginHandler *PluginHandler
+	imageHandler  *ImageHandler
 }
 
-func NewAppHandler(voltHandler *VoltHandler, noteHandler *NoteHandler, searchHandler *SearchHandler, graphHandler *GraphHandler, pluginHandler *PluginHandler) *AppHandler {
+func NewAppHandler(voltHandler *VoltHandler, noteHandler *NoteHandler, searchHandler *SearchHandler, graphHandler *GraphHandler, pluginHandler *PluginHandler, imageHandler *ImageHandler) *AppHandler {
 	return &AppHandler{
 		voltHandler:   voltHandler,
 		noteHandler:   noteHandler,
 		searchHandler: searchHandler,
 		graphHandler:  graphHandler,
 		pluginHandler: pluginHandler,
+		imageHandler:  imageHandler,
 	}
 }
 
@@ -35,4 +37,5 @@ func (h *AppHandler) Startup(ctx context.Context) {
 	h.searchHandler.SetContext(ctx)
 	h.graphHandler.SetContext(ctx)
 	h.pluginHandler.SetContext(ctx)
+	h.imageHandler.SetContext(ctx)
 }

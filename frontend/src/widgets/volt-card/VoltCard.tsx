@@ -1,4 +1,5 @@
 import { Volt } from '@api/volt/types';
+import { Icon } from '@uikit/icon';
 import styles from './VoltCard.module.scss';
 
 interface VoltCardProps {
@@ -36,7 +37,7 @@ export function VoltCard({ volt, onDelete, onOpen }: VoltCardProps) {
         onClick={handleDelete}
         aria-label="Delete volt"
       >
-        ×
+        <Icon name="close" size={14} />
       </button>
       <span className={styles.name}>{volt.name}</span>
       <span className={styles.path} title={volt.path}>

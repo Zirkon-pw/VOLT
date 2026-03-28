@@ -1,9 +1,11 @@
 package graph
 
 type GraphNode struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Path string `json:"path"`
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Path      string `json:"path"`
+	LinkCount int    `json:"linkCount"`
+	WordCount int    `json:"wordCount"`
 }
 
 type GraphEdge struct {

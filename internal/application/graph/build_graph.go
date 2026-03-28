@@ -10,6 +10,7 @@ import (
 )
 
 var wikiLinkRe = regexp.MustCompile(`\[\[([^\]]+)\]\]`)
+var mdLinkRe = regexp.MustCompile(`\[([^\]]*)\]\(([^)]+\.md)\)`)
 
 type BuildGraphUseCase struct{}
 
@@ -24,7 +25,7 @@ func (uc *BuildGraphUseCase) Execute(voltPath string) (*domain.Graph, error) {
 
 	err := filepath.Walk(voltPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return nil // skip errors
+			return nil
 		}
 		if info.IsDir() {
 			return nil
@@ -49,20 +50,9 @@ func (uc *BuildGraphUseCase) Execute(voltPath string) (*domain.Graph, error) {
 		return nil, err
 	}
 
-	// Build nodes
-	nodes := make([]domain.GraphNode, 0, len(allPaths))
-	for _, relPath := range allPaths {
-		baseName := strings.TrimSuffix(filepath.Base(relPath), filepath.Ext(relPath))
-		nodes = append(nodes, domain.GraphNode{
-			ID:   relPath,
-			Name: baseName,
-			Path: relPath,
-		})
-	}
-
-	// Build edges by extracting wiki-links
-	edgeSet := make(map[string]bool)
-	var edges []domain.GraphEdge
+	// Read file contents and count words
+	fileContents := make(map[string]string, len(allPaths))
+	wordCounts := make(map[string]int, len(allPaths))
 
 	for _, relPath := range allPaths {
 		fullPath := filepath.Join(voltPath, relPath)
@@ -70,36 +60,25 @@ func (uc *BuildGraphUseCase) Execute(voltPath string) (*domain.Graph, error) {
 		if err != nil {
 			continue
 		}
+		text := string(content)
+		fileContents[relPath] = text
+		wordCounts[relPath] = len(strings.Fields(text))
+	}
 
-		matches := wikiLinkRe.FindAllStringSubmatch(string(content), -1)
-		for _, match := range matches {
-			linkTarget := match[1]
-			// Handle links with aliases: [[target|alias]]
-			if idx := strings.Index(linkTarget, "|"); idx != -1 {
-				linkTarget = linkTarget[:idx]
-			}
-			// Handle links with headings: [[target#heading]]
-			if idx := strings.Index(linkTarget, "#"); idx != -1 {
-				linkTarget = linkTarget[:idx]
-			}
+	// Build edges
+	edgeSet := make(map[string]bool)
+	var edges []domain.GraphEdge
 
-			linkTarget = strings.TrimSpace(linkTarget)
-			if linkTarget == "" {
-				continue
-			}
+	for _, relPath := range allPaths {
+		text, ok := fileContents[relPath]
+		if !ok {
+			continue
+		}
 
-			targetPath, ok := mdFiles[strings.ToLower(linkTarget)]
-			if !ok {
-				continue
-			}
-
+		addEdge := func(targetPath string) {
 			edgeKey := relPath + "->" + targetPath
-			if edgeSet[edgeKey] {
-				continue
-			}
-			// Skip self-links
-			if relPath == targetPath {
-				continue
+			if edgeSet[edgeKey] || relPath == targetPath {
+				return
 			}
 			edgeSet[edgeKey] = true
 			edges = append(edges, domain.GraphEdge{
@@ -107,6 +86,63 @@ func (uc *BuildGraphUseCase) Execute(voltPath string) (*domain.Graph, error) {
 				Target: targetPath,
 			})
 		}
+
+		// Wiki-links: [[target]], [[target|alias]], [[target#heading]]
+		matches := wikiLinkRe.FindAllStringSubmatch(text, -1)
+		for _, match := range matches {
+			linkTarget := match[1]
+			if idx := strings.Index(linkTarget, "|"); idx != -1 {
+				linkTarget = linkTarget[:idx]
+			}
+			if idx := strings.Index(linkTarget, "#"); idx != -1 {
+				linkTarget = linkTarget[:idx]
+			}
+			linkTarget = strings.TrimSpace(linkTarget)
+			if linkTarget == "" {
+				continue
+			}
+			if targetPath, ok := mdFiles[strings.ToLower(linkTarget)]; ok {
+				addEdge(targetPath)
+			}
+		}
+
+		// Markdown links: [text](path.md)
+		mdMatches := mdLinkRe.FindAllStringSubmatch(text, -1)
+		for _, match := range mdMatches {
+			linkPath := match[2]
+			dir := filepath.Dir(relPath)
+			resolved := filepath.Clean(filepath.Join(dir, linkPath))
+			for _, nodePath := range allPaths {
+				if nodePath == resolved {
+					addEdge(resolved)
+					break
+				}
+			}
+			baseName := strings.TrimSuffix(filepath.Base(linkPath), filepath.Ext(linkPath))
+			if targetPath, ok := mdFiles[strings.ToLower(baseName)]; ok {
+				addEdge(targetPath)
+			}
+		}
+	}
+
+	// Count links per node (degree = outgoing + incoming)
+	linkCounts := make(map[string]int, len(allPaths))
+	for _, edge := range edges {
+		linkCounts[edge.Source]++
+		linkCounts[edge.Target]++
+	}
+
+	// Build nodes with metadata
+	nodes := make([]domain.GraphNode, 0, len(allPaths))
+	for _, relPath := range allPaths {
+		baseName := strings.TrimSuffix(filepath.Base(relPath), filepath.Ext(relPath))
+		nodes = append(nodes, domain.GraphNode{
+			ID:        relPath,
+			Name:      baseName,
+			Path:      relPath,
+			LinkCount: linkCounts[relPath],
+			WordCount: wordCounts[relPath],
+		})
 	}
 
 	if nodes == nil {

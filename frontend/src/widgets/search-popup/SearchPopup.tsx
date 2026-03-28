@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { searchFiles } from '@api/search';
 import type { SearchResult } from '@api/search';
 import { useTabStore } from '@app/stores/tabStore';
+import { Icon } from '@uikit/icon';
 import styles from './SearchPopup.module.scss';
 
 interface SearchPopupProps {
@@ -140,7 +141,7 @@ export function SearchPopup({ isOpen, onClose, voltId, voltPath }: SearchPopupPr
               onMouseEnter={() => setActiveIndex(i)}
             >
               <span className={styles.resultIcon}>
-                {result.isName ? '#' : 'T'}
+                {result.isName ? <Icon name="hash" size={14} /> : <Icon name="fileText" size={14} />}
               </span>
               <div className={styles.resultContent}>
                 <span

@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { useTabStore } from '@app/stores/tabStore';
+import { Icon } from '@uikit/icon';
 import styles from './FileTabs.module.scss';
 
 interface FileTabsProps {
@@ -6,9 +8,12 @@ interface FileTabsProps {
 }
 
 export function FileTabs({ voltId }: FileTabsProps) {
-  const { tabs, activeTabs, setActiveTab, closeTab } = useTabStore();
+  const { tabs, activeTabs, setActiveTab, closeTab, reorderTabs } = useTabStore();
   const voltTabs = tabs[voltId] ?? [];
   const activeTabId = activeTabs[voltId] ?? null;
+
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   if (voltTabs.length === 0) return null;
 
@@ -22,12 +27,34 @@ export function FileTabs({ voltId }: FileTabsProps) {
 
   return (
     <div className={styles.bar}>
-      {voltTabs.map((tab) => (
+      {voltTabs.map((tab, index) => (
         <div
           key={tab.id}
-          className={`${styles.tab} ${tab.id === activeTabId ? styles.active : ''}`}
+          className={`${styles.tab} ${tab.id === activeTabId ? styles.active : ''} ${dragIndex === index ? styles.dragging : ''} ${dragOverIndex === index ? styles.dragOver : ''}`}
           onClick={() => setActiveTab(voltId, tab.id)}
           onMouseDown={(e) => handleMouseDown(e, tab.id)}
+          draggable={true}
+          onDragStart={(e) => {
+            e.dataTransfer.effectAllowed = 'move';
+            setDragIndex(index);
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            setDragOverIndex(index);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            if (dragIndex !== null && dragIndex !== index) {
+              reorderTabs(voltId, dragIndex, index);
+            }
+            setDragIndex(null);
+            setDragOverIndex(null);
+          }}
+          onDragEnd={() => {
+            setDragIndex(null);
+            setDragOverIndex(null);
+          }}
         >
           <span className={styles.label}>
             {tab.isDirty && <span className={styles.dirty} />}
@@ -41,7 +68,7 @@ export function FileTabs({ voltId }: FileTabsProps) {
             }}
             aria-label={`Close ${tab.fileName}`}
           >
-            &times;
+            <Icon name="close" size={14} />
           </button>
         </div>
       ))}

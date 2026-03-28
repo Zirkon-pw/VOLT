@@ -18,6 +18,7 @@ interface TabState {
   closeTab: (voltId: string, tabId: string) => void;
   setActiveTab: (voltId: string, tabId: string) => void;
   setDirty: (voltId: string, tabId: string, dirty: boolean) => void;
+  reorderTabs: (voltId: string, fromIndex: number, toIndex: number) => void;
 }
 
 export const useTabStore = create<TabState>((set, get) => ({
@@ -98,6 +99,15 @@ export const useTabStore = create<TabState>((set, get) => ({
         ...tabs,
         [voltId]: voltTabs.map((t) => (t.id === tabId ? { ...t, isDirty: dirty } : t)),
       },
+    });
+  },
+
+  reorderTabs: (voltId, fromIndex, toIndex) => {
+    set((state) => {
+      const voltTabs = [...(state.tabs[voltId] || [])];
+      const [moved] = voltTabs.splice(fromIndex, 1);
+      voltTabs.splice(toIndex, 0, moved);
+      return { tabs: { ...state.tabs, [voltId]: voltTabs } };
     });
   },
 }));

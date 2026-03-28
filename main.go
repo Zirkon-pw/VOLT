@@ -9,6 +9,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
 
 	"volt/internal/bootstrap"
+	"volt/internal/interfaces/wailshandler"
 )
 
 //go:embed all:frontend/dist
@@ -24,7 +25,8 @@ func main() {
 		MinWidth:  800,
 		MinHeight: 600,
 		AssetServer: &assetserver.Options{
-			Assets: assets,
+			Assets:  assets,
+			Handler: wailshandler.NewVaultAssetServer(),
 		},
 		BackgroundColour: &options.RGBA{R: 25, G: 25, B: 25, A: 1},
 		StartHidden:      false,
@@ -35,7 +37,7 @@ func main() {
 		Mac: &mac.Options{
 			TitleBar: &mac.TitleBar{
 				TitlebarAppearsTransparent: true,
-				HideTitle:                  false,
+				HideTitle:                  true,
 				HideTitleBar:               false,
 				FullSizeContent:            true,
 				UseToolbar:                 false,

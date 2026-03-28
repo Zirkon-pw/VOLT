@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { FileEntry } from '@api/note/types';
+import { Icon } from '@uikit/icon';
 import styles from './FileTree.module.scss';
 
 interface FileTreeItemProps {
@@ -54,7 +55,7 @@ export function FileTreeItem({
         onContextMenu={handleContextMenu}
       >
         <span className={styles.icon}>
-          {entry.isDir ? (expanded ? '\u{1F4C2}' : '\u{1F4C1}') : '\u{1F4C4}'}
+          {entry.isDir ? (expanded ? <Icon name="folderOpen" size={16} /> : <Icon name="folder" size={16} />) : <Icon name="file" size={16} />}
         </span>
         <span className={styles.name}>{entry.name}</span>
       </div>

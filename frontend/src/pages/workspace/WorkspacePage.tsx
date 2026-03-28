@@ -18,6 +18,7 @@ export function WorkspacePage() {
   const { workspaces, activeWorkspaceId, setActiveWorkspace } = useWorkspaceStore();
   const activeTabs = useTabStore((s) => s.activeTabs);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('volt-sidebar-collapsed') === 'true');
 
   const workspace = workspaces.find((w) => w.voltId === voltId);
 
@@ -28,6 +29,11 @@ export function WorkspacePage() {
   const closeSearch = useCallback(() => {
     setSearchOpen(false);
   }, []);
+
+  // Persist sidebar collapsed state
+  useEffect(() => {
+    localStorage.setItem('volt-sidebar-collapsed', String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
 
   // Global keyboard shortcuts
   useKeyboardShortcuts({ voltId: voltId ?? '', voltPath: workspace?.voltPath ?? '' });
@@ -41,6 +47,10 @@ export function WorkspacePage() {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setSearchOpen((prev) => !prev);
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
+        e.preventDefault();
+        setSidebarCollapsed((prev) => !prev);
       }
     };
 
@@ -92,7 +102,13 @@ export function WorkspacePage() {
 
   return (
     <div className={styles.layout}>
-      <Sidebar voltId={voltId} voltPath={workspace.voltPath} />
+      <Sidebar
+        voltId={voltId}
+        voltPath={workspace.voltPath}
+        onSearchClick={() => setSearchOpen(true)}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((p) => !p)}
+      />
       <div className={styles.main}>
         <FileTabs voltId={voltId} />
         {isGraphTab ? (

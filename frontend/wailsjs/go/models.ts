@@ -18,6 +18,8 @@ export namespace graph {
 	    id: string;
 	    name: string;
 	    path: string;
+	    linkCount: number;
+	    wordCount: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new GraphNode(source);
@@ -28,6 +30,8 @@ export namespace graph {
 	        this.id = source["id"];
 	        this.name = source["name"];
 	        this.path = source["path"];
+	        this.linkCount = source["linkCount"];
+	        this.wordCount = source["wordCount"];
 	    }
 	}
 	export class Graph {

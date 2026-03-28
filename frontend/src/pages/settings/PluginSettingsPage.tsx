@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listPlugins, setPluginEnabled } from '@api/plugin';
 import type { PluginInfo } from '@api/plugin';
+import { Icon } from '@uikit/icon';
 import styles from './PluginSettingsPage.module.scss';
 
 export function PluginSettingsPage() {
@@ -51,7 +52,7 @@ export function PluginSettingsPage() {
           if (e.key === 'Enter') navigate(-1);
         }}
       >
-        &larr; Back
+        <Icon name="arrowLeft" size={14} /> Back
       </span>
       <h1 className={styles.title}>Plugins</h1>
       <p className={styles.subtitle}>Manage installed plugins</p>

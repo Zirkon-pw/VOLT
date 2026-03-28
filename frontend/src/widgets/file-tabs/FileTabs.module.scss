@@ -90,3 +90,11 @@
     color: var(--color-text-primary);
   }
 }
+
+.dragging {
+  opacity: 0.4;
+}
+
+.drag-over {
+  border-left: 2px solid var(--color-accent);
+}

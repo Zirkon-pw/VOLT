@@ -20,6 +20,7 @@ type Container struct {
 	searchHandler *wailshandler.SearchHandler
 	graphHandler  *wailshandler.GraphHandler
 	pluginHandler *wailshandler.PluginHandler
+	imageHandler  *wailshandler.ImageHandler
 }
 
 func NewContainer() *Container {
@@ -70,7 +71,8 @@ func NewContainer() *Container {
 	searchHandler := wailshandler.NewSearchHandler(searchFiles)
 	graphHandler := wailshandler.NewGraphHandler(buildGraph)
 	pluginHandler := wailshandler.NewPluginHandler(listPlugins, loadPlugin, togglePlugin, getPluginData, setPluginData)
-	appHandler := wailshandler.NewAppHandler(voltHandler, noteHandler, searchHandler, graphHandler, pluginHandler)
+	imageHandler := wailshandler.NewImageHandler()
+	appHandler := wailshandler.NewAppHandler(voltHandler, noteHandler, searchHandler, graphHandler, pluginHandler, imageHandler)
 
 	return &Container{
 		App:           appHandler,
@@ -79,6 +81,7 @@ func NewContainer() *Container {
 		searchHandler: searchHandler,
 		graphHandler:  graphHandler,
 		pluginHandler: pluginHandler,
+		imageHandler:  imageHandler,
 	}
 }
 
@@ -90,5 +93,6 @@ func (c *Container) Bindings() []interface{} {
 		c.searchHandler,
 		c.graphHandler,
 		c.pluginHandler,
+		c.imageHandler,
 	}
 }

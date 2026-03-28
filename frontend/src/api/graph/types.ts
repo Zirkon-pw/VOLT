@@ -2,6 +2,8 @@ export interface GraphNode {
   id: string;
   name: string;
   path: string;
+  linkCount: number;
+  wordCount: number;
 }
 
 export interface GraphEdge {

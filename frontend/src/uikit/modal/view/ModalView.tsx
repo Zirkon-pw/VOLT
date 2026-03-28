@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useCallback, MouseEvent } from 'react';
+import { Icon } from '@uikit/icon';
 import styles from './ModalView.module.scss';
 
 interface ModalViewProps {
@@ -43,7 +44,7 @@ export function ModalView({ isOpen, onClose, title, children }: ModalViewProps) 
             onClick={onClose}
             aria-label="Close"
           >
-            ×
+            <Icon name="close" size={16} />
           </button>
         </div>
         <div className={styles.body}>{children}</div>

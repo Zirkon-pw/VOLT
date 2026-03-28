@@ -1,13 +1,16 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkspaceStore } from '@app/stores/workspaceStore';
+import { Icon } from '@uikit/icon';
 import styles from './WorkspaceTabs.module.scss';
 
 export function WorkspaceTabs() {
-  const { workspaces, activeWorkspaceId, setActiveWorkspace, closeWorkspace } =
+  const { workspaces, activeWorkspaceId, setActiveWorkspace, closeWorkspace, reorderWorkspaces } =
     useWorkspaceStore();
   const navigate = useNavigate();
 
-  if (workspaces.length === 0) return null;
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const handleClick = (voltId: string) => {
     setActiveWorkspace(voltId);
@@ -28,11 +31,42 @@ export function WorkspaceTabs() {
 
   return (
     <div className={styles.bar}>
-      {workspaces.map((ws) => (
+      <div className={styles.headerButtons}>
+        <button className={styles.headerBtn} onClick={() => navigate('/')} title="Home">
+          <Icon name="home" size={16} />
+        </button>
+        <button className={styles.headerBtn} onClick={() => navigate('/settings')} title="Settings">
+          <Icon name="settings" size={16} />
+        </button>
+        <div className={styles.separator} />
+      </div>
+      {workspaces.map((ws, index) => (
         <div
           key={ws.voltId}
-          className={`${styles.tab} ${ws.voltId === activeWorkspaceId ? styles.active : ''}`}
+          className={`${styles.tab} ${ws.voltId === activeWorkspaceId ? styles.active : ''} ${dragIndex === index ? styles.dragging : ''} ${dragOverIndex === index ? styles.dragOver : ''}`}
           onClick={() => handleClick(ws.voltId)}
+          draggable={true}
+          onDragStart={(e) => {
+            e.dataTransfer.effectAllowed = 'move';
+            setDragIndex(index);
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            setDragOverIndex(index);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            if (dragIndex !== null && dragIndex !== index) {
+              reorderWorkspaces(dragIndex, index);
+            }
+            setDragIndex(null);
+            setDragOverIndex(null);
+          }}
+          onDragEnd={() => {
+            setDragIndex(null);
+            setDragOverIndex(null);
+          }}
         >
           <span className={styles.label}>{ws.voltName}</span>
           <button
@@ -40,7 +74,7 @@ export function WorkspaceTabs() {
             onClick={(e) => handleClose(e, ws.voltId)}
             aria-label={`Close ${ws.voltName}`}
           >
-            &times;
+            <Icon name="close" size={14} />
           </button>
         </div>
       ))}

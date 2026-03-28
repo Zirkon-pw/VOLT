@@ -12,6 +12,7 @@ import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { Markdown } from 'tiptap-markdown';
 import { common, createLowlight } from 'lowlight';
+import { SlashCommand } from '../extensions/slashCommand';
 
 const lowlight = createLowlight(common);
 
@@ -41,7 +42,10 @@ export function useEditorSetup({ onUpdate }: UseEditorSetupOptions = {}) {
       CodeBlockLowlight.configure({
         lowlight,
       }),
-      Image,
+      Image.configure({
+        inline: true,
+        allowBase64: true,
+      }),
       Table.configure({
         resizable: true,
       }),
@@ -53,6 +57,7 @@ export function useEditorSetup({ onUpdate }: UseEditorSetupOptions = {}) {
         transformCopiedText: true,
         transformPastedText: true,
       }),
+      SlashCommand,
     ],
     onUpdate: ({ editor: ed }) => {
       onUpdate?.(ed as Editor);

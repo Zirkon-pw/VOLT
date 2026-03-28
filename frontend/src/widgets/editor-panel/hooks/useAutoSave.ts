@@ -9,6 +9,8 @@ interface UseAutoSaveOptions {
   voltPath: string;
   filePath: string | null;
   delay?: number;
+  /** Optional transform applied to markdown before saving (e.g. unresolve image URLs) */
+  transformMarkdown?: (md: string) => string;
 }
 
 export function useAutoSave({
@@ -17,6 +19,7 @@ export function useAutoSave({
   voltPath,
   filePath,
   delay = 500,
+  transformMarkdown,
 }: UseAutoSaveOptions) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const setDirty = useTabStore((s) => s.setDirty);
@@ -26,13 +29,16 @@ export function useAutoSave({
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const markdown = (editor.storage as any).markdown.getMarkdown();
+      let markdown = (editor.storage as any).markdown.getMarkdown();
+      if (transformMarkdown) {
+        markdown = transformMarkdown(markdown);
+      }
       await saveNote(voltPath, filePath, markdown);
       setDirty(voltId, filePath, false);
     } catch (e) {
       console.error('Auto-save failed:', e);
     }
-  }, [editor, voltPath, filePath, voltId, setDirty]);
+  }, [editor, voltPath, filePath, voltId, setDirty, transformMarkdown]);
 
   useEffect(() => {
     if (!editor || !filePath) return;

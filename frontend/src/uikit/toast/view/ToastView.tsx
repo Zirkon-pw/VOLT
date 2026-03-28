@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { ToastProps } from '../model/types';
+import { Icon } from '@uikit/icon';
 import styles from './ToastView.module.scss';
 
 export function ToastView({ toast, onDismiss }: ToastProps) {
@@ -15,7 +16,7 @@ export function ToastView({ toast, onDismiss }: ToastProps) {
     <div className={`${styles.toast} ${styles[toast.type]}`}>
       <span className={styles.message}>{toast.message}</span>
       <button className={styles.closeBtn} onClick={() => onDismiss(toast.id)}>
-        &times;
+        <Icon name="close" size={14} />
       </button>
     </div>
   );

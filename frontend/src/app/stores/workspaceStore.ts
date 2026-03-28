@@ -12,6 +12,7 @@ interface WorkspaceState {
   openWorkspace: (volt: WorkspaceTab) => void;
   closeWorkspace: (voltId: string) => void;
   setActiveWorkspace: (voltId: string) => void;
+  reorderWorkspaces: (fromIndex: number, toIndex: number) => void;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
@@ -40,5 +41,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   setActiveWorkspace: (voltId) => {
     set({ activeWorkspaceId: voltId });
+  },
+
+  reorderWorkspaces: (fromIndex, toIndex) => {
+    set((state) => {
+      const updated = [...state.workspaces];
+      const [moved] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, moved);
+      return { workspaces: updated };
+    });
   },
 }));
