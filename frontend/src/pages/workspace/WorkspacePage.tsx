@@ -7,7 +7,9 @@ import { FileTabs } from '@widgets/file-tabs/FileTabs';
 import { EditorPanel } from '@widgets/editor-panel/EditorPanel';
 import { GraphView } from '@widgets/graph-view/GraphView';
 import { SearchPopup } from '@widgets/search-popup/SearchPopup';
+import { loadAllPlugins, unloadAllPlugins } from '@app/plugins/pluginLoader';
 import { useDoubleShift } from '../../hooks/useDoubleShift';
+import { useKeyboardShortcuts } from '@app/hooks/useKeyboardShortcuts';
 import styles from './WorkspacePage.module.scss';
 
 export function WorkspacePage() {
@@ -27,6 +29,9 @@ export function WorkspacePage() {
     setSearchOpen(false);
   }, []);
 
+  // Global keyboard shortcuts
+  useKeyboardShortcuts({ voltId: voltId ?? '', voltPath: workspace?.voltPath ?? '' });
+
   // Double-Shift to toggle search popup
   useDoubleShift(toggleSearch);
 
@@ -42,6 +47,16 @@ export function WorkspacePage() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Load plugins on workspace mount
+  useEffect(() => {
+    if (workspace) {
+      loadAllPlugins(workspace.voltPath);
+    }
+    return () => {
+      unloadAllPlugins();
+    };
+  }, [workspace]);
 
   useEffect(() => {
     if (voltId && workspace) {

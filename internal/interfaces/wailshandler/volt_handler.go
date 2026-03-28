@@ -2,6 +2,7 @@ package wailshandler
 
 import (
 	"context"
+	"fmt"
 
 	domain "volt/core/volt"
 	appvolt "volt/internal/application/volt"
@@ -33,15 +34,26 @@ func (h *VoltHandler) SetContext(ctx context.Context) {
 }
 
 func (h *VoltHandler) ListVolts() ([]domain.Volt, error) {
-	return h.listVolts.Execute()
+	result, err := h.listVolts.Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list volts: %w", err)
+	}
+	return result, nil
 }
 
 func (h *VoltHandler) CreateVolt(name, path string) (*domain.Volt, error) {
-	return h.createVolt.Execute(name, path)
+	result, err := h.createVolt.Execute(name, path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create volt %q: %w", name, err)
+	}
+	return result, nil
 }
 
 func (h *VoltHandler) DeleteVolt(id string) error {
-	return h.deleteVolt.Execute(id)
+	if err := h.deleteVolt.Execute(id); err != nil {
+		return fmt.Errorf("failed to delete volt %q: %w", id, err)
+	}
+	return nil
 }
 
 func (h *VoltHandler) SelectDirectory() (string, error) {
@@ -49,7 +61,7 @@ func (h *VoltHandler) SelectDirectory() (string, error) {
 		Title: "Select volt Directory",
 	})
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to open directory dialog: %w", err)
 	}
 	return result, nil
 }

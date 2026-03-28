@@ -5,6 +5,7 @@ import (
 
 	appgraph "volt/internal/application/graph"
 	appnote "volt/internal/application/note"
+	appplugin "volt/internal/application/plugin"
 	appsearch "volt/internal/application/search"
 	appvolt "volt/internal/application/volt"
 	"volt/internal/infrastructure/filesystem"
@@ -14,10 +15,11 @@ import (
 
 type Container struct {
 	App           *wailshandler.AppHandler
-	voltHandler  *wailshandler.VoltHandler
+	voltHandler   *wailshandler.VoltHandler
 	noteHandler   *wailshandler.NoteHandler
 	searchHandler *wailshandler.SearchHandler
 	graphHandler  *wailshandler.GraphHandler
+	pluginHandler *wailshandler.PluginHandler
 }
 
 func NewContainer() *Container {
@@ -49,19 +51,34 @@ func NewContainer() *Container {
 	// Use cases — graph
 	buildGraph := appgraph.NewBuildGraphUseCase()
 
+	// Plugin store
+	pluginStore, err := filesystem.NewPluginStore()
+	if err != nil {
+		log.Fatalf("failed to initialize plugin store: %v", err)
+	}
+
+	// Use cases — plugin
+	listPlugins := appplugin.NewListPluginsUseCase(pluginStore)
+	loadPlugin := appplugin.NewLoadPluginUseCase(pluginStore)
+	togglePlugin := appplugin.NewTogglePluginUseCase(pluginStore)
+	getPluginData := appplugin.NewGetPluginDataUseCase(pluginStore)
+	setPluginData := appplugin.NewSetPluginDataUseCase(pluginStore)
+
 	// Handlers
 	voltHandler := wailshandler.NewVoltHandler(listVolts, createVolt, deleteVolt)
 	noteHandler := wailshandler.NewNoteHandler(readNote, saveNote, listTree, createNote, createDir, deleteNote, renameNote)
 	searchHandler := wailshandler.NewSearchHandler(searchFiles)
 	graphHandler := wailshandler.NewGraphHandler(buildGraph)
-	appHandler := wailshandler.NewAppHandler(voltHandler, noteHandler, searchHandler, graphHandler)
+	pluginHandler := wailshandler.NewPluginHandler(listPlugins, loadPlugin, togglePlugin, getPluginData, setPluginData)
+	appHandler := wailshandler.NewAppHandler(voltHandler, noteHandler, searchHandler, graphHandler, pluginHandler)
 
 	return &Container{
 		App:           appHandler,
-		voltHandler:  voltHandler,
+		voltHandler:   voltHandler,
 		noteHandler:   noteHandler,
 		searchHandler: searchHandler,
 		graphHandler:  graphHandler,
+		pluginHandler: pluginHandler,
 	}
 }
 
@@ -72,5 +89,6 @@ func (c *Container) Bindings() []interface{} {
 		c.noteHandler,
 		c.searchHandler,
 		c.graphHandler,
+		c.pluginHandler,
 	}
 }

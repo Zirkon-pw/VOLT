@@ -2,6 +2,7 @@ package wailshandler
 
 import (
 	"context"
+	"fmt"
 
 	domain "volt/core/graph"
 	appgraph "volt/internal/application/graph"
@@ -23,5 +24,9 @@ func (h *GraphHandler) SetContext(ctx context.Context) {
 }
 
 func (h *GraphHandler) GetGraph(voltPath string) (*domain.Graph, error) {
-	return h.buildGraph.Execute(voltPath)
+	result, err := h.buildGraph.Execute(voltPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build graph for vault: %w", err)
+	}
+	return result, nil
 }

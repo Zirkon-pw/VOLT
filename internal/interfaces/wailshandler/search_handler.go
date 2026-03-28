@@ -2,6 +2,7 @@ package wailshandler
 
 import (
 	"context"
+	"fmt"
 
 	domain "volt/core/search"
 	appsearch "volt/internal/application/search"
@@ -23,5 +24,9 @@ func (h *SearchHandler) SetContext(ctx context.Context) {
 }
 
 func (h *SearchHandler) SearchFiles(voltPath, query string) ([]domain.SearchResult, error) {
-	return h.searchFiles.Execute(voltPath, query)
+	result, err := h.searchFiles.Execute(voltPath, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search files for %q: %w", query, err)
+	}
+	return result, nil
 }
