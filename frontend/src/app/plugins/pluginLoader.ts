@@ -6,6 +6,10 @@ import { clearAllListeners, clearPluginListeners } from './pluginEventBus';
 import { usePluginLogStore } from './pluginLogStore';
 import { reportPluginError, safeExecute } from './safeExecute';
 import { useTabStore } from '@app/stores/tabStore';
+import { cleanupPluginProcesses, cleanupAllPluginProcesses } from './pluginProcessManager';
+import { cleanupPluginEditorSessions, cleanupAllEditorSessions } from './editorSessionManager';
+import { clearAllPluginSettingsRuntime, clearPluginSettingsRuntime } from './pluginSettingsStore';
+import { cleanupAllPluginTaskStatuses, cleanupPluginTaskStatuses } from './pluginTaskStatusStore';
 
 let activeLoadAllSession = 0;
 
@@ -26,7 +30,12 @@ export async function loadPlugin(
     }
 
     const pluginFn = new Function('api', source);
-    const api = createPluginAPI(pluginId, voltPath, pluginInfo.manifest.permissions ?? []);
+    const api = createPluginAPI(
+      pluginId,
+      voltPath,
+      pluginInfo.manifest.permissions ?? [],
+      pluginInfo.manifest.settings?.sections ?? [],
+    );
     if (isStaleLoadAllSession(sessionId)) {
       return;
     }
@@ -39,6 +48,10 @@ export async function loadPlugin(
 
 export async function loadAllPlugins(voltPath: string): Promise<void> {
   const sessionId = ++activeLoadAllSession;
+  cleanupAllPluginProcesses();
+  cleanupAllEditorSessions();
+  cleanupAllPluginTaskStatuses();
+  clearAllPluginSettingsRuntime();
   clearAll();
   clearAllListeners();
 
@@ -75,6 +88,10 @@ export async function loadSinglePlugin(pluginId: string, voltPath: string): Prom
 }
 
 export function unloadSinglePlugin(pluginId: string): void {
+  cleanupPluginProcesses(pluginId);
+  cleanupPluginEditorSessions(pluginId);
+  cleanupPluginTaskStatuses(pluginId);
+  clearPluginSettingsRuntime(pluginId);
   usePluginRegistryStore.getState().removeByPluginId(pluginId);
   clearPluginListeners(pluginId);
   useTabStore.getState().removePluginTabs(pluginId);
@@ -83,6 +100,10 @@ export function unloadSinglePlugin(pluginId: string): void {
 
 export function unloadAllPlugins(): void {
   activeLoadAllSession += 1;
+  cleanupAllPluginProcesses();
+  cleanupAllEditorSessions();
+  cleanupAllPluginTaskStatuses();
+  clearAllPluginSettingsRuntime();
   clearAll();
   clearAllListeners();
 }

@@ -1,3 +1,55 @@
+import type { PluginSettingsSection } from '@api/plugin';
+
+export interface EditorSessionRange {
+  from: number;
+  to: number;
+}
+
+export interface PluginSettingChangeEvent {
+  key: string;
+  value: unknown;
+  values: Record<string, unknown>;
+}
+
+export interface EditorSession {
+  id: string;
+  filePath: string;
+  getMarkdown(): string;
+  save(): Promise<void>;
+  dispose(): void;
+  onDidChange(callback: () => void | Promise<void>): () => void;
+  getSelection(): EditorSessionRange;
+  createAnchor(options?: {
+    from?: number;
+    to?: number;
+    bias?: 'start' | 'end';
+  }): string;
+  getAnchorRange(anchorId: string): EditorSessionRange | null;
+  insertAtAnchor(anchorId: string, text: string): void;
+  replaceRange(range: EditorSessionRange, text: string): void;
+  removeAnchor(anchorId: string): void;
+}
+
+export type DesktopProcessEvent =
+  | { type: 'stdout'; data: string }
+  | { type: 'stderr'; data: string }
+  | { type: 'exit'; code: number }
+  | { type: 'error'; message: string };
+
+export interface DesktopProcessHandle {
+  id: string;
+  onEvent(callback: (event: DesktopProcessEvent) => void | Promise<void>): () => void;
+  cancel(): Promise<void>;
+}
+
+export interface PluginTaskStatusHandle {
+  setMessage(message: string): void;
+  markSuccess(message?: string): void;
+  markError(message: string): void;
+  markCancelled(message?: string): void;
+  close(): void;
+}
+
 export interface VoltPluginAPI {
   volt: {
     read(path: string): Promise<string>;
@@ -5,7 +57,36 @@ export interface VoltPluginAPI {
     list(dirPath?: string): Promise<unknown[]>;
     getActivePath(): string | null;
   };
+  desktop: {
+    process: {
+      start(config: {
+        command: string;
+        args?: string[];
+        stdin?: string;
+        cwd: 'workspace';
+        stdoutMode?: 'raw' | 'lines';
+        stderrMode?: 'raw' | 'lines';
+      }): Promise<DesktopProcessHandle>;
+    };
+  };
   ui: {
+    promptText(config: {
+      title: string;
+      description?: string;
+      placeholder?: string;
+      submitLabel?: string;
+      initialValue?: string;
+      multiline?: boolean;
+    }): Promise<string | null>;
+    createTaskStatus(config: {
+      title: string;
+      message?: string;
+      cancellable?: boolean;
+      onCancel?: () => void | Promise<void>;
+      surface?: 'floating' | 'workspace-banner';
+      sessionId?: string;
+      scope?: 'workspace' | 'source-note';
+    }): PluginTaskStatusHandle;
     registerSidebarPanel(config: {
       id: string;
       title: string;
@@ -55,8 +136,8 @@ export interface VoltPluginAPI {
     showNotice(message: string, durationMs?: number): void;
   };
   editor: {
-    getContent(): string | null;
-    insertAtCursor(text: string): void;
+    captureActiveSession(): Promise<EditorSession | null>;
+    openSession(path: string): Promise<EditorSession>;
   };
   events: {
     on(event: string, callback: (...args: unknown[]) => void | Promise<void>): () => void;
@@ -65,4 +146,12 @@ export interface VoltPluginAPI {
     get(key: string): Promise<unknown>;
     set(key: string, value: unknown): Promise<void>;
   };
+  settings: {
+    get<T = unknown>(key: string): Promise<T | undefined>;
+    getAll(): Promise<Record<string, unknown>>;
+    set(key: string, value: unknown): Promise<void>;
+    onChange(callback: (event: PluginSettingChangeEvent) => void | Promise<void>): () => void;
+  };
 }
+
+export type { PluginSettingsSection };

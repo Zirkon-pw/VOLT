@@ -3,6 +3,8 @@
 import {plugin} from '../models';
 import {context} from '../models';
 
+export function CancelPluginProcess(arg1:string):Promise<void>;
+
 export function GetPluginData(arg1:string,arg2:string):Promise<string>;
 
 export function ListPlugins():Promise<Array<plugin.Plugin>>;
@@ -14,3 +16,5 @@ export function SetContext(arg1:context.Context):Promise<void>;
 export function SetPluginData(arg1:string,arg2:string,arg3:string):Promise<void>;
 
 export function SetPluginEnabled(arg1:string,arg2:boolean):Promise<void>;
+
+export function StartPluginProcess(arg1:string,arg2:string,arg3:string,arg4:Array<string>,arg5:string,arg6:string,arg7:string):Promise<void>;

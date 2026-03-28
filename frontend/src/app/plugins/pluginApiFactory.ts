@@ -1,4 +1,10 @@
-import type { VoltPluginAPI } from './pluginApi';
+import type {
+  DesktopProcessEvent,
+  DesktopProcessHandle,
+  EditorSession,
+  PluginSettingsSection,
+  VoltPluginAPI,
+} from './pluginApi';
 import {
   registerCommand,
   registerContextMenuItem,
@@ -9,16 +15,35 @@ import {
   registerToolbarButton,
   usePluginRegistryStore,
 } from './pluginRegistry';
-import { getEditor } from './editorBridge';
 import { onTracked } from './pluginEventBus';
 import { readNote, saveNote, listTree } from '@api/note';
 import { getPluginData, setPluginData } from '@api/plugin';
+import { openPluginPrompt } from '@app/stores/pluginPromptStore';
 import { useWorkspaceStore } from '@app/stores/workspaceStore';
 import { useTabStore } from '@app/stores/tabStore';
 import { useToastStore } from '@app/stores/toastStore';
 import { icons } from '@uikit/icon/icons';
 import type { IconName } from '@uikit/icon';
+import {
+  captureActiveEditorSession,
+  openEditorSession,
+  type PluginEditorSession,
+} from './editorSessionManager';
+import {
+  startPluginProcess,
+  type PluginProcessHandle,
+} from './pluginProcessManager';
+import {
+  createPluginTaskStatus,
+  type PluginTaskStatusHandle,
+} from './pluginTaskStatusStore';
 import { reportPluginError, safeExecuteMaybeAsync } from './safeExecute';
+import {
+  getAllPluginSettings,
+  getPluginSettingValue,
+  setPluginSettingValue,
+  subscribePluginSettings,
+} from './pluginSettingsStore';
 
 function normalizePluginIcon(icon?: string): IconName {
   if (icon && icon in icons) {
@@ -31,12 +56,13 @@ export function createPluginAPI(
   pluginId: string,
   voltPath: string,
   permissions: string[],
+  settingsSections: PluginSettingsSection[] = [],
 ): VoltPluginAPI {
   const declaredPermissions = new Set(permissions);
 
   const namespaceId = (configId: string) => `${pluginId}:${configId}`;
 
-  const requirePermission = (permission: 'read' | 'write' | 'editor', action: string) => {
+  const requirePermission = (permission: 'read' | 'write' | 'editor' | 'process', action: string) => {
     if (declaredPermissions.has(permission)) {
       return;
     }
@@ -73,6 +99,45 @@ export function createPluginAPI(
     };
   };
 
+  const wrapSession = (session: PluginEditorSession): EditorSession => ({
+    id: session.id,
+    filePath: session.filePath,
+    getMarkdown: () => session.getMarkdown(),
+    save: () => session.save(),
+    dispose: () => session.dispose(),
+    onDidChange: (callback: () => void | Promise<void>) => session.onDidChange(() => {
+      safeExecuteMaybeAsync(pluginId, `editorSession:${session.id}:change`, () => callback());
+    }),
+    getSelection: () => session.getSelection(),
+    createAnchor: (options) => session.createAnchor(options),
+    getAnchorRange: (anchorId) => session.getAnchorRange(anchorId),
+    insertAtAnchor: (anchorId, text) => session.insertAtAnchor(anchorId, text),
+    replaceRange: (range, text) => session.replaceRange(range, text),
+    removeAnchor: (anchorId) => session.removeAnchor(anchorId),
+  });
+
+  const wrapProcessHandle = (
+    handle: PluginProcessHandle,
+  ): DesktopProcessHandle => ({
+    id: handle.id,
+    onEvent(callback: (event: DesktopProcessEvent) => void | Promise<void>) {
+      return handle.onEvent((event) => {
+        safeExecuteMaybeAsync(pluginId, `process:${handle.id}:event`, () => callback(event));
+      });
+    },
+    cancel: () => handle.cancel(),
+  });
+
+  const wrapTaskStatusHandle = (
+    handle: PluginTaskStatusHandle,
+  ): PluginTaskStatusHandle => ({
+    setMessage: (message) => handle.setMessage(message),
+    markSuccess: (message) => handle.markSuccess(message),
+    markError: (message) => handle.markError(message),
+    markCancelled: (message) => handle.markCancelled(message),
+    close: () => handle.close(),
+  });
+
   return {
     volt: {
       async read(path: string): Promise<string> {
@@ -99,7 +164,46 @@ export function createPluginAPI(
         return tab && tab.type === 'file' ? tab.filePath : null;
       },
     },
+    desktop: {
+      process: {
+        async start(config) {
+          requirePermission('process', 'desktop.process.start');
+          if (config.cwd !== 'workspace') {
+            throw reportPluginError(
+              pluginId,
+              'desktop.process.start',
+              new Error('Only cwd="workspace" is supported'),
+            );
+          }
+
+          const handle = await startPluginProcess(pluginId, voltPath, config);
+          return wrapProcessHandle(handle);
+        },
+      },
+    },
     ui: {
+      promptText(config) {
+        return openPluginPrompt(config);
+      },
+      createTaskStatus(config) {
+        const onCancel = config.onCancel
+          ? () => {
+            safeExecuteMaybeAsync(pluginId, `taskStatusCancel:${config.title}`, () => config.onCancel!());
+          }
+          : undefined;
+
+        const handle = createPluginTaskStatus(pluginId, {
+          title: config.title,
+          message: config.message,
+          cancellable: config.cancellable,
+          onCancel,
+          surface: config.surface,
+          sessionId: config.sessionId,
+          scope: config.scope,
+        });
+
+        return wrapTaskStatusHandle(handle);
+      },
       registerSidebarPanel(config) {
         registerSidebarPanel({
           id: namespaceId(config.id),
@@ -208,16 +312,15 @@ export function createPluginAPI(
       },
     },
     editor: {
-      getContent(): string | null {
-        requirePermission('editor', 'editor.getContent');
-        const editor = getEditor();
-        if (!editor) return null;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return (editor.storage as any).markdown?.getMarkdown() ?? null;
+      async captureActiveSession() {
+        requirePermission('editor', 'editor.captureActiveSession');
+        const session = await captureActiveEditorSession(pluginId, voltPath);
+        return session ? wrapSession(session) : null;
       },
-      insertAtCursor(text: string): void {
-        requirePermission('editor', 'editor.insertAtCursor');
-        getEditor()?.chain().focus().insertContent(text).run();
+      async openSession(path: string) {
+        requirePermission('editor', 'editor.openSession');
+        const session = await openEditorSession(pluginId, voltPath, path);
+        return wrapSession(session);
       },
     },
     events: {
@@ -237,6 +340,20 @@ export function createPluginAPI(
       },
       async set(key: string, value: unknown): Promise<void> {
         await setPluginData(pluginId, key, JSON.stringify(value));
+      },
+    },
+    settings: {
+      get<T = unknown>(key: string) {
+        return getPluginSettingValue<T>(pluginId, key, settingsSections);
+      },
+      getAll() {
+        return getAllPluginSettings(pluginId, settingsSections);
+      },
+      set(key: string, value: unknown) {
+        return setPluginSettingValue(pluginId, key, value, settingsSections).then(() => undefined);
+      },
+      onChange(callback) {
+        return subscribePluginSettings(pluginId, callback);
       },
     },
   };

@@ -5,6 +5,7 @@
 - `core/volt` - сущность volt и контракт хранилища volt
 - `core/note` - сущности и ошибки для работы с файлами заметок
 - `core/search` - структура результатов поиска
+- `core/plugin` - manifest и metadata плагинов
 
 ## Use case-слой
 
@@ -73,3 +74,35 @@ Host-side backend оставляет для них только инфрастр
 - загрузка исходника `main.js`
 - включение и выключение
 - key/value storage для plugin data
+- запуск локальных процессов через `PluginHandler`
+
+### Что делает backend для plugin runtime
+
+Backend не исполняет plugin JS и не хранит plugin registry. Его зона ответственности уже:
+
+- перечислить plugin folders и прочитать `manifest.json`
+- загрузить содержимое `main.js`
+- сохранить enabled-state в `~/.volt/plugin-state.json`
+- сохранить plugin-local `data.json`
+- запустить plugin-owned process внутри текущего workspace и стримить stdout/stderr/exit/error события во frontend через Wails runtime events
+
+### Безопасность файлового доступа
+
+Даже если плагин имеет `read` или `write`, фактические файловые операции всё равно идут через note repository:
+
+- путь нормализуется и проверяется через `safePath`
+- выход за пределы активного workspace блокируется
+- hidden files не попадают в `listTree`
+
+### Desktop process broker
+
+Текущий backend bridge для процессов реализован в [`internal/interfaces/wailshandler/plugin_process.go`](../internal/interfaces/wailshandler/plugin_process.go).
+
+Он:
+
+- запускает бинарник напрямую, без `sh -c`
+- ограничивает `cwd` активным `voltPath`
+- публикует `stdout`, `stderr`, `exit` и `error` события во frontend через Wails runtime events
+- хранит cancel-функции по `runId` и принудительно останавливает plugin-owned runs при unload
+
+Подробное описание plugin contract находится в [docs/plugins.md](plugins.md).

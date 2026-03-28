@@ -4,6 +4,8 @@ import { ErrorBoundary } from './providers/ErrorBoundary';
 import { I18nProvider } from './providers/I18nProvider';
 import { AppRouter } from './routes/AppRouter';
 import { ToastController } from '@uikit/toast';
+import { PluginPromptDialog } from '@widgets/plugin-prompt-dialog/PluginPromptDialog';
+import { PluginTaskStatusController } from '@widgets/plugin-task-status/PluginTaskStatusController';
 import './styles/globals.scss';
 
 function App() {
@@ -28,7 +30,9 @@ function App() {
       <I18nProvider>
         <ThemeProvider>
           <AppRouter />
+          <PluginTaskStatusController />
           <ToastController />
+          <PluginPromptDialog />
         </ThemeProvider>
       </I18nProvider>
     </ErrorBoundary>

@@ -2,6 +2,7 @@ package wailshandler
 
 import (
 	"context"
+	"sync"
 
 	domain "volt/core/plugin"
 	appplugin "volt/internal/application/plugin"
@@ -9,13 +10,15 @@ import (
 )
 
 type PluginHandler struct {
-	ctx           context.Context
-	listPlugins   *appplugin.ListPluginsUseCase
-	loadPlugin    *appplugin.LoadPluginUseCase
-	togglePlugin  *appplugin.TogglePluginUseCase
-	getPluginData *appplugin.GetPluginDataUseCase
-	setPluginData *appplugin.SetPluginDataUseCase
-	localization  *appsettings.LocalizationService
+	ctx            context.Context
+	listPlugins    *appplugin.ListPluginsUseCase
+	loadPlugin     *appplugin.LoadPluginUseCase
+	togglePlugin   *appplugin.TogglePluginUseCase
+	getPluginData  *appplugin.GetPluginDataUseCase
+	setPluginData  *appplugin.SetPluginDataUseCase
+	localization   *appsettings.LocalizationService
+	processMu      sync.Mutex
+	processCancels map[string]context.CancelFunc
 }
 
 func NewPluginHandler(
@@ -27,12 +30,14 @@ func NewPluginHandler(
 	localization *appsettings.LocalizationService,
 ) *PluginHandler {
 	return &PluginHandler{
-		listPlugins:   listPlugins,
-		loadPlugin:    loadPlugin,
-		togglePlugin:  togglePlugin,
-		getPluginData: getPluginData,
-		setPluginData: setPluginData,
-		localization:  localization,
+		listPlugins:    listPlugins,
+		loadPlugin:     loadPlugin,
+		togglePlugin:   togglePlugin,
+		getPluginData:  getPluginData,
+		setPluginData:  setPluginData,
+		localization:   localization,
+		processMu:      sync.Mutex{},
+		processCancels: make(map[string]context.CancelFunc),
 	}
 }
 

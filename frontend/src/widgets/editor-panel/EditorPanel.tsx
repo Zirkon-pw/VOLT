@@ -11,6 +11,7 @@ import { useImageResolver } from './hooks/useImageResolver';
 import { setEditor } from '@app/plugins/editorBridge';
 import { emit } from '@app/plugins/pluginEventBus';
 import { TableBubbleMenu } from './extensions/TableBubbleMenu';
+import { PluginTaskStatusBanner } from '@widgets/plugin-task-status/PluginTaskStatusBanner';
 import styles from './EditorPanel.module.scss';
 
 const IMAGE_DIR_KEY = 'volt-image-dir';
@@ -47,9 +48,14 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
 
   // Register editor with plugin bridge
   useEffect(() => {
-    if (editor) setEditor(editor);
+    if (editor) {
+      setEditor(editor, { voltId, voltPath, filePath });
+    } else {
+      setEditor(null);
+    }
+
     return () => { setEditor(null); };
-  }, [editor]);
+  }, [editor, filePath, voltId, voltPath]);
 
   useEffect(() => {
     if (filePath) {
@@ -229,6 +235,7 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
       onDragOver={handleDragOver}
       onPaste={handlePaste}
     >
+      <PluginTaskStatusBanner voltPath={voltPath} filePath={filePath} />
       <div className={styles.editorContent}>
         {editor && <TableBubbleMenu editor={editor} />}
         <EditorContent editor={editor} />

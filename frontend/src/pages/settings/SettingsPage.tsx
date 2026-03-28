@@ -1,35 +1,227 @@
-import { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { listPlugins, setPluginEnabled } from '@api/plugin';
+import type { PluginInfo, PluginSettingField, PluginSettingsSection } from '@api/plugin';
 import { useI18n } from '@app/providers/I18nProvider';
 import { useTheme } from '@app/providers/ThemeProvider';
-import { listPlugins, setPluginEnabled } from '@api/plugin';
-import type { PluginInfo } from '@api/plugin';
-import { loadSinglePlugin, unloadSinglePlugin } from '@app/plugins/pluginLoader';
 import { usePluginLogStore } from '@app/plugins/pluginLogStore';
+import {
+  ensurePluginSettingsLoaded,
+  getMergedPluginSettings,
+  setPluginSettingValue,
+  usePluginSettingsStore,
+} from '@app/plugins/pluginSettingsStore';
+import { loadSinglePlugin, unloadSinglePlugin } from '@app/plugins/pluginLoader';
 import { useWorkspaceStore } from '@app/stores/workspaceStore';
 import { PermissionDialog } from '@widgets/permission-dialog/PermissionDialog';
 import { Icon } from '@uikit/icon';
 import styles from './SettingsPage.module.scss';
 
 const IMAGE_DIR_KEY = 'volt-image-dir';
+const EMPTY_PLUGIN_SETTINGS: Record<string, unknown> = {};
 
-type SettingsTab = 'general' | 'plugins' | 'about';
+export type SettingsSection = 'general' | 'plugins' | 'about' | 'plugin';
 
 interface SettingsPageProps {
-  initialTab?: SettingsTab;
+  section?: SettingsSection;
+  pluginId?: string;
 }
 
-export function SettingsPage({ initialTab = 'general' }: SettingsPageProps) {
-  const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
+interface PluginSettingsViewProps {
+  plugin: PluginInfo;
+}
+
+function formatNumberInputValue(value: unknown): string {
+  return typeof value === 'number' && Number.isFinite(value) ? String(value) : '';
+}
+
+function renderFieldValue(
+  pluginId: string,
+  field: PluginSettingField,
+  value: unknown,
+  sections: PluginSettingsSection[],
+) {
+  if (field.type === 'toggle') {
+    return (
+      <button
+        type="button"
+        className={`${styles.toggle} ${value ? styles.toggleOn : ''}`}
+        onClick={() => {
+          void setPluginSettingValue(pluginId, field.key, !(value === true), sections);
+        }}
+      />
+    );
+  }
+
+  if (field.type === 'textarea') {
+    return (
+      <textarea
+        className={`${styles.textInput} ${styles.textareaInput}`}
+        value={typeof value === 'string' ? value : field.defaultValue}
+        placeholder={field.placeholder}
+        onChange={(event) => {
+          void setPluginSettingValue(pluginId, field.key, event.target.value, sections);
+        }}
+      />
+    );
+  }
+
+  if (field.type === 'text') {
+    return (
+      <input
+        type="text"
+        className={styles.textInput}
+        value={typeof value === 'string' ? value : field.defaultValue}
+        placeholder={field.placeholder}
+        onChange={(event) => {
+          void setPluginSettingValue(pluginId, field.key, event.target.value, sections);
+        }}
+      />
+    );
+  }
+
+  if (field.type === 'number') {
+    return (
+      <input
+        type="number"
+        className={styles.textInput}
+        min={field.min}
+        max={field.max}
+        step={field.step}
+        value={formatNumberInputValue(value)}
+        onChange={(event) => {
+          const nextValue = event.target.value;
+          void setPluginSettingValue(
+            pluginId,
+            field.key,
+            nextValue === '' ? field.defaultValue : Number(nextValue),
+            sections,
+          );
+        }}
+      />
+    );
+  }
+
+  return (
+    <select
+      value={typeof value === 'string' ? value : field.defaultValue}
+      onChange={(event) => {
+        void setPluginSettingValue(pluginId, field.key, event.target.value, sections);
+      }}
+    >
+      {field.options.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function PluginSettingsView({ plugin }: PluginSettingsViewProps) {
+  const { t } = useI18n();
+  const sections = plugin.manifest.settings?.sections ?? [];
+  const pluginId = plugin.manifest.id;
+  const rawPluginValues = usePluginSettingsStore((state) => state.valuesByPlugin[pluginId]);
+  const rawValues = rawPluginValues ?? EMPTY_PLUGIN_SETTINGS;
+  const logEntries = usePluginLogStore((state) => state.entries);
+  const clearPluginLog = usePluginLogStore((state) => state.clearByPlugin);
+  const pluginLogEntries = useMemo(
+    () => logEntries.filter((entry) => entry.pluginId === pluginId),
+    [logEntries, pluginId],
+  );
+
+  useEffect(() => {
+    void ensurePluginSettingsLoaded(pluginId).catch(() => undefined);
+  }, [pluginId]);
+
+  const mergedValues = getMergedPluginSettings(pluginId, sections, rawValues);
+
+  return (
+    <div className={styles.section}>
+      <div className={styles.pluginSettingsHeader}>
+        <div>
+          <h2>{plugin.manifest.name}</h2>
+          {plugin.manifest.description && (
+            <p className={styles.sectionDescription}>{plugin.manifest.description}</p>
+          )}
+        </div>
+        <div className={`${styles.statusBadge} ${plugin.enabled ? styles.statusEnabled : styles.statusDisabled}`}>
+          {plugin.enabled ? t('common.enabled') : t('common.disabled')}
+        </div>
+      </div>
+
+      {!plugin.enabled && (
+        <div className={styles.pluginSettingsNotice}>
+          {t('settings.plugins.disabledNotice')}
+        </div>
+      )}
+
+      {sections.map((section) => (
+        <div key={section.id} className={styles.pluginSettingsSectionCard}>
+          {section.title && <h3 className={styles.pluginSettingsTitle}>{section.title}</h3>}
+          {section.description && (
+            <p className={styles.pluginSettingsDescription}>{section.description}</p>
+          )}
+          <div className={styles.pluginSettingsFields}>
+            {section.fields.map((field) => (
+              <div key={field.key} className={styles.pluginFieldRow}>
+                <div className={styles.pluginFieldBody}>
+                  <div className={styles.pluginFieldLabel}>{field.label}</div>
+                  {field.description && (
+                    <div className={styles.pluginFieldDescription}>{field.description}</div>
+                  )}
+                </div>
+                <div className={styles.pluginFieldControl}>
+                  {renderFieldValue(pluginId, field, mergedValues[field.key], sections)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {pluginLogEntries.length > 0 && (
+        <div className={styles.logSection}>
+          <div className={styles.logHeader}>
+            <h3>{t('settings.plugins.logTitle')}</h3>
+            <button
+              type="button"
+              className={styles.clearLogsButton}
+              onClick={() => clearPluginLog(pluginId)}
+            >
+              {t('settings.plugins.logClear')}
+            </button>
+          </div>
+          <div className={styles.logList}>
+            {[...pluginLogEntries].reverse().map((entry) => (
+              <div key={entry.id} className={styles.logItem}>
+                <div className={styles.logMeta}>
+                  <span className={styles.logLevel}>{entry.level}</span>
+                  <span>{new Date(entry.timestamp).toLocaleString()}</span>
+                </div>
+                <div className={styles.logMessage}>{entry.message}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function SettingsPage({
+  section = 'general',
+  pluginId,
+}: SettingsPageProps) {
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
   const { t, selectedLocale, availableLocales, setLocale, refreshLocalization } = useI18n();
+  const { theme, setTheme } = useTheme();
   const { workspaces, activeWorkspaceId } = useWorkspaceStore();
-  const pluginLogEntries = usePluginLogStore((state) => state.entries);
-  const clearPluginLog = usePluginLogStore((state) => state.clearAll);
-  const [imageDir, setImageDir] = useState(() => localStorage.getItem(IMAGE_DIR_KEY) || 'attachments');
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
+  const [pluginsLoaded, setPluginsLoaded] = useState(false);
   const [confirmPlugin, setConfirmPlugin] = useState<PluginInfo | null>(null);
+  const [imageDir, setImageDir] = useState(() => localStorage.getItem(IMAGE_DIR_KEY) || 'attachments');
   const activeWorkspace = workspaces.find((workspace) => workspace.voltId === activeWorkspaceId) ?? null;
 
   const fetchPlugins = useCallback(async () => {
@@ -38,15 +230,25 @@ export function SettingsPage({ initialTab = 'general' }: SettingsPageProps) {
       setPlugins(list);
     } catch (err) {
       console.error('Failed to load plugins:', err);
+    } finally {
+      setPluginsLoaded(true);
     }
   }, []);
+
+  useEffect(() => {
+    void fetchPlugins();
+  }, [fetchPlugins]);
+
+  useEffect(() => {
+    void refreshLocalization().catch(() => undefined);
+  }, [refreshLocalization]);
 
   const applyPluginToggle = useCallback(async (plugin: PluginInfo, nextEnabled: boolean) => {
     try {
       await setPluginEnabled(plugin.manifest.id, nextEnabled);
       setPlugins((prev) =>
-        prev.map((p) =>
-          p.manifest.id === plugin.manifest.id ? { ...p, enabled: nextEnabled } : p,
+        prev.map((current) =>
+          current.manifest.id === plugin.manifest.id ? { ...current, enabled: nextEnabled } : current,
         ),
       );
 
@@ -71,23 +273,44 @@ export function SettingsPage({ initialTab = 'general' }: SettingsPageProps) {
     await applyPluginToggle(plugin, !plugin.enabled);
   }, [applyPluginToggle]);
 
-  useEffect(() => {
-    if (activeTab === 'plugins') {
-      void fetchPlugins();
-    }
-  }, [activeTab, fetchPlugins]);
+  const settingsPlugins = useMemo(
+    () => [...plugins]
+      .filter((plugin) => plugin.enabled)
+      .filter((plugin) => (plugin.manifest.settings?.sections ?? []).length > 0)
+      .sort((left, right) => left.manifest.name.localeCompare(right.manifest.name)),
+    [plugins],
+  );
 
-  useEffect(() => {
-    setActiveTab(initialTab);
-  }, [initialTab]);
+  const selectedPlugin = useMemo(
+    () => plugins.find((plugin) => plugin.manifest.id === pluginId) ?? null,
+    [pluginId, plugins],
+  );
 
-  useEffect(() => {
-    void refreshLocalization().catch(() => undefined);
-  }, [refreshLocalization]);
+  const hasSelectedPluginSettings = (selectedPlugin?.manifest.settings?.sections ?? []).length > 0;
+
+  const navItems = useMemo(() => {
+    const items = [
+      { key: 'general', label: t('settings.tab.general'), path: '/settings' },
+      { key: 'plugins', label: t('settings.tab.plugins'), path: '/settings/plugins' },
+      ...settingsPlugins.map((plugin) => ({
+        key: `plugin:${plugin.manifest.id}`,
+        label: plugin.manifest.name,
+        path: `/settings/plugin/${plugin.manifest.id}`,
+      })),
+      { key: 'about', label: t('settings.tab.about'), path: '/settings/about' },
+    ];
+    return items;
+  }, [settingsPlugins, t]);
+
+  const activeNavKey = section === 'plugin' && pluginId ? `plugin:${pluginId}` : section;
 
   const languageValue = (
     selectedLocale === 'auto' || availableLocales.some((locale) => locale.code === selectedLocale)
   ) ? selectedLocale : 'auto';
+
+  if (section === 'plugin' && pluginsLoaded && (!selectedPlugin || !hasSelectedPluginSettings)) {
+    return <Navigate to="/settings/plugins" replace />;
+  }
 
   return (
     <div className={styles.container}>
@@ -99,20 +322,26 @@ export function SettingsPage({ initialTab = 'general' }: SettingsPageProps) {
       </div>
       <div className={styles.layout}>
         <nav className={styles.tabs}>
-          <button className={activeTab === 'general' ? styles.activeTab : styles.tab} onClick={() => setActiveTab('general')}>{t('settings.tab.general')}</button>
-          <button className={activeTab === 'plugins' ? styles.activeTab : styles.tab} onClick={() => setActiveTab('plugins')}>{t('settings.tab.plugins')}</button>
-          <button className={activeTab === 'about' ? styles.activeTab : styles.tab} onClick={() => setActiveTab('about')}>{t('settings.tab.about')}</button>
+          {navItems.map((item) => (
+            <button
+              key={item.key}
+              className={activeNavKey === item.key ? styles.activeTab : styles.tab}
+              onClick={() => navigate(item.path)}
+            >
+              {item.label}
+            </button>
+          ))}
         </nav>
         <div className={styles.content}>
-          {activeTab === 'general' && (
+          {section === 'general' && (
             <div className={styles.section}>
               <h2>{t('settings.section.localization')}</h2>
               <div className={styles.settingRow}>
                 <label>{t('settings.language.label')}</label>
                 <select
                   value={languageValue}
-                  onChange={(e) => {
-                    void setLocale(e.target.value);
+                  onChange={(event) => {
+                    void setLocale(event.target.value);
                   }}
                 >
                   <option value="auto">{t('common.auto')}</option>
@@ -123,98 +352,85 @@ export function SettingsPage({ initialTab = 'general' }: SettingsPageProps) {
                   ))}
                 </select>
               </div>
-              <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-xs)', marginTop: 'var(--space-1)' }}>
-                {t('settings.language.autoHint')}
-              </p>
+              <p className={styles.helperText}>{t('settings.language.autoHint')}</p>
 
-              <h2 style={{ marginTop: 'var(--space-4)' }}>{t('settings.section.appearance')}</h2>
+              <h2 className={styles.sectionTitle}>{t('settings.section.appearance')}</h2>
               <div className={styles.settingRow}>
                 <label>{t('settings.theme')}</label>
-                <select value={theme} onChange={(e) => setTheme(e.target.value as 'light' | 'dark')}>
+                <select value={theme} onChange={(event) => setTheme(event.target.value as 'light' | 'dark')}>
                   <option value="light">{t('common.light')}</option>
                   <option value="dark">{t('common.dark')}</option>
                 </select>
               </div>
-              <h2 style={{ marginTop: 'var(--space-4)' }}>{t('settings.section.files')}</h2>
+
+              <h2 className={styles.sectionTitle}>{t('settings.section.files')}</h2>
               <div className={styles.settingRow}>
                 <label>{t('settings.imageDirectory')}</label>
                 <input
                   type="text"
                   value={imageDir}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setImageDir(val);
-                    localStorage.setItem(IMAGE_DIR_KEY, val);
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setImageDir(value);
+                    localStorage.setItem(IMAGE_DIR_KEY, value);
                   }}
                   placeholder="attachments"
                   className={styles.textInput}
                 />
               </div>
-              <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-xs)', marginTop: 'var(--space-1)' }}>
-                {t('settings.imageDirectoryHint')}
-              </p>
+              <p className={styles.helperText}>{t('settings.imageDirectoryHint')}</p>
             </div>
           )}
-          {activeTab === 'plugins' && (
+
+          {section === 'plugins' && (
             <div className={styles.section}>
               <h2>{t('settings.plugins.title')}</h2>
-              <p style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-4)' }}>{t('settings.plugins.description')}</p>
+              <p className={styles.sectionDescription}>{t('settings.plugins.description')}</p>
               {plugins.length === 0 ? (
-                <p style={{ color: 'var(--color-text-tertiary)' }}>{t('settings.plugins.empty')}</p>
+                <p className={styles.emptyMessage}>{t('settings.plugins.empty')}</p>
               ) : (
                 <div className={styles.pluginList}>
-                  {plugins.map((p) => (
-                    <div key={p.manifest.id} className={styles.pluginItem}>
-                      <div className={styles.pluginInfo}>
-                        <div className={styles.pluginName}>
-                          {p.manifest.name}
-                          <span className={styles.pluginVersion}>v{p.manifest.version}</span>
+                  {plugins.map((plugin) => (
+                    <div key={plugin.manifest.id} className={styles.pluginCard}>
+                      <div className={styles.pluginItem}>
+                        <div className={styles.pluginInfo}>
+                          <div className={styles.pluginName}>
+                            {plugin.manifest.name}
+                            <span className={styles.pluginVersion}>v{plugin.manifest.version}</span>
+                          </div>
+                          {plugin.manifest.description && (
+                            <div className={styles.pluginDescription}>{plugin.manifest.description}</div>
+                          )}
                         </div>
-                        {p.manifest.description && (
-                          <div className={styles.pluginDescription}>{p.manifest.description}</div>
-                        )}
+                        <button
+                          type="button"
+                          className={`${styles.toggle} ${plugin.enabled ? styles.toggleOn : ''}`}
+                          onClick={() => {
+                            void handleTogglePlugin(plugin);
+                          }}
+                        />
                       </div>
-                      <button
-                        className={`${styles.toggle} ${p.enabled ? styles.toggleOn : ''}`}
-                        onClick={() => void handleTogglePlugin(p)}
-                      />
                     </div>
                   ))}
                 </div>
               )}
-              {pluginLogEntries.length > 0 && (
-                <div className={styles.logSection}>
-                  <div className={styles.logHeader}>
-                    <h3>{t('settings.plugins.logTitle')}</h3>
-                    <button type="button" className={styles.clearLogsButton} onClick={clearPluginLog}>
-                      {t('settings.plugins.logClear')}
-                    </button>
-                  </div>
-                  <div className={styles.logList}>
-                    {[...pluginLogEntries].reverse().map((entry) => (
-                      <div key={entry.id} className={styles.logItem}>
-                        <div className={styles.logMeta}>
-                          <span className={styles.logPlugin}>{entry.pluginId}</span>
-                          <span className={styles.logLevel}>{entry.level}</span>
-                          <span>{new Date(entry.timestamp).toLocaleString()}</span>
-                        </div>
-                        <div className={styles.logMessage}>{entry.message}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
-          {activeTab === 'about' && (
+
+          {section === 'plugin' && selectedPlugin && hasSelectedPluginSettings && (
+            <PluginSettingsView plugin={selectedPlugin} />
+          )}
+
+          {section === 'about' && (
             <div className={styles.section}>
               <h2>{t('settings.about.title')}</h2>
               <p>{t('settings.about.version')}</p>
-              <p style={{ color: 'var(--color-text-secondary)', marginTop: 'var(--space-2)' }}>{t('settings.about.description')}</p>
+              <p className={styles.sectionDescription}>{t('settings.about.description')}</p>
             </div>
           )}
         </div>
       </div>
+
       <PermissionDialog
         isOpen={confirmPlugin != null}
         plugin={confirmPlugin}

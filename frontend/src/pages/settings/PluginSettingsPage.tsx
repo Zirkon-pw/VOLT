@@ -1,5 +1,5 @@
 import { SettingsPage } from './SettingsPage';
 
 export function PluginSettingsPage() {
-  return <SettingsPage initialTab="plugins" />;
+  return <SettingsPage section="plugins" />;
 }

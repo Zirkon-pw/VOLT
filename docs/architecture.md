@@ -4,6 +4,11 @@
 
 Проект разделен на бэкенд на `Go` и фронтенд на `React`, которые связываются через `Wails`.
 
+Отдельно поверх core-логики работает plugin runtime:
+
+- backend даёт инфраструктурные plugin handlers
+- frontend загружает plugin JS, строит ограниченный API и монтирует plugin UI surfaces
+
 Поток запроса выглядит так:
 
 1. Пользовательское действие происходит во frontend.
@@ -15,7 +20,7 @@
 ## Бэкенд-слои
 
 - `core/` содержит доменные сущности, ошибки и контракты репозиториев.
-- `internal/application/` содержит use case-операции: работа с volt, заметками, поиском и графом.
+- `internal/application/` содержит use case-операции: работа с volt, заметками, поиском и плагинами.
 - `internal/infrastructure/` содержит конкретные реализации доступа к локальным данным.
 - `internal/interfaces/wailshandler/` публикует backend-функции во frontend через Wails.
 - `internal/bootstrap/container.go` собирает зависимости приложения вручную.
@@ -31,4 +36,24 @@
 - управление volt-хранилищами
 - чтение, сохранение, создание, удаление и переименование markdown-файлов
 - поиск по именам и содержимому заметок
-- построение графа заметок по wiki-ссылкам
+- расширение приложения через внешние плагины
+
+## Plugin архитектура
+
+Plugin flow в текущей реализации выглядит так:
+
+1. Backend перечисляет плагины в `~/.volt/plugins`.
+2. Frontend при входе в workspace вызывает `loadAllPlugins(voltPath)`.
+3. Для каждого enabled plugin frontend загружает `main.js`, создаёт `api` и исполняет entry.
+4. Плагин регистрирует команды, pages и другие UI surfaces в `pluginRegistry`.
+5. При unload registry, listeners, runtime `settings.onChange` subscriptions и plugin tabs очищаются.
+
+Важно:
+
+- plugin JS работает во frontend runtime, а не в backend
+- привилегированные действия даются только через host API
+- long-running workflows строятся из generic `editor` sessions и `desktop.process`, а не из plugin-specific веток в core
+- schema plugin settings объявляется declarative в `manifest.json`, а host рендерит отдельную settings page `/settings/plugin/:pluginId`
+- settings pages не зависят от загруженного plugin runtime и доступны даже когда plugin disabled
+
+Подробности и guide по созданию собственных плагинов находятся в [docs/plugins.md](plugins.md).

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { IconName } from '@uikit/icon';
+import { reportPluginError } from './safeExecute';
 
 export interface RegisteredCommand {
   id: string;
@@ -94,7 +95,7 @@ function runPageCleanup(page: RegisteredPluginPage, force = false): void {
   try {
     page.cleanup();
   } catch (err) {
-    console.error(`[pluginRegistry] Failed to clean up page "${page.id}":`, err);
+    reportPluginError(page.pluginId, `page:${page.id}:cleanup`, err);
   }
 }
 
@@ -142,7 +143,6 @@ export const usePluginRegistryStore = create<PluginRegistryState>((set) => ({
   }),
 }));
 
-// Backward-compatible function exports
 export function registerCommand(cmd: RegisteredCommand): void {
   usePluginRegistryStore.getState().registerCommand(cmd);
 }
