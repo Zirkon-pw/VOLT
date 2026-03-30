@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '@app/providers/I18nProvider';
 import { useFileTreeStore } from '@entities/file-tree';
 import { usePluginRegistryStore, type RegisteredSidebarPanel } from '@entities/plugin';
 import { safeExecute } from '@shared/lib/plugin-runtime';
 import { FileTree } from '../file-tree/FileTree';
 import { Icon, type IconName } from '@shared/ui/icon';
+import { useSidebarButtonOrder } from './hooks/useSidebarButtonOrder';
 import styles from './Sidebar.module.scss';
 
 function PluginPanelSlot({ panel }: { panel: RegisteredSidebarPanel }) {
@@ -50,46 +51,52 @@ interface SidebarProps {
   onToggleCollapse: () => void;
 }
 
+interface SidebarButtonItem {
+  id: string;
+  icon: IconName;
+  title: string;
+  onClick: () => void | Promise<void>;
+}
+
 export function Sidebar({ voltId, voltPath, onSearchClick, collapsed, onToggleCollapse }: SidebarProps) {
   const { t } = useI18n();
   const startCreate = useFileTreeStore((state) => state.startCreate);
-  const notifyFsMutation = useFileTreeStore((state) => state.notifyFsMutation);
   const sidebarPanels = usePluginRegistryStore((s) => s.sidebarPanels);
   const sidebarButtons = usePluginRegistryStore((s) => s.sidebarButtons);
   const [width, setWidth] = useState(getInitialWidth);
   const dragging = useRef(false);
 
-  const builtInButtons: Array<{
-    id: string;
-    icon: IconName;
-    title: string;
-    onClick: () => void | Promise<void>;
-  }> = [
+  const builtInButtons = useMemo<SidebarButtonItem[]>(() => ([
     {
-      id: 'search',
+      id: 'builtin:search',
       icon: 'search',
       title: t('sidebar.search'),
       onClick: onSearchClick,
     },
     {
-      id: 'new-note',
+      id: 'builtin:new-note',
       icon: 'plus',
       title: t('sidebar.newNote'),
       onClick: () => startCreate(voltId, '', false),
     },
     {
-      id: 'new-folder',
+      id: 'builtin:new-folder',
       icon: 'folder',
       title: t('sidebar.newFolder'),
       onClick: () => startCreate(voltId, '', true),
     },
-    {
-      id: 'refresh-files',
-      icon: 'refreshCw',
-      title: t('sidebar.refreshFiles'),
-      onClick: () => void notifyFsMutation(voltId, voltPath),
-    },
-  ];
+  ]), [onSearchClick, startCreate, t, voltId]);
+
+  const pluginButtons = useMemo<SidebarButtonItem[]>(() => (
+    sidebarButtons.map((button) => ({
+      id: `plugin:${button.pluginId}:${button.id}`,
+      icon: button.icon,
+      title: button.label,
+      onClick: button.callback,
+    }))
+  ), [sidebarButtons]);
+
+  const [orderedButtons, dragHandlers] = useSidebarButtonOrder([...builtInButtons, ...pluginButtons]);
 
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -128,28 +135,34 @@ export function Sidebar({ voltId, voltPath, onSearchClick, collapsed, onToggleCo
     <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''}`}>
       <div className={styles.rail}>
         <div className={styles.railActions}>
-          {builtInButtons.map((button) => (
-            <button
-              key={button.id}
-              className={styles.iconButton}
-              onClick={button.onClick}
-              title={button.title}
-              aria-label={button.title}
-            >
-              <Icon name={button.icon} size={18} />
-            </button>
-          ))}
-          {sidebarButtons.map((button) => (
-            <button
-              key={button.id}
-              className={styles.iconButton}
-              onClick={button.callback}
-              title={button.label}
-              aria-label={button.label}
-            >
-              <Icon name={button.icon} size={18} />
-            </button>
-          ))}
+          {orderedButtons.map((button) => {
+            const isDragging = dragHandlers.draggedId === button.id;
+            const isDragOver = dragHandlers.overId === button.id && dragHandlers.draggedId !== button.id;
+
+            return (
+              <button
+                key={button.id}
+                type="button"
+                className={[
+                  styles.iconButton,
+                  isDragging ? styles.iconButtonDragging : '',
+                  isDragOver ? styles.iconButtonDragOver : '',
+                ].filter(Boolean).join(' ')}
+                onClick={() => { void button.onClick(); }}
+                title={button.title}
+                aria-label={button.title}
+                aria-grabbed={isDragging}
+                draggable={true}
+                onDragStart={(event) => dragHandlers.handleDragStart(event, button.id)}
+                onDragEnd={dragHandlers.handleDragEnd}
+                onDragOver={(event) => dragHandlers.handleDragOver(event, button.id)}
+                onDragLeave={(event) => dragHandlers.handleDragLeave(event, button.id)}
+                onDrop={(event) => dragHandlers.handleDrop(event, button.id)}
+              >
+                <Icon name={button.icon} size={18} />
+              </button>
+            );
+          })}
         </div>
       </div>
       {!collapsed && (
@@ -168,6 +181,7 @@ export function Sidebar({ voltId, voltPath, onSearchClick, collapsed, onToggleCo
         </div>
       )}
       <button
+        type="button"
         className={styles.toggleButton}
         onClick={onToggleCollapse}
         title={collapsed ? t('sidebar.expand') : t('sidebar.collapse')}

@@ -239,6 +239,7 @@
     "editor.table.addRowBelow": "Add row below",
     "editor.table.deleteRow": "Delete row",
     "editor.table.deleteTable": "Delete table",
+    "editor.table.cellColor": "Cell color",
     "editor.table.short.addColumnBefore": "Col←",
     "editor.table.short.addColumnAfter": "Col→",
     "editor.table.short.deleteColumn": "Col",

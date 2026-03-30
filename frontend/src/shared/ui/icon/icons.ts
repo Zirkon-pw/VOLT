@@ -5,7 +5,8 @@ export type IconName =
   | 'hash' | 'bold' | 'italic' | 'heading' | 'list' | 'listOrdered'
   | 'checkSquare' | 'code' | 'quote' | 'table' | 'image' | 'minus'
   | 'panelLeft' | 'strikethrough'
-  | 'zoomIn' | 'zoomOut' | 'maximize' | 'refreshCw';
+  | 'zoomIn' | 'zoomOut' | 'maximize' | 'refreshCw'
+  | 'columns' | 'rows' | 'paintBucket';
 
 // Use pipe `|` to separate multiple path d-strings per icon
 export const icons: Record<IconName, string> = {
@@ -44,4 +45,7 @@ export const icons: Record<IconName, string> = {
   zoomOut: 'M11 17.25a6.25 6.25 0 1 1 0-12.5 6.25 6.25 0 0 1 0 12.5z|M16 16l4.5 4.5|M8 11h6',
   maximize: 'M8 3H5a2 2 0 0 0-2 2v3|M21 8V5a2 2 0 0 0-2-2h-3|M3 16v3a2 2 0 0 0 2 2h3|M16 21h3a2 2 0 0 0 2-2v-3',
   refreshCw: 'M21 2v6h-6|M3 12a9 9 0 0 1 15-6.7L21 8|M3 22v-6h6|M21 12a9 9 0 0 1-15 6.7L3 16',
+  columns: 'M12 3v18|M3 3h18v18H3z',
+  rows: 'M3 12h18|M3 3h18v18H3z',
+  paintBucket: 'M19 11H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2z|M12 3l4 8H8l4-8z',
 };

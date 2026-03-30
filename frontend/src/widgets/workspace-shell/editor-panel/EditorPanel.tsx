@@ -12,6 +12,7 @@ import { useAutoSave } from './hooks/useAutoSave';
 import { useImageResolver } from './hooks/useImageResolver';
 import { useImageHandlers } from './hooks/useImageHandlers';
 import { TableBubbleMenu } from './extensions/TableBubbleMenu';
+import { TextBubbleMenu } from './extensions/TextBubbleMenu';
 import { PluginTaskStatusBanner } from '@features/plugin-task-status';
 import styles from './EditorPanel.module.scss';
 
@@ -115,6 +116,7 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
     >
       <PluginTaskStatusBanner voltPath={voltPath} filePath={filePath} />
       <div className={styles.editorContent}>
+        {editor && <TextBubbleMenu editor={editor} />}
         {editor && <TableBubbleMenu editor={editor} />}
         <EditorContent editor={editor} />
       </div>

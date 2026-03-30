@@ -239,6 +239,7 @@
     "editor.table.addRowBelow": "Добавить строку ниже",
     "editor.table.deleteRow": "Удалить строку",
     "editor.table.deleteTable": "Удалить таблицу",
+    "editor.table.cellColor": "Цвет ячейки",
     "editor.table.short.addColumnBefore": "Кол←",
     "editor.table.short.addColumnAfter": "Кол→",
     "editor.table.short.deleteColumn": "Кол",

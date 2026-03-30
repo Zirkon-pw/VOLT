@@ -44,6 +44,12 @@ export function WorkspaceShell({ voltId, voltPath }: WorkspaceShellProps) {
     onToggleSidebar: toggleSidebar,
   });
 
+  useEffect(() => {
+    const handler = (e: MouseEvent) => e.preventDefault();
+    document.addEventListener('contextmenu', handler);
+    return () => document.removeEventListener('contextmenu', handler);
+  }, []);
+
   const activeTabId = activeTabs[voltId] ?? null;
   const voltTabs: FileTab[] = allTabs[voltId] ?? [];
   const activeTab = voltTabs.find((tab) => tab.id === activeTabId) ?? null;

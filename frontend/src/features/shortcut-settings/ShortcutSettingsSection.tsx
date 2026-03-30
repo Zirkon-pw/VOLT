@@ -206,7 +206,10 @@ export function ShortcutSettingsSection() {
                       setCapturingActionId((current) => current === item.actionId ? null : item.actionId);
                       lastShiftTimestamp.current = null;
                     }}
-                    onKeyDown={(event) => handleCaptureKeyDown(item.actionId, event)}
+                    onKeyDown={(event) => {
+                      if (capturingActionId !== item.actionId) return;
+                      handleCaptureKeyDown(item.actionId, event);
+                    }}
                   >
                     {bindingLabel}
                   </button>

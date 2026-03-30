@@ -329,9 +329,14 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
 
     if (pendingCreate) {
       const trimmedValue = pendingCreate.value.trim();
+      if (!trimmedValue) {
+        set((state) => ({ ...clearMutationState(state, voltId) }));
+        return null;
+      }
       const validationError = validateInlineName(trimmedValue);
       if (validationError) {
         showError(validationError);
+        set((state) => ({ ...clearMutationState(state, voltId) }));
         return null;
       }
 
@@ -377,9 +382,14 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
     }
 
     const trimmedValue = editingItem.value.trim();
+    if (!trimmedValue) {
+      get().cancelInlineEdit(voltId);
+      return editingItem.path;
+    }
     const validationError = validateInlineName(trimmedValue);
     if (validationError) {
       showError(validationError);
+      set((state) => ({ ...clearMutationState(state, voltId) }));
       return null;
     }
 
