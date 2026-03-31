@@ -1,0 +1,46 @@
+.dragHandle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  color: var(--color-text-tertiary);
+  border-radius: var(--radius-sm);
+  transition: color 0.15s, background-color 0.15s;
+  z-index: 5;
+  user-select: none;
+  touch-action: none;
+
+  &:hover {
+    color: var(--color-text-primary);
+    background: var(--color-bg-hover);
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.dragHandleActive {
+  cursor: grabbing;
+  color: var(--color-text-primary);
+  background: var(--color-bg-hover);
+}
+
+.dropIndicator {
+  position: absolute;
+  height: 2px;
+  background: var(--color-accent);
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent) 18%, transparent);
+  transform: translateY(-1px);
+  pointer-events: none;
+  z-index: 6;
+}
+
+.dragActiveBody {
+  cursor: grabbing;
+  user-select: none;
+}

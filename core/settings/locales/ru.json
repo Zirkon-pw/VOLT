@@ -283,6 +283,11 @@
     "editor.slash.divider.description": "Горизонтальная линия",
     "editor.slash.link.title": "Ссылка на документ",
     "editor.slash.link.description": "Вставить ссылку на другой документ",
+    "editor.link.remove": "Убрать ссылку",
+    "editor.slash.mathInline.title": "Формула (строчная)",
+    "editor.slash.mathInline.description": "LaTeX формула в строке",
+    "editor.slash.mathBlock.title": "Блок формулы",
+    "editor.slash.mathBlock.description": "LaTeX формула блоком",
     "editor.linkPicker.placeholder": "Поиск документа...",
     "editor.linkPicker.empty": "Документы не найдены",
     "volt.delete": "Удалить volt"

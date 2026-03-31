@@ -283,6 +283,11 @@
     "editor.slash.divider.description": "Horizontal rule",
     "editor.slash.link.title": "Document link",
     "editor.slash.link.description": "Insert link to another document",
+    "editor.link.remove": "Remove link",
+    "editor.slash.mathInline.title": "Inline Math",
+    "editor.slash.mathInline.description": "Inline LaTeX formula",
+    "editor.slash.mathBlock.title": "Math Block",
+    "editor.slash.mathBlock.description": "Display LaTeX formula",
     "editor.linkPicker.placeholder": "Search document...",
     "editor.linkPicker.empty": "No documents found",
     "volt.delete": "Delete volt"

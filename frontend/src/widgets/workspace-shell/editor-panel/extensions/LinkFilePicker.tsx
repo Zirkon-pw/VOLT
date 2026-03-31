@@ -45,7 +45,7 @@ export function LinkFilePicker({ editor, voltId, filePath, onClose }: LinkFilePi
   }, []);
 
   const insertLink = useCallback(
-    (targetPath: string, targetName: string) => {
+    (targetPath: string) => {
       const currentDir = getParentPath(filePath);
       const relativePath = computeRelativePath(currentDir, targetPath);
       const displayName = getEntryDisplayName(getPathBasename(targetPath), false);
@@ -79,7 +79,7 @@ export function LinkFilePicker({ editor, voltId, filePath, onClose }: LinkFilePi
       } else if (e.key === 'Enter') {
         e.preventDefault();
         if (filtered[selectedIndex]) {
-          insertLink(filtered[selectedIndex].path, filtered[selectedIndex].name);
+          insertLink(filtered[selectedIndex].path);
         }
       }
     },
@@ -92,7 +92,7 @@ export function LinkFilePicker({ editor, voltId, filePath, onClose }: LinkFilePi
   }, [selectedIndex]);
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
+    <div className={styles.overlay} data-testid="link-file-picker" onClick={onClose}>
       <div className={styles.picker} onClick={(e) => e.stopPropagation()}>
         <div className={styles.searchWrap}>
           <Icon name="search" size={14} />
@@ -111,8 +111,10 @@ export function LinkFilePicker({ editor, voltId, filePath, onClose }: LinkFilePi
             <button
               key={file.path}
               type="button"
+              data-testid="link-picker-item"
+              data-path={file.path}
               className={`${styles.item} ${i === selectedIndex ? styles.itemSelected : ''}`}
-              onClick={() => insertLink(file.path, file.name)}
+              onClick={() => insertLink(file.path)}
               onMouseEnter={() => setSelectedIndex(i)}
             >
               <Icon name="fileText" size={14} />

@@ -6,7 +6,8 @@ export type IconName =
   | 'checkSquare' | 'code' | 'quote' | 'table' | 'image' | 'minus'
   | 'panelLeft' | 'strikethrough'
   | 'zoomIn' | 'zoomOut' | 'maximize' | 'refreshCw'
-  | 'columns' | 'rows' | 'paintBucket';
+  | 'columns' | 'rows' | 'paintBucket'
+  | 'sigma' | 'gripVertical';
 
 export interface CustomSvgIcon {
   svg: string;
@@ -54,6 +55,8 @@ export const icons: Record<IconName, string> = {
   columns: 'M12 3v18|M3 3h18v18H3z',
   rows: 'M3 12h18|M3 3h18v18H3z',
   paintBucket: 'M19 11H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2z|M12 3l4 8H8l4-8z',
+  sigma: 'M18 7V4H6l6 8-6 8h12v-3',
+  gripVertical: 'M9 5a1 1 0 1 0 0-2 1 1 0 0 0 0 2z|M15 5a1 1 0 1 0 0-2 1 1 0 0 0 0 2z|M9 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z|M15 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z|M9 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2z|M15 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
 };
 
 export function isIconName(icon: string): icon is IconName {

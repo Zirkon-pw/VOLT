@@ -92,6 +92,7 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
         const content = await resolveAll(raw);
         if (cancelled) return;
         editor.commands.setContent(content);
+        editor.commands.setTextSelection(1);
         loadedPathRef.current = filePath;
         emit('file-open', filePath);
       } catch (e) {
@@ -100,7 +101,7 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
     })();
 
     return () => { cancelled = true; };
-  }, [activeFileTab?.isDirty, clear, consumePendingRename, editor, filePath, pendingRename, resolveAll, save, voltId, voltPath]);
+  }, [clear, consumePendingRename, editor, filePath, pendingRename, resolveAll, save, voltId, voltPath]);
 
   useEffect(() => {
     if (!filePath) return;

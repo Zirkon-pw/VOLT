@@ -14,9 +14,12 @@ import Color from '@tiptap/extension-color';
 import Underline from '@tiptap/extension-underline';
 import Highlight from '@tiptap/extension-highlight';
 import { Markdown } from 'tiptap-markdown';
+import 'katex/dist/katex.min.css';
 import { translate } from '@shared/i18n';
 import { SlashCommand } from '../extensions/slashCommand';
 import { CodeBlockWithLanguage } from '../extensions/CodeBlockWithLanguage';
+import { MathInline } from '../extensions/MathInline';
+import { MathBlock } from '../extensions/MathBlock';
 
 interface UseEditorSetupOptions {
   onUpdate?: (editor: Editor) => void;
@@ -77,6 +80,8 @@ export function useEditorSetup({
       Color,
       Underline,
       Highlight.configure({ multicolor: true }),
+      MathInline,
+      MathBlock,
       Markdown.configure({
         html: true,
         transformCopiedText: true,
