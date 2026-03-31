@@ -95,6 +95,7 @@ Frontend в Volt не ограничивается рендерингом экр
 - дополнительно поддерживает `Double Shift`
 - переключается в режим command palette, если строка начинается с `>`
 - объединяет backend search по `.md` и результаты плагинов через `search.registerTextProvider(...)`
+- в режиме command palette показывает plugin-команды из `pluginRegistry.commands` и использует их иконки из `registerCommand(...)`
 
 Основная логика находится в [`frontend/src/features/workspace-search/useSearchPopup.ts`](../frontend/src/features/workspace-search/useSearchPopup.ts).
 
@@ -132,6 +133,8 @@ Frontend в Volt не ограничивается рендерингом экр
 - context menu items
 - file viewers
 - search providers
+
+Для UI-регистраций runtime поддерживает как встроенные иконки Volt по имени, так и пользовательские SVG-иконки через `PluginIcon`.
 
 ## Lifecycle плагинов
 

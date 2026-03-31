@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { IconName } from '@shared/ui/icon';
+import type { IconSource } from '@shared/ui/icon';
 import type {
   EditorMountConfig,
   PluginFileViewerContext,
@@ -12,6 +12,7 @@ export interface RegisteredCommand {
   id: string;
   pluginId: string;
   name: string;
+  icon?: IconSource;
   hotkey?: string;
   callback: () => void;
 }
@@ -36,7 +37,7 @@ interface RegisteredFileViewerBase {
   id: string;
   pluginId: string;
   extensions: string[];
-  icon?: IconName;
+  icon?: IconSource;
   priority: number;
 }
 
@@ -67,7 +68,7 @@ export interface RegisteredSlashCommand {
   pluginId: string;
   title: string;
   description: string;
-  icon: IconName;
+  icon: IconSource;
   callback: () => void;
 }
 
@@ -80,7 +81,7 @@ export interface RegisteredContextMenuItem {
   id: string;
   pluginId: string;
   label: string;
-  icon?: IconName;
+  icon?: IconSource;
   filter?: (entry: PluginContextMenuEntry) => boolean;
   callback: (entry: PluginContextMenuEntry) => void;
 }
@@ -89,7 +90,7 @@ export interface RegisteredToolbarButton {
   id: string;
   pluginId: string;
   label: string;
-  icon: IconName;
+  icon: IconSource;
   callback: () => void;
 }
 
@@ -97,7 +98,7 @@ export interface RegisteredSidebarButton {
   id: string;
   pluginId: string;
   label: string;
-  icon: IconName;
+  icon: IconSource;
   callback: () => void;
 }
 

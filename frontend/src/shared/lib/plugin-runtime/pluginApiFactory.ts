@@ -3,6 +3,7 @@ import type {
   DesktopProcessHandle,
   EditorSession,
   PluginEventMap,
+  PluginIcon,
   PluginSettingsSection,
   SearchFileTextProviderInput,
   VoltPluginAPI,
@@ -29,8 +30,8 @@ import { useWorkspaceStore } from '@entities/workspace';
 import { useFileTreeStore } from '@entities/file-tree';
 import { useTabStore } from '@entities/tab';
 import { useToastStore } from '@shared/ui/toast';
-import { icons } from '@shared/ui/icon/icons';
-import type { IconName } from '@shared/ui/icon';
+import { isIconName } from '@shared/ui/icon/icons';
+import type { IconSource } from '@shared/ui/icon';
 import {
   captureActiveEditorSession,
   openEditorSession,
@@ -58,10 +59,15 @@ import {
 } from '@entities/plugin';
 import { BrowserOpenURL } from '../../../../wailsjs/runtime/runtime';
 
-function normalizePluginIcon(icon?: string): IconName {
-  if (icon && icon in icons) {
-    return icon as IconName;
+function normalizePluginIcon(icon?: PluginIcon): IconSource {
+  if (typeof icon === 'string' && isIconName(icon)) {
+    return icon;
   }
+
+  if (icon && typeof icon === 'object' && typeof icon.svg === 'string' && icon.svg.trim()) {
+    return { svg: icon.svg.trim() };
+  }
+
   return 'file';
 }
 
@@ -409,6 +415,7 @@ export function createPluginAPI(
           id: namespaceId(config.id),
           pluginId,
           name: config.name,
+          icon: config.icon ? normalizePluginIcon(config.icon) : undefined,
           hotkey: config.hotkey,
           callback: wrapCallback(`command:${config.id}`, config.callback),
         });

@@ -16,7 +16,7 @@ import { getPathBasename } from '@shared/lib/fileTree';
 import { getFileExtension } from '@shared/lib/fileTypes';
 import { formatShortcutBinding } from '@shared/lib/hotkeys';
 import { useI18n } from '@app/providers/I18nProvider';
-import type { IconName } from '@shared/ui/icon';
+import type { IconSource } from '@shared/ui/icon';
 const EMPTY_FILE_TREE: FileEntry[] = [];
 
 function extractSnippet(line: string, matchIdx: number, matchLength: number): string {
@@ -180,7 +180,7 @@ export interface CommandPaletteItem {
   id: string;
   title: string;
   hotkey?: string;
-  icon: IconName;
+  icon: IconSource;
   subtitle?: string;
   callback: () => void;
 }
@@ -302,7 +302,7 @@ export function useSearchPopup(
         id: command.id,
         title: command.name,
         hotkey: formatShortcutBinding(byActionId[getPluginCommandShortcutActionId(command.id)]?.binding),
-        icon: 'hash' as IconName,
+        icon: command.icon ?? 'file',
         subtitle: command.pluginId,
         callback: command.callback,
       })),

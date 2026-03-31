@@ -17,6 +17,8 @@
 - работать с editor sessions и host editors
 - запускать локальные процессы внутри workspace
 
+UI-регистрации могут использовать либо встроенные иконки Volt по имени, либо собственный SVG через объект `{ svg: string }`.
+
 Плагин не получает прямой доступ к Go handlers, shell, файловой системе или внутренним store-ам приложения. Все привилегированные действия идут только через объект `api`, который создаёт host runtime.
 
 ## Где живут плагины
@@ -214,6 +216,27 @@ Backend перечисляет подпапки в `~/.volt/plugins`, читае
 
 Ниже приведены актуальные namespace-ы host API.
 
+### Общие типы
+
+```ts
+interface PluginSvgIcon {
+  svg: string
+}
+
+type PluginIcon = string | PluginSvgIcon
+```
+
+`PluginIcon` используется во всех UI-регистрациях, где плагин может задать иконку:
+
+- `registerCommand(...)`
+- `registerSlashCommand(...)`
+- `registerContextMenuItem(...)`
+- `registerToolbarButton(...)`
+- `registerSidebarButton(...)`
+- `registerFileViewer(...)`
+
+Строка означает встроенную иконку Volt. Объект `{ svg }` позволяет передать собственную SVG-иконку.
+
 ### `api.fs`
 
 ```ts
@@ -336,6 +359,7 @@ registerSidebarPanel(config: {
 registerCommand(config: {
   id: string
   name: string
+  icon?: PluginIcon
   hotkey?: string
   callback(): void | Promise<void>
 }): void
@@ -353,14 +377,14 @@ registerSlashCommand(config: {
   id: string
   title: string
   description: string
-  icon: string
+  icon: PluginIcon
   callback(): void | Promise<void>
 }): void
 
 registerContextMenuItem(config: {
   id: string
   label: string
-  icon?: string
+  icon?: PluginIcon
   filter?: (entry: { path: string; isDir: boolean }) => boolean
   callback(entry: { path: string; isDir: boolean }): void | Promise<void>
 }): void
@@ -368,14 +392,14 @@ registerContextMenuItem(config: {
 registerToolbarButton(config: {
   id: string
   label: string
-  icon: string
+  icon: PluginIcon
   callback(): void | Promise<void>
 }): void
 
 registerSidebarButton(config: {
   id: string
   label: string
-  icon: string
+  icon: PluginIcon
   callback(): void | Promise<void>
 }): void
 
@@ -393,6 +417,41 @@ notify(message: string, durationMs?: number): void
 - host-editor viewer через конфиг `hostEditor`
 
 Это позволяет встраивать как полностью собственный просмотрщик, так и host editor для нестандартного файла.
+
+Обе формы `PluginFileViewerConfig` также поддерживают `icon?: PluginIcon`.
+
+#### Иконки UI-элементов
+
+Поддерживаются два формата:
+
+1. Встроенная иконка Volt по имени:
+
+```ts
+icon: 'graph'
+```
+
+2. Пользовательская SVG-иконка:
+
+```ts
+icon: {
+  svg: `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 3v18" />
+      <path d="M3 12h18" />
+    </svg>
+  `
+}
+```
+
+Замечания:
+
+- встроенные имена иконок берутся из `frontend/src/shared/ui/icon/icons.ts`
+- если имя встроенной иконки неизвестно, host подставляет `file`
+- если custom SVG невалидный, host тоже подставляет `file`
+- из SVG вырезаются `script`, `foreignObject` и inline-обработчики вида `on*`
+- `registerCommand(...)` использует иконку в command palette при поиске по `>`
+- `registerSlashCommand(...)` использует иконку в slash-меню редактора
+- `registerContextMenuItem(...)`, `registerToolbarButton(...)`, `registerSidebarButton(...)` и `registerFileViewer(...)` используют ту же иконку в соответствующих host surface
 
 ### `api.editor`
 
@@ -486,6 +545,7 @@ ${pluginId}:${config.id}
   api.ui.registerCommand({
     id: 'show-active-file-info',
     name: 'Show Active File Info',
+    icon: 'fileText',
     callback: async () => {
       const path = api.workspace.getActivePath();
       if (!path) {

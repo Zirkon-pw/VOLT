@@ -6,7 +6,7 @@ import { createElement, createRef } from 'react';
 import { usePluginRegistryStore } from '@entities/plugin';
 import { EDITOR } from '@shared/config/constants';
 import { translate } from '@shared/i18n';
-import type { IconName } from '@shared/ui/icon';
+import type { IconSource } from '@shared/ui/icon';
 import {
   SlashCommandMenu,
   type SlashCommandMenuHandle,
@@ -15,7 +15,7 @@ import {
 export interface SlashCommandItem {
   title: string;
   description: string;
-  icon: IconName;
+  icon: IconSource;
   command: (editor: any, range: any) => void;
 }
 

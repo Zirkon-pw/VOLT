@@ -5,7 +5,7 @@ import { usePluginRegistryStore, type RegisteredSidebarPanel } from '@entities/p
 import { SIDEBAR } from '@shared/config/constants';
 import { safeExecute } from '@shared/lib/plugin-runtime';
 import { FileTree } from '../file-tree/FileTree';
-import { Icon, type IconName } from '@shared/ui/icon';
+import { Icon, type IconSource } from '@shared/ui/icon';
 import { useSidebarButtonOrder } from './hooks/useSidebarButtonOrder';
 import styles from './Sidebar.module.scss';
 
@@ -50,7 +50,7 @@ interface SidebarProps {
 
 interface SidebarButtonItem {
   id: string;
-  icon: IconName;
+  icon: IconSource;
   title: string;
   onClick: () => void | Promise<void>;
 }

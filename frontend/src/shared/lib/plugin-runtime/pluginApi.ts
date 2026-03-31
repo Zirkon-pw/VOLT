@@ -35,6 +35,13 @@ export interface PluginFilePickerConfig {
   multiple?: boolean;
 }
 
+export interface PluginSvgIcon {
+  // Full SVG markup, for example: <svg viewBox="0 0 24 24">...</svg>
+  svg: string;
+}
+
+export type PluginIcon = string | PluginSvgIcon;
+
 export interface PluginEventMap {
   'workspace:path-renamed': WorkspacePathRenamedEvent;
   'file-open': string;
@@ -175,7 +182,7 @@ export interface EditorHandle {
 export interface PluginCustomFileViewerConfig {
   id: string;
   extensions: string[];
-  icon?: string;
+  icon?: PluginIcon;
   priority?: number;
   render: (container: HTMLElement, context: PluginFileViewerContext) => void;
   cleanup?: () => void;
@@ -184,7 +191,7 @@ export interface PluginCustomFileViewerConfig {
 export interface PluginHostEditorFileViewerConfig {
   id: string;
   extensions: string[];
-  icon?: string;
+  icon?: PluginIcon;
   priority?: number;
   hostEditor: Omit<EditorMountConfig, 'filePath'>;
 }
@@ -251,6 +258,7 @@ export interface VoltPluginAPI {
     registerCommand(config: {
       id: string;
       name: string;
+      icon?: PluginIcon;
       hotkey?: string;
       callback: () => void | Promise<void>;
     }): void;
@@ -266,26 +274,26 @@ export interface VoltPluginAPI {
       id: string;
       title: string;
       description: string;
-      icon: string;
+      icon: PluginIcon;
       callback: () => void | Promise<void>;
     }): void;
     registerContextMenuItem(config: {
       id: string;
       label: string;
-      icon?: string;
+      icon?: PluginIcon;
       filter?: (entry: { path: string; isDir: boolean }) => boolean;
       callback: (entry: { path: string; isDir: boolean }) => void | Promise<void>;
     }): void;
     registerToolbarButton(config: {
       id: string;
       label: string;
-      icon: string;
+      icon: PluginIcon;
       callback: () => void | Promise<void>;
     }): void;
     registerSidebarButton(config: {
       id: string;
       label: string;
-      icon: string;
+      icon: PluginIcon;
       callback: () => void | Promise<void>;
     }): void;
     openPluginPage(pageId: string): void;
