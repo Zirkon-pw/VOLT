@@ -89,7 +89,10 @@ test('inserts a file link once from the picker', async ({ page }) => {
   await expect(page.getByTestId('link-file-picker')).toBeVisible();
   await page.locator('[data-testid="link-picker-item"][data-path="notes/target.md"]').click();
 
-  await expect(page.locator('.ProseMirror a[href="target.md"]')).toHaveCount(1);
+  const link = page.locator('.ProseMirror a[href="./target.md"]');
+  await expect(link).toHaveCount(1);
+  await link.click();
+  await expect.poll(async () => page.evaluate(() => window.__VOLT_PLAYWRIGHT__?.getActiveTab() ?? null)).toBe('notes/target.md');
 });
 
 test('does not show table toolbar on hover only, but shows notion-like controls on selection', async ({ page }) => {
@@ -130,8 +133,8 @@ test('drops a file from the tree into the editor only once', async ({ page }) =>
   await page.keyboard.press(`${modKey}+End`);
   await source.dragTo(editor);
 
-  await expect(page.locator('.ProseMirror a[href="target.md"]')).toHaveCount(1);
-  await expect.poll(async () => page.evaluate(() => window.__VOLT_PLAYWRIGHT__?.getMarkdown() ?? null)).toContain('[target](target.md)');
+  await expect(page.locator('.ProseMirror a[href="./target.md"]')).toHaveCount(1);
+  await expect.poll(async () => page.evaluate(() => window.__VOLT_PLAYWRIGHT__?.getMarkdown() ?? null)).toContain('[target](./target.md)');
   const markdown = await page.evaluate(() => window.__VOLT_PLAYWRIGHT__?.getMarkdown() ?? null);
   expect(markdown).not.toMatch(/target\s+\[target\]\(target\.md\)/);
 });

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
 import { useI18n } from '@app/providers/I18nProvider';
+import { ensureExplicitRelativePath } from '@shared/lib/fileTree';
 import { ColorPicker } from '@shared/ui/color-picker';
 import { Icon } from '@shared/ui/icon';
 import styles from './TextBubbleMenu.module.scss';
@@ -39,7 +40,10 @@ function normalizeUrl(raw: string): string {
   if (/^[a-zA-Z][\w-]*(\.[a-zA-Z]{2,})(\/.*)?$/.test(trimmed)) {
     return `https://${trimmed}`;
   }
-  return trimmed;
+  if (/^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(trimmed) || /^[a-z][a-z0-9+.-]*:/i.test(trimmed)) {
+    return trimmed;
+  }
+  return ensureExplicitRelativePath(trimmed);
 }
 
 export function TextBubbleMenu({ editor }: TextBubbleMenuProps) {

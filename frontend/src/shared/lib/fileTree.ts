@@ -182,6 +182,24 @@ export function findEntryByPath(entries: FileEntry[], targetPath: string): FileE
   return null;
 }
 
+export function ensureExplicitRelativePath(path: string): string {
+  if (!path) {
+    return path;
+  }
+
+  if (
+    path.startsWith('./')
+    || path.startsWith('../')
+    || path.startsWith('#')
+    || path.startsWith('/')
+    || path.startsWith('?')
+  ) {
+    return path;
+  }
+
+  return `./${path}`;
+}
+
 export function computeRelativePath(fromDir: string, toPath: string): string {
   const fromParts = fromDir ? fromDir.split('/') : [];
   const toParts = toPath.split('/');
@@ -191,7 +209,7 @@ export function computeRelativePath(fromDir: string, toPath: string): string {
   }
   const ups = fromParts.length - common;
   const result = [...Array(ups).fill('..'), ...toParts.slice(common)].join('/');
-  return result || toPath;
+  return ensureExplicitRelativePath(result || toPath);
 }
 
 export function resolveRelativePath(baseDir: string, relativePath: string): string {
