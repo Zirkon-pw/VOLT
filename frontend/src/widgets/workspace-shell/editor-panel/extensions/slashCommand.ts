@@ -122,18 +122,6 @@ export function getSlashCommandItems(): SlashCommandItem[] {
       },
     },
     {
-      title: translate('editor.slash.mathInline.title'),
-      description: translate('editor.slash.mathInline.description'),
-      icon: 'sigma',
-      command: (editor, range) =>
-        editor
-          .chain()
-          .focus()
-          .deleteRange(range)
-          .insertContent({ type: 'mathInline', attrs: { latex: '' } })
-          .run(),
-    },
-    {
       title: translate('editor.slash.mathBlock.title'),
       description: translate('editor.slash.mathBlock.description'),
       icon: 'sigma',
@@ -144,6 +132,15 @@ export function getSlashCommandItems(): SlashCommandItem[] {
           .deleteRange(range)
           .insertContent({ type: 'mathBlock', attrs: { latex: '' } })
           .run(),
+    },
+    {
+      title: translate('editor.slash.embed.title'),
+      description: translate('editor.slash.embed.description'),
+      icon: 'link',
+      command: (editor, range) => {
+        editor.chain().focus().deleteRange(range).run();
+        window.dispatchEvent(new CustomEvent('volt:pick-embed'));
+      },
     },
   ];
 }

@@ -7,6 +7,7 @@ import (
 	commandbase "volt/commands"
 	commandfile "volt/commands/file"
 	commandsettings "volt/commands/settings"
+	commandssystem "volt/commands/system"
 	commandvolt "volt/commands/volt"
 	coresettings "volt/core/settings"
 	corevolt "volt/core/volt"
@@ -124,5 +125,36 @@ func TestSettingsHandlerGetLocalizationUsesCommandManager(t *testing.T) {
 
 	if payload.EffectiveLocale != "en" {
 		t.Fatalf("payload.EffectiveLocale = %q, want %q", payload.EffectiveLocale, "en")
+	}
+}
+
+func TestLinkPreviewHandlerResolveLinkPreviewUsesCommandManager(t *testing.T) {
+	manager := commandbase.MustNewManager(handlerStubCommand{
+		name: commandssystem.ResolveLinkPreviewName,
+		run: func(ctx context.Context, req any) (any, error) {
+			request, ok := req.(commandssystem.ResolveLinkPreviewRequest)
+			if !ok {
+				t.Fatalf("unexpected request type %T", req)
+			}
+			if request.URL != "https://example.com/article" {
+				t.Fatalf("request.URL = %q", request.URL)
+			}
+
+			return commandssystem.ResolveLinkPreviewResponse{
+				Kind:  "generic",
+				URL:   request.URL,
+				Title: "Example article",
+			}, nil
+		},
+	})
+
+	handler := NewLinkPreviewHandler(manager, nil)
+	payload, err := handler.ResolveLinkPreview("https://example.com/article")
+	if err != nil {
+		t.Fatalf("ResolveLinkPreview() error = %v", err)
+	}
+
+	if payload.Kind != "generic" || payload.Title != "Example article" {
+		t.Fatalf("payload = %#v", payload)
 	}
 }

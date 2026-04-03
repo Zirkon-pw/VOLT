@@ -155,6 +155,7 @@ export function useImageHandlers({
         return;
       }
     }
+
   }, [saveAndInsert]);
 
   // Listen for slash command image picker event

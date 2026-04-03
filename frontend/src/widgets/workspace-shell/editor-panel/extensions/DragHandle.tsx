@@ -17,6 +17,7 @@ const DRAGGABLE_TYPES = new Set([
   'image',
   'horizontalRule',
   'mathBlock',
+  'embedBlock',
 ]);
 
 interface DragHandleProps {

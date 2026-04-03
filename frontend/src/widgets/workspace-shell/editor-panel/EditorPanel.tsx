@@ -17,6 +17,7 @@ import { useImageHandlers } from './hooks/useImageHandlers';
 import { MarkdownEditorSurface } from './MarkdownEditorSurface';
 import { findInFileHighlightsPluginKey, type FindInFileMatch } from './extensions/FindInFileHighlights';
 import { LinkFilePicker } from './extensions/LinkFilePicker';
+import { EmbedUrlPicker } from './extensions/EmbedUrlPicker';
 import styles from './EditorPanel.module.scss';
 
 interface EditorPanelProps {
@@ -107,6 +108,7 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
   });
 
   const [showLinkPicker, setShowLinkPicker] = useState(false);
+  const [showEmbedPicker, setShowEmbedPicker] = useState(false);
   const [showFindInFile, setShowFindInFile] = useState(false);
   const [findQuery, setFindQuery] = useState('');
   const [findMatches, setFindMatches] = useState<FindInFileMatch[]>([]);
@@ -115,12 +117,11 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
   const findQueryRef = useRef('');
   const activeFindMatchRef = useRef<FindInFileMatch | null>(null);
   const linkPickerSelectionRef = useRef<{ from: number; to: number } | null>(null);
-  const restoreLinkSelection = useCallback(() => {
+  const embedPickerSelectionRef = useRef<{ from: number; to: number } | null>(null);
+  const restoreSelection = useCallback((selection: { from: number; to: number } | null) => {
     if (!editor) {
       return;
     }
-
-    const selection = linkPickerSelectionRef.current;
 
     try {
       editor.view.focus();
@@ -135,6 +136,12 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
       editor.chain().focus().run();
     }
   }, [editor]);
+  const restoreLinkSelection = useCallback(() => {
+    restoreSelection(linkPickerSelectionRef.current);
+  }, [restoreSelection]);
+  const restoreEmbedSelection = useCallback(() => {
+    restoreSelection(embedPickerSelectionRef.current);
+  }, [restoreSelection]);
   const closeLinkPicker = useCallback((restoreSelection = true) => {
     flushSync(() => {
       setShowLinkPicker(false);
@@ -144,6 +151,34 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
       restoreLinkSelection();
     }
   }, [restoreLinkSelection]);
+  const closeEmbedPicker = useCallback((restoreSelectionOnClose = true) => {
+    flushSync(() => {
+      setShowEmbedPicker(false);
+    });
+
+    if (restoreSelectionOnClose) {
+      restoreEmbedSelection();
+    }
+  }, [restoreEmbedSelection]);
+  const insertEmbedBlock = useCallback((url: string) => {
+    if (!editor) {
+      return;
+    }
+
+    const selection = embedPickerSelectionRef.current ?? {
+      from: editor.state.selection.from,
+      to: editor.state.selection.to,
+    };
+
+    editor
+      .chain()
+      .focus()
+      .setTextSelection(selection)
+      .insertContent({ type: 'embedBlock', attrs: { url } })
+      .run();
+
+    closeEmbedPicker(false);
+  }, [closeEmbedPicker, editor]);
 
   const closeFindInFile = useCallback(() => {
     setShowFindInFile(false);
@@ -229,6 +264,21 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
   }, [editor]);
 
   useEffect(() => {
+    if (!editor) return;
+
+    const handler = () => {
+      embedPickerSelectionRef.current = {
+        from: editor.state.selection.from,
+        to: editor.state.selection.to,
+      };
+      setShowEmbedPicker(true);
+    };
+
+    window.addEventListener('volt:pick-embed', handler);
+    return () => window.removeEventListener('volt:pick-embed', handler);
+  }, [editor]);
+
+  useEffect(() => {
     findQueryRef.current = findQuery;
     activeFindMatchRef.current = findMatches[activeFindIndex] ?? null;
   }, [activeFindIndex, findMatches, findQuery]);
@@ -267,6 +317,8 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
     loadedPathRef.current = null;
     clear();
     linkPickerSelectionRef.current = null;
+    embedPickerSelectionRef.current = null;
+    setShowEmbedPicker(false);
     setShowFindInFile(false);
     setFindQuery('');
     setFindMatches([]);
@@ -458,6 +510,11 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
           onClose={closeLinkPicker}
         />
       )}
+      <EmbedUrlPicker
+        isOpen={showEmbedPicker}
+        onClose={closeEmbedPicker}
+        onSubmit={insertEmbedBlock}
+      />
     </>
   );
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { TextSelection } from '@tiptap/pm/state';
 import { SearchPopup } from '@features/workspace-search';
 import type { FileEntry } from '@shared/api/file/types';
 import { getEditor } from '@shared/lib/plugin-runtime';
@@ -21,8 +22,9 @@ declare global {
       getSavedFile: (path: string) => string | null;
       getMarkdown: () => string | null;
       getSelectionRange: () => { from: number; to: number } | null;
+      appendEmptyParagraphAtEnd: () => void;
+      insertEmbedBlock: (url: string) => void;
       insertMathBlock: () => void;
-      insertMathInline: () => void;
       insertCodeBlock: () => void;
       reset: () => void;
     };
@@ -66,6 +68,8 @@ const INITIAL_MARKDOWN = `# Playwright harness
 Alpha paragraph
 
 Beta paragraph
+
+Legacy inline $math$ text
 
 [External](https://example.com)
 
@@ -165,6 +169,87 @@ export function PlaywrightEditorHarness() {
           DeletePath: async () => undefined,
           RenamePath: async () => undefined,
         },
+        LinkPreviewHandler: {
+          ResolveLinkPreview: async (url: string) => {
+            if (url.includes('github.com/example/volt')) {
+              return {
+                Kind: 'githubRepo',
+                URL: url,
+                Title: 'example/volt',
+                Description: 'Volt test repository preview',
+                ImageURL: 'https://images.example/github.png',
+                Owner: 'example',
+                Repo: 'volt',
+                Stars: 128,
+                Language: 'TypeScript',
+                SourceURL: '',
+                EmbedURL: '',
+                MimeType: '',
+                PosterURL: '',
+                Provider: '',
+                SiteName: 'GitHub',
+              };
+            }
+
+            if (url.includes('videos.example.com/demo.mp4')) {
+              return {
+                Kind: 'video',
+                URL: url,
+                Title: 'Demo video',
+                Description: '',
+                ImageURL: '',
+                Owner: '',
+                Repo: '',
+                Stars: 0,
+                Language: '',
+                SourceURL: url,
+                EmbedURL: '',
+                MimeType: 'video/mp4',
+                PosterURL: 'https://images.example/video-poster.png',
+                Provider: 'direct',
+                SiteName: '',
+              };
+            }
+
+            if (url.includes('youtu.be/volt-demo-123')) {
+              return {
+                Kind: 'video',
+                URL: url,
+                Title: 'Volt demo on YouTube',
+                Description: '',
+                ImageURL: '',
+                Owner: '',
+                Repo: '',
+                Stars: 0,
+                Language: '',
+                SourceURL: url,
+                EmbedURL: 'https://www.youtube.com/embed/volt-demo-123',
+                MimeType: '',
+                PosterURL: 'https://images.example/youtube-poster.png',
+                Provider: 'youtube',
+                SiteName: '',
+              };
+            }
+
+            return {
+              Kind: 'generic',
+              URL: url,
+              Title: 'Generic preview title',
+              Description: 'Generic preview description',
+              SiteName: 'example.com',
+              ImageURL: 'https://images.example/generic.png',
+              Owner: '',
+              Repo: '',
+              Stars: 0,
+              Language: '',
+              SourceURL: '',
+              EmbedURL: '',
+              MimeType: '',
+              PosterURL: '',
+              Provider: '',
+            };
+          },
+        },
       },
     };
 
@@ -222,11 +307,24 @@ export function PlaywrightEditorHarness() {
         const { from, to } = editor.state.selection;
         return { from, to };
       },
+      appendEmptyParagraphAtEnd: () => {
+        const editor = getEditor();
+        const paragraph = editor?.state.schema.nodes.paragraph;
+        if (!editor || !paragraph) {
+          return;
+        }
+
+        const insertPos = editor.state.doc.content.size;
+        const tr = editor.state.tr.insert(insertPos, paragraph.create());
+        tr.setSelection(TextSelection.create(tr.doc, insertPos + 1)).scrollIntoView();
+        editor.view.dispatch(tr);
+        editor.view.focus();
+      },
+      insertEmbedBlock: (url: string) => {
+        getEditor()?.chain().focus('end').insertContent({ type: 'embedBlock', attrs: { url } }).run();
+      },
       insertMathBlock: () => {
         getEditor()?.chain().focus('end').insertContent({ type: 'mathBlock', attrs: { latex: '' } }).run();
-      },
-      insertMathInline: () => {
-        getEditor()?.chain().focus('end').insertContent({ type: 'mathInline', attrs: { latex: '' } }).run();
       },
       insertCodeBlock: () => {
         getEditor()?.chain().focus('end').toggleCodeBlock().run();

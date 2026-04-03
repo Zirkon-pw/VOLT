@@ -8,6 +8,14 @@ async function gotoHarness(page: import('@playwright/test').Page) {
   await expect(page.locator('.ProseMirror')).toContainText('Alpha paragraph');
 }
 
+async function pasteClipboardText(page: import('@playwright/test').Page, text: string) {
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.evaluate(async (value) => {
+    await navigator.clipboard.writeText(value);
+  }, text);
+  await page.keyboard.press(`${modKey}+V`);
+}
+
 async function expectNoAppOverflow(page: import('@playwright/test').Page) {
   await expect.poll(async () => page.evaluate(() => {
     const root = document.documentElement;
@@ -134,6 +142,11 @@ test('opens external links and internal note links', async ({ page }) => {
   await expect.poll(async () => page.evaluate(() => window.__VOLT_PLAYWRIGHT__?.getActiveTab() ?? null)).toBe('docs/guide.md');
 });
 
+test('keeps legacy inline markdown as plain text after inline math removal', async ({ page }) => {
+  await expect(page.locator('.ProseMirror')).toContainText('Legacy inline $math$ text');
+  await expect(page.locator('.math-inline-node')).toHaveCount(0);
+});
+
 test('inserts a file link once from the picker', async ({ page }) => {
   const editor = page.locator('.ProseMirror');
 
@@ -186,11 +199,96 @@ test('closes slash commands on escape and inserts math blocks from the slash men
   await page.keyboard.press('Enter');
   await page.keyboard.type('/math');
   await expect(page.getByTestId('slash-command-menu')).toBeVisible();
-  await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
 
   await expect(page.locator('.math-block-node')).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.__VOLT_PLAYWRIGHT__?.getMarkdown() ?? null)).toContain('$$');
+});
+
+test('opens embed picker from slash command and inserts a generic preview block', async ({ page }) => {
+  const editor = page.locator('.ProseMirror');
+
+  await editor.click();
+  await page.keyboard.press(`${modKey}+End`);
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('/embed');
+  await expect(page.getByTestId('slash-command-menu')).toBeVisible();
+  await page.keyboard.press('Enter');
+
+  await expect(page.getByTestId('embed-url-picker')).toBeVisible();
+  await page.getByTestId('embed-url-input').fill('https://example.com/article');
+  await page.getByTestId('embed-url-submit').click();
+
+  await expect(page.getByTestId('embed-block-generic')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.__VOLT_PLAYWRIGHT__?.getMarkdown() ?? null))
+    .toContain('<volt-embed url="https://example.com/article"></volt-embed>');
+});
+
+test('converts a pasted standalone url into an embed block only in an empty paragraph', async ({ page }) => {
+  await page.evaluate(() => {
+    window.__VOLT_PLAYWRIGHT__?.appendEmptyParagraphAtEnd();
+  });
+  await pasteClipboardText(page, 'https://example.com/article');
+
+  await expect(page.getByTestId('embed-block-generic')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.__VOLT_PLAYWRIGHT__?.getMarkdown() ?? null))
+    .toContain('<volt-embed url="https://example.com/article"></volt-embed>');
+});
+
+test('keeps pasted urls as text when the cursor is inside non-empty text', async ({ page }) => {
+  await page.locator('.ProseMirror p', { hasText: 'Alpha paragraph' }).click();
+  await page.keyboard.press('End');
+  await page.keyboard.type(' ');
+  await pasteClipboardText(page, 'https://example.com/article');
+
+  await expect(page.getByTestId('embed-block-generic')).toHaveCount(0);
+  await expect.poll(async () => page.evaluate(() => window.__VOLT_PLAYWRIGHT__?.getMarkdown() ?? null))
+    .toContain('https://example.com/article');
+});
+
+test('renders github repository embeds', async ({ page }) => {
+  await page.evaluate(() => {
+    window.__VOLT_PLAYWRIGHT__?.insertEmbedBlock('https://github.com/example/volt');
+  });
+
+  await expect(page.getByTestId('embed-block-github')).toBeVisible();
+  await expect(page.locator('.embed-block-title')).toContainText('example/volt');
+  await expect(page.getByText('TypeScript')).toBeVisible();
+});
+
+test('renders direct video embeds with a playable video element', async ({ page }) => {
+  await page.evaluate(() => {
+    window.__VOLT_PLAYWRIGHT__?.insertEmbedBlock('https://videos.example.com/demo.mp4');
+  });
+
+  const video = page.getByTestId('embed-video-player');
+  await expect(video).toBeVisible();
+  await expect(video).toHaveAttribute('src', /https:\/\/videos\.example\.com\/demo\.mp4/);
+});
+
+test('renders youtube embeds as iframe previews', async ({ page }) => {
+  await page.evaluate(() => {
+    window.__VOLT_PLAYWRIGHT__?.insertEmbedBlock('https://youtu.be/volt-demo-123');
+  });
+
+  await expect(page.getByTestId('embed-video-frame')).toHaveAttribute(
+    'src',
+    /https:\/\/www\.youtube\.com\/embed\/volt-demo-123/,
+  );
+});
+
+test('saves and reloads embed blocks without losing markdown structure', async ({ page }) => {
+  await page.evaluate(() => {
+    window.__VOLT_PLAYWRIGHT__?.insertEmbedBlock('https://example.com/article');
+  });
+
+  await page.waitForTimeout(800);
+  await page.locator('[data-testid="file-tree-item"][data-path="notes/target.md"]').click();
+  await page.locator('[data-testid="file-tree-item"][data-path="notes/test.md"]').click();
+
+  await expect(page.getByTestId('embed-block-generic')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.__VOLT_PLAYWRIGHT__?.getSavedFile('notes/test.md') ?? null))
+    .toContain('<volt-embed url="https://example.com/article"></volt-embed>');
 });
 
 test('shows quiet table controls, lets you target rows and columns, and keeps the toolbar stable', async ({ page }) => {

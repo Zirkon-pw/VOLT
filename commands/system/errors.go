@@ -10,6 +10,7 @@ var (
 	ErrRunIDRequired         = errors.New("run id is required")
 	ErrWorkspacePathRequired = errors.New("workspace path is required")
 	ErrCommandRequired       = errors.New("command is required")
+	ErrInvalidRemoteURL      = errors.New("invalid remote url")
 )
 
 type ErrProcessRunExists struct {
