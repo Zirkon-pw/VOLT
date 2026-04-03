@@ -21,16 +21,24 @@ export function WorkspaceShell({ voltId, voltPath }: WorkspaceShellProps) {
   const activeTabs = useTabStore((state) => state.activeTabs);
   const allTabs = useTabStore((state) => state.tabs);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchInitialQuery, setSearchInitialQuery] = useState('');
+  const [searchOpenToken, setSearchOpenToken] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem(SIDEBAR.COLLAPSED_STORAGE_KEY) === 'true',
   );
 
-  const toggleSearch = useCallback(() => {
-    setSearchOpen((prev) => !prev);
+  const openSearch = useCallback((initialQuery = '') => {
+    setSearchInitialQuery(initialQuery);
+    setSearchOpenToken((current) => current + 1);
+    setSearchOpen(true);
   }, []);
 
   const closeSearch = useCallback(() => {
     setSearchOpen(false);
+  }, []);
+
+  const openFindInFile = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('volt:find-in-file'));
   }, []);
 
   const toggleSidebar = useCallback(() => {
@@ -43,8 +51,9 @@ export function WorkspaceShell({ voltId, voltPath }: WorkspaceShellProps) {
 
   useWorkspaceHotkeys({
     voltId,
-    onToggleSearch: toggleSearch,
+    onOpenSearch: openSearch,
     onToggleSidebar: toggleSidebar,
+    onOpenFindInFile: openFindInFile,
   });
 
   useEffect(() => {
@@ -73,7 +82,7 @@ export function WorkspaceShell({ voltId, voltPath }: WorkspaceShellProps) {
       <Sidebar
         voltId={voltId}
         voltPath={voltPath}
-        onSearchClick={() => setSearchOpen(true)}
+        onSearchClick={() => openSearch('')}
         collapsed={sidebarCollapsed}
         onToggleCollapse={toggleSidebar}
       />
@@ -98,6 +107,8 @@ export function WorkspaceShell({ voltId, voltPath }: WorkspaceShellProps) {
       </div>
       <SearchPopup
         isOpen={searchOpen}
+        initialQuery={searchInitialQuery}
+        openToken={searchOpenToken}
         onClose={closeSearch}
         voltId={voltId}
         voltPath={voltPath}

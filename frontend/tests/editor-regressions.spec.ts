@@ -12,6 +12,51 @@ test.beforeEach(async ({ page }) => {
   await gotoHarness(page);
 });
 
+test('opens command palette with the search shortcut and regular search with double shift', async ({ page }) => {
+  const searchInput = page.getByTestId('workspace-search-input');
+
+  await page.locator('.ProseMirror').click();
+  await page.keyboard.press(`${modKey}+K`);
+  await expect(page.getByTestId('workspace-search-popup')).toBeVisible();
+  await expect(searchInput).toHaveValue('>');
+
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('workspace-search-popup')).toBeHidden();
+
+  await page.getByTestId('playwright-editor-harness').click({ position: { x: 12, y: 12 } });
+  await page.keyboard.press('Shift');
+  await page.waitForTimeout(120);
+  await page.keyboard.press('Shift');
+
+  await expect(page.getByTestId('workspace-search-popup')).toBeVisible();
+  await expect(searchInput).toHaveValue('');
+});
+
+test('finds matches in the current file with the file-search shortcut', async ({ page }) => {
+  const editor = page.locator('.ProseMirror');
+  const count = page.getByTestId('find-in-file-count');
+
+  await editor.click();
+  await page.keyboard.press(`${modKey}+F`);
+
+  await expect(page.getByTestId('find-in-file-panel')).toBeVisible();
+  await page.getByTestId('find-in-file-input').fill('paragraph');
+  await expect(count).toContainText('1');
+  await expect(count).toContainText('2');
+
+  const firstRange = await page.evaluate(() => window.__VOLT_PLAYWRIGHT__?.getSelectionRange() ?? null);
+  await page.keyboard.press('Enter');
+  await expect(count).toContainText('2');
+  await expect(count).toContainText('2');
+
+  const secondRange = await page.evaluate(() => window.__VOLT_PLAYWRIGHT__?.getSelectionRange() ?? null);
+  expect(secondRange).not.toEqual(firstRange);
+
+  await page.keyboard.press('Shift+Enter');
+  const thirdRange = await page.evaluate(() => window.__VOLT_PLAYWRIGHT__?.getSelectionRange() ?? null);
+  expect(thirdRange).toEqual(firstRange);
+});
+
 test('keeps typed content instead of reloading the file', async ({ page }) => {
   const editor = page.locator('.ProseMirror');
 

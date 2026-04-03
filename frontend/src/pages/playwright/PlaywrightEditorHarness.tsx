@@ -1,10 +1,12 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { SearchPopup } from '@features/workspace-search';
 import type { FileEntry } from '@shared/api/file/types';
 import { getEditor } from '@shared/lib/plugin-runtime';
 import { FileTree } from '@widgets/workspace-shell/file-tree/FileTree';
 import { EditorPanel } from '@widgets/workspace-shell/editor-panel/EditorPanel';
 import { useFileTreeStore } from '@entities/file-tree';
 import { useTabStore } from '@entities/tab';
+import { useWorkspaceHotkeys } from '@widgets/workspace-shell/model/useWorkspaceHotkeys';
 
 declare global {
   interface Window {
@@ -16,6 +18,7 @@ declare global {
       getOpenedUrl: () => string | null;
       getSavedFile: (path: string) => string | null;
       getMarkdown: () => string | null;
+      getSelectionRange: () => { from: number; to: number } | null;
       insertMathBlock: () => void;
       insertMathInline: () => void;
       reset: () => void;
@@ -81,6 +84,45 @@ function cloneTree(entries: FileEntry[]): FileEntry[] {
     ...entry,
     children: entry.children ? cloneTree(entry.children) : undefined,
   }));
+}
+
+function PlaywrightHotkeysLayer() {
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchInitialQuery, setSearchInitialQuery] = useState('');
+  const [searchOpenToken, setSearchOpenToken] = useState(0);
+
+  const openSearch = useCallback((initialQuery = '') => {
+    setSearchInitialQuery(initialQuery);
+    setSearchOpenToken((current) => current + 1);
+    setSearchOpen(true);
+  }, []);
+
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+  }, []);
+
+  const openFindInFile = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('volt:find-in-file'));
+  }, []);
+
+  useWorkspaceHotkeys({
+    voltId: VOLT_ID,
+    onOpenSearch: openSearch,
+    onToggleSidebar: () => undefined,
+    onOpenFindInFile: openFindInFile,
+  });
+
+  return (
+    <SearchPopup
+      isOpen={searchOpen}
+      initialQuery={searchInitialQuery}
+      openToken={searchOpenToken}
+      onClose={closeSearch}
+      voltId={VOLT_ID}
+      voltPath={VOLT_PATH}
+      onToggleSidebar={() => undefined}
+    />
+  );
 }
 
 export function PlaywrightEditorHarness() {
@@ -151,6 +193,15 @@ export function PlaywrightEditorHarness() {
         const markdownStorage = (editor?.storage as { markdown?: { getMarkdown?: () => string } } | undefined)?.markdown;
         return markdownStorage?.getMarkdown?.() ?? null;
       },
+      getSelectionRange: () => {
+        const editor = getEditor();
+        if (!editor) {
+          return null;
+        }
+
+        const { from, to } = editor.state.selection;
+        return { from, to };
+      },
       insertMathBlock: () => {
         getEditor()?.chain().focus('end').insertContent({ type: 'mathBlock', attrs: { latex: '' } }).run();
       },
@@ -183,6 +234,7 @@ export function PlaywrightEditorHarness() {
       <div style={{ minWidth: 0 }}>
         <EditorPanel voltId={VOLT_ID} voltPath={VOLT_PATH} filePath={FILE_PATH} />
       </div>
+      <PlaywrightHotkeysLayer />
     </div>
   );
 }

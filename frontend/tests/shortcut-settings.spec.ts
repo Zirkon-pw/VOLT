@@ -7,6 +7,9 @@ test('captures a shortcut in settings even if the binding button loses focus', a
 
   await page.goto('/__playwright__/settings/shortcuts');
   await expect(page.getByRole('heading', { name: 'Keyboard shortcuts' })).toBeVisible();
+  await expect(page.getByText('Invoke Command')).toBeVisible();
+  await expect(page.getByText('Open Search')).toBeVisible();
+  await expect(page.getByText('Find in Current File')).toBeVisible();
 
   const bindingButton = page.locator('[data-testid="shortcut-binding-button"][data-action-id="workspace.sidebar.toggle"]');
   await expect(bindingButton).toHaveAttribute('data-binding', 'Mod+B');

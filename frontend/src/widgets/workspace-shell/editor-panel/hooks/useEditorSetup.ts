@@ -20,6 +20,7 @@ import { SlashCommand } from '../extensions/slashCommand';
 import { CodeBlockWithLanguage } from '../extensions/CodeBlockWithLanguage';
 import { MathInline } from '../extensions/MathInline';
 import { MathBlock } from '../extensions/MathBlock';
+import { FindInFileHighlights } from '../extensions/FindInFileHighlights';
 
 interface UseEditorSetupOptions {
   onUpdate?: (editor: Editor) => void;
@@ -82,6 +83,7 @@ export function useEditorSetup({
       Highlight.configure({ multicolor: true }),
       MathInline,
       MathBlock,
+      FindInFileHighlights,
       Markdown.configure({
         html: true,
         transformCopiedText: true,
