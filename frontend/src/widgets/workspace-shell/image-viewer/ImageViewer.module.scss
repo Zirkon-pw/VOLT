@@ -3,7 +3,7 @@
   flex-direction: column;
   flex: 1;
   overflow: hidden;
-  background: var(--color-bg-primary);
+  background: color-mix(in srgb, var(--color-surface-raised) 92%, var(--color-bg-primary));
 }
 
 .toolbar {
@@ -12,8 +12,8 @@
   justify-content: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-4);
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-bg-secondary);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-divider) 84%, transparent);
+  background: color-mix(in srgb, var(--color-surface-chrome) 76%, var(--color-bg-secondary));
   flex-shrink: 0;
 }
 
@@ -21,18 +21,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
+  width: 30px;
+  height: 30px;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--color-text-secondary);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   cursor: pointer;
   font-size: 13px;
 
   &:hover {
-    background: var(--color-bg-tertiary);
+    background: color-mix(in srgb, var(--color-surface-raised) 76%, var(--color-bg-hover));
     color: var(--color-text-primary);
+    border-color: color-mix(in srgb, var(--color-border) 84%, transparent);
   }
 }
 
@@ -52,6 +53,9 @@
   justify-content: center;
   cursor: grab;
   position: relative;
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--color-tint-blue) 24%, transparent), transparent 32%),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-bg-secondary) 72%, var(--color-bg-primary)), var(--color-bg-primary));
 
   &.dragging {
     cursor: grabbing;
@@ -70,7 +74,8 @@
   display: block;
   user-select: none;
   -webkit-user-drag: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
 }
 
 .filename {
@@ -83,7 +88,7 @@
 .separator {
   width: 1px;
   height: 16px;
-  background: var(--color-border);
+  background: color-mix(in srgb, var(--color-divider) 84%, transparent);
 }
 
 .dimensions {

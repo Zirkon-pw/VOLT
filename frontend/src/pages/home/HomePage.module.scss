@@ -6,11 +6,16 @@
   min-height: 0;
   padding: var(--space-16) var(--space-6) var(--space-10);
   overflow-y: auto;
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--color-tint-sage) 62%, transparent), transparent 34%),
+    radial-gradient(circle at top right, color-mix(in srgb, var(--color-tint-lilac) 52%, transparent), transparent 36%),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-bg-secondary) 74%, var(--color-bg-primary)), var(--color-bg-primary));
 }
 
 .container {
   width: 100%;
   max-width: 900px;
+  padding: 0;
 }
 
 .header {
@@ -19,6 +24,8 @@
   justify-content: space-between;
   margin-bottom: var(--space-8);
   gap: var(--space-4);
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-divider) 88%, transparent);
 }
 
 .brand {
@@ -44,17 +51,18 @@
   margin-bottom: 6px;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: var(--letter-spacing-caps);
   text-transform: uppercase;
   color: var(--color-accent);
 }
 
 .title {
   font-size: var(--font-size-3xl);
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-weight: 600;
   color: var(--color-text-primary);
-  letter-spacing: -0.02em;
-  line-height: 1;
+  letter-spacing: var(--letter-spacing-display);
+  line-height: 0.96;
   margin: 0;
 }
 
@@ -66,9 +74,9 @@
 }
 
 .grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 .empty {
@@ -96,9 +104,9 @@
   margin-bottom: var(--space-4);
   font-size: var(--font-size-sm);
   color: var(--color-error);
-  background-color: rgba(224, 62, 62, 0.06);
-  border: 1px solid rgba(224, 62, 62, 0.2);
-  border-radius: var(--radius-md);
+  background-color: var(--color-danger-bg);
+  border: 1px solid color-mix(in srgb, var(--color-error) 26%, transparent);
+  border-radius: var(--radius-lg);
 }
 
 .modal-field {
@@ -122,14 +130,14 @@
 .directory-path {
   flex: 1;
   min-width: 0;
-  height: 32px;
+  height: 36px;
   display: flex;
   align-items: center;
   padding: 0 var(--space-3);
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-  background-color: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
+  background-color: color-mix(in srgb, var(--color-surface-raised) 88%, var(--color-bg-secondary));
+  border: 1px solid color-mix(in srgb, var(--color-border) 90%, transparent);
   border-radius: var(--radius-md);
   white-space: nowrap;
   overflow: hidden;

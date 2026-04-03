@@ -24,7 +24,7 @@
 
   &:hover {
     color: var(--color-text-primary);
-    background: var(--color-surface-elevated);
+    background: color-mix(in srgb, var(--color-surface-elevated) 88%, var(--color-surface-raised));
     box-shadow: var(--shadow-md);
   }
 
@@ -36,7 +36,7 @@
 .dragHandleActive {
   cursor: grabbing;
   color: var(--color-text-primary);
-  background: var(--color-surface-elevated);
+  background: color-mix(in srgb, var(--color-surface-elevated) 88%, var(--color-surface-raised));
   box-shadow: var(--shadow-md);
 }
 
@@ -64,5 +64,5 @@
   position: relative;
   z-index: var(--z-editor-chrome);
   border-radius: var(--radius-md);
-  background: var(--color-bg-primary);
+  background: color-mix(in srgb, var(--color-surface-raised) 90%, var(--color-bg-primary));
 }

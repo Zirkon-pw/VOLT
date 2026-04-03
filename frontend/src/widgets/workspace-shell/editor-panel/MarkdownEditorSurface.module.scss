@@ -8,7 +8,8 @@
   overflow: hidden;
   isolation: isolate;
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--color-bg-secondary) 88%, var(--color-bg-primary)), var(--color-bg-secondary));
+    radial-gradient(circle at top left, color-mix(in srgb, var(--color-tint-butter) 32%, transparent), transparent 34%),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-bg-secondary) 78%, var(--color-bg-primary)), var(--color-bg-primary));
 }
 
 .editor-content {
@@ -61,15 +62,19 @@
 
       h1 {
         font-size: var(--font-size-3xl);
-        letter-spacing: -0.03em;
-        line-height: 1.1;
+        font-family: var(--font-display);
+        font-weight: 600;
+        letter-spacing: var(--letter-spacing-display);
+        line-height: 1.02;
         margin-top: 1.7em;
-        margin-bottom: 0.2em;
+        margin-bottom: 0.18em;
       }
 
       h2 {
         font-size: var(--font-size-2xl);
-        letter-spacing: -0.024em;
+        font-family: var(--font-display);
+        font-weight: 580;
+        letter-spacing: calc(var(--letter-spacing-display) * 0.72);
         line-height: 1.2;
         margin-top: 1.35em;
         margin-bottom: 0.2em;
@@ -77,24 +82,26 @@
 
       h3 {
         font-size: var(--font-size-xl);
-        line-height: 1.25;
+        font-family: var(--font-display);
+        line-height: 1.18;
         margin-top: 1.1em;
         margin-bottom: 0.18em;
       }
 
       p {
-        line-height: 1.78;
+        line-height: 1.82;
       }
 
       code {
-        background: color-mix(in srgb, var(--color-bg-tertiary) 86%, var(--color-bg-primary));
-        padding: 2px 5px;
+        background: color-mix(in srgb, var(--color-surface-chrome) 78%, var(--color-bg-tertiary));
+        padding: 2px 6px;
         border-radius: var(--radius-sm);
         font-size: 0.9em;
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-border) 46%, transparent);
       }
 
       pre {
-        background: var(--color-bg-tertiary);
+        background: transparent;
         padding: var(--space-4);
         border-radius: var(--radius-lg);
 
@@ -105,10 +112,11 @@
       }
 
       blockquote {
-        border-left: 3px solid var(--color-border-strong);
-        padding-left: var(--space-4);
+        border-left: 3px solid color-mix(in srgb, var(--color-accent) 42%, var(--color-border-strong));
+        padding: 2px 0 2px var(--space-4);
         color: var(--color-text-secondary);
         margin-left: 2px;
+        font-style: italic;
       }
 
       ul:not([data-type="taskList"]) {
@@ -203,7 +211,8 @@
       a {
         color: var(--color-accent);
         text-decoration: underline;
-        text-underline-offset: 2px;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
         cursor: pointer;
         transition: color var(--transition-fast);
 
@@ -213,13 +222,13 @@
       }
 
       .find-in-file-match {
-        background: color-mix(in srgb, var(--color-warning, #f59e0b) 22%, transparent);
+        background: color-mix(in srgb, var(--color-warning, #f59e0b) 18%, transparent);
         border-radius: var(--radius-xs);
       }
 
       .find-in-file-match-current {
-        background: color-mix(in srgb, var(--color-accent) 24%, transparent);
-        box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent) 55%, transparent);
+        background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+        box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent) 42%, transparent);
       }
 
       img {
@@ -270,9 +279,14 @@
       .math-block-node {
         margin: 1em 0;
         padding: var(--space-4);
-        border-radius: var(--radius-lg);
-        background: color-mix(in srgb, var(--color-bg-tertiary) 90%, var(--color-bg-primary));
-        border: 1px solid color-mix(in srgb, var(--color-border) 88%, transparent);
+        border-radius: var(--radius-xl);
+        background:
+          linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--color-surface-raised) 88%, var(--color-tint-blue)),
+            color-mix(in srgb, var(--color-surface-raised) 82%, var(--color-bg-secondary))
+          );
+        border: 1px solid color-mix(in srgb, var(--color-border) 78%, transparent);
         cursor: pointer;
         text-align: center;
         transition: background-color var(--transition-fast);
@@ -311,17 +325,17 @@
       .tableWrapper {
         overflow-x: auto;
         margin: 1em 0;
-        padding: var(--space-2);
-        border-radius: var(--radius-xl);
-        border: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
+        padding: 10px;
+        border-radius: var(--radius-2xl);
+        border: 1px solid color-mix(in srgb, var(--color-border) 66%, transparent);
         background:
           linear-gradient(
             180deg,
-            color-mix(in srgb, var(--color-bg-primary) 40%, var(--color-bg-secondary)),
-            color-mix(in srgb, var(--color-bg-secondary) 90%, var(--color-bg-primary))
+            color-mix(in srgb, var(--color-surface-raised) 80%, var(--color-tint-butter)),
+            color-mix(in srgb, var(--color-surface-raised) 76%, var(--color-bg-secondary))
           );
         box-shadow:
-          inset 0 1px 0 color-mix(in srgb, var(--color-bg-primary) 65%, transparent),
+          inset 0 1px 0 color-mix(in srgb, var(--color-bg-primary) 54%, transparent),
           0 18px 32px -28px color-mix(in srgb, var(--color-shadow, #020617) 28%, transparent);
 
         &::-webkit-scrollbar {
@@ -334,14 +348,14 @@
         }
 
         &:hover {
-          border-color: color-mix(in srgb, var(--color-border-strong) 52%, transparent);
+          border-color: color-mix(in srgb, var(--color-border-strong) 60%, transparent);
         }
 
         &:has(.selectedCell) {
-          border-color: color-mix(in srgb, var(--color-accent) 28%, var(--color-border));
+          border-color: color-mix(in srgb, var(--color-accent) 24%, var(--color-border));
           box-shadow:
-            inset 0 1px 0 color-mix(in srgb, var(--color-bg-primary) 72%, transparent),
-            0 0 0 1px color-mix(in srgb, var(--color-accent) 12%, transparent),
+            inset 0 1px 0 color-mix(in srgb, var(--color-bg-primary) 64%, transparent),
+            0 0 0 1px color-mix(in srgb, var(--color-accent) 10%, transparent),
             0 18px 32px -28px color-mix(in srgb, var(--color-shadow, #020617) 28%, transparent);
         }
       }
@@ -353,18 +367,18 @@
         overflow: hidden;
         background: transparent;
         box-shadow:
-          inset 0 0 0 1px color-mix(in srgb, var(--color-border) 66%, transparent),
+          inset 0 0 0 1px color-mix(in srgb, var(--color-border) 56%, transparent),
           0 1px 0 color-mix(in srgb, var(--color-border) 34%, transparent);
 
         th,
         td {
-          border: 1px solid color-mix(in srgb, var(--color-border) 64%, transparent);
+          border: 1px solid color-mix(in srgb, var(--color-border) 54%, transparent);
           padding: 10px var(--space-3);
           text-align: left;
           min-width: 80px;
           vertical-align: top;
           position: relative;
-          background: color-mix(in srgb, var(--color-bg-primary) 28%, var(--color-bg-secondary));
+          background: color-mix(in srgb, var(--color-surface-raised) 72%, var(--color-bg-primary));
           transition:
             background-color var(--transition-base),
             box-shadow var(--transition-fast),
@@ -373,19 +387,19 @@
 
         td:hover,
         th:hover {
-          background: color-mix(in srgb, var(--color-bg-hover) 82%, var(--color-bg-primary));
+          background: color-mix(in srgb, var(--color-bg-hover) 68%, var(--color-surface-raised));
         }
 
         th {
-          background-color: color-mix(in srgb, var(--color-bg-primary) 48%, var(--color-bg-tertiary));
+          background-color: color-mix(in srgb, var(--color-surface-chrome) 84%, var(--color-bg-tertiary));
           font-weight: 600;
           color: var(--color-text-primary);
         }
 
         .selectedCell {
           box-shadow:
-            inset 0 0 0 1.5px color-mix(in srgb, var(--color-accent) 48%, transparent),
-            inset 0 0 0 999px color-mix(in srgb, var(--color-accent) 8%, transparent);
+            inset 0 0 0 1.5px color-mix(in srgb, var(--color-accent) 38%, transparent),
+            inset 0 0 0 999px color-mix(in srgb, var(--color-accent) 7%, transparent);
         }
 
         .column-resize-handle {

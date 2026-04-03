@@ -4,7 +4,9 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  background: color-mix(in srgb, var(--color-bg-secondary) 92%, var(--color-bg-primary));
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--color-tint-sage) 46%, transparent), transparent 30%),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-bg-secondary) 88%, var(--color-bg-primary)), var(--color-bg-primary));
 }
 
 .main {
@@ -14,7 +16,12 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  background: color-mix(in srgb, var(--color-bg-secondary) 90%, var(--color-bg-primary));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface-raised) 44%, transparent),
+      color-mix(in srgb, var(--color-bg-secondary) 90%, var(--color-bg-primary))
+    );
 }
 
 .content {
@@ -23,7 +30,8 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  background: var(--color-bg-secondary);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-bg-secondary) 84%, var(--color-bg-primary)), var(--color-bg-primary));
 }
 
 .plugin-page {
@@ -32,5 +40,5 @@
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
-  background: var(--color-bg-primary);
+  background: color-mix(in srgb, var(--color-surface-raised) 92%, var(--color-bg-primary));
 }

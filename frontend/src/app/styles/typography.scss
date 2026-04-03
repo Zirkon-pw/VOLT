@@ -4,32 +4,40 @@ body {
   line-height: var(--line-height);
   color: var(--color-text-primary);
   background-color: var(--color-bg-primary);
+  letter-spacing: -0.01em;
+  text-rendering: optimizeLegibility;
 }
 
 h1 {
   font-size: var(--font-size-3xl);
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-weight: 600;
   line-height: var(--line-height-tight);
-  letter-spacing: -0.02em;
+  letter-spacing: var(--letter-spacing-display);
 }
 
 h2 {
   font-size: var(--font-size-2xl);
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-weight: 560;
   line-height: var(--line-height-tight);
-  letter-spacing: -0.01em;
+  letter-spacing: calc(var(--letter-spacing-display) * 0.7);
 }
 
 h3 {
   font-size: var(--font-size-xl);
+  font-family: var(--font-display);
   font-weight: 600;
   line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
 }
 
 h4 {
   font-size: var(--font-size-lg);
+  font-family: var(--font-family);
   font-weight: 600;
-  line-height: var(--line-height-tight);
+  line-height: var(--line-height-snug);
+  letter-spacing: -0.02em;
 }
 
 code,
@@ -38,7 +46,16 @@ pre {
   font-size: 0.9em;
 }
 
+p,
+li,
+input,
+textarea,
+select,
+button {
+  font-family: var(--font-family);
+}
+
 ::selection {
-  background-color: var(--color-accent);
-  color: var(--color-accent-text);
+  background-color: var(--color-selection-bg);
+  color: var(--color-text-primary);
 }

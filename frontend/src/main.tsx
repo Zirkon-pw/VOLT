@@ -1,5 +1,8 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import '@fontsource/instrument-sans/index.css';
+import '@fontsource/newsreader/index.css';
+import '@fontsource/jetbrains-mono/index.css';
 import App from './app/App';
 import { installPlaywrightBootstrap } from './pages/playwright/installPlaywrightBootstrap';
 

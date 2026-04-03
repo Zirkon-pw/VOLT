@@ -6,13 +6,19 @@
 
 .menu {
   position: fixed;
-  z-index: 1001;
+  z-index: var(--z-dialog-surface);
   min-width: 160px;
-  padding: var(--space-1) 0;
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 6px;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface-overlay) 92%, var(--color-surface-raised)),
+      color-mix(in srgb, var(--color-surface-overlay) 84%, var(--color-surface-chrome))
+    );
+  border: 1px solid color-mix(in srgb, var(--color-border-strong) 70%, transparent);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-floating);
+  backdrop-filter: blur(16px);
 }
 
 .item {
@@ -20,7 +26,7 @@
   align-items: center;
   gap: var(--space-2);
   width: 100%;
-  padding: var(--space-1) var(--space-3);
+  padding: 8px 12px;
   border: none;
   background: none;
   color: var(--color-text-primary);
@@ -31,7 +37,7 @@
   white-space: nowrap;
 
   &:hover:not(:disabled) {
-    background: var(--color-bg-hover);
+    background: color-mix(in srgb, var(--color-bg-hover) 84%, var(--color-surface-raised));
   }
 
   &:disabled {
@@ -59,6 +65,6 @@
 
 .separator {
   height: 1px;
-  margin: var(--space-1) 0;
-  background: var(--color-border);
+  margin: 6px 2px;
+  background: color-mix(in srgb, var(--color-divider) 88%, transparent);
 }
