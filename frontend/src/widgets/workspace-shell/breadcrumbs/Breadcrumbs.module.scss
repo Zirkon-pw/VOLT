@@ -32,7 +32,7 @@
   transition: background-color var(--transition-fast), color var(--transition-fast);
 
   &:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--surface-shell-pill) 88%, transparent);
+    background: color-mix(in srgb, var(--surface-solid-secondary) 90%, var(--color-bg-hover));
     color: var(--color-text-primary);
   }
 
@@ -53,8 +53,7 @@
   max-width: min(100%, 920px);
   padding: var(--space-1);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-shell-pill) 88%, transparent);
-  backdrop-filter: blur(var(--chrome-blur)) saturate(110%);
+  background: var(--surface-solid-secondary);
   border: none;
 }
 
@@ -83,7 +82,7 @@
   height: 26px;
   padding: 0 var(--space-2);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-solid-primary) 82%, transparent);
+  background: var(--surface-solid-primary);
   font-size: var(--font-size-xs);
   color: var(--color-accent);
   font-weight: 600;

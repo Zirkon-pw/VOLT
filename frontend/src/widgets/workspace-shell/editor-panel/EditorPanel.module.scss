@@ -8,16 +8,16 @@
 
 .find-panel {
   position: absolute;
-  top: var(--space-3);
-  right: var(--space-3);
+  top: var(--space-2);
+  right: var(--space-2);
   display: flex;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2);
   border: none;
-  border-radius: 20px;
-  background: color-mix(in srgb, var(--surface-shell-pill) 90%, transparent);
-  backdrop-filter: blur(var(--chrome-blur)) saturate(110%);
+  border-radius: var(--surface-radius);
+  background: var(--surface-solid-tertiary);
+  backdrop-filter: none;
   box-shadow: none;
   z-index: var(--z-editor-chrome);
 }
@@ -28,8 +28,8 @@
   gap: var(--space-2);
   min-width: 240px;
   padding: 0 var(--space-2);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--surface-solid-primary) 88%, transparent);
+  border-radius: var(--radius-lg);
+  background: var(--surface-solid-primary);
   border: none;
   box-shadow: none;
 }
@@ -64,15 +64,15 @@
 .find-button,
 .find-icon-button {
   border: none;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--surface-solid-primary) 86%, transparent);
+  border-radius: var(--radius-lg);
+  background: var(--surface-solid-primary);
   color: var(--color-text-primary);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
   box-shadow: none;
 
   &:hover:not(:disabled) {
-    background: var(--color-bg-hover);
+    background: color-mix(in srgb, var(--surface-solid-secondary) 78%, var(--color-bg-hover));
   }
 
   &:disabled {

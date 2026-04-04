@@ -28,7 +28,7 @@ func main() {
 			Assets:  assets,
 			Handler: wailshandler.NewVaultAssetServer(),
 		},
-		BackgroundColour: &options.RGBA{R: 0, G: 0, B: 0, A: 0},
+		BackgroundColour: &options.RGBA{R: 236, G: 223, B: 210, A: 255},
 		StartHidden:      false,
 		Frameless:        false,
 		OnStartup:        container.Lifecycle.Startup,
@@ -36,14 +36,14 @@ func main() {
 		Bind:             container.Bindings(),
 		Mac: &mac.Options{
 			TitleBar: &mac.TitleBar{
-				TitlebarAppearsTransparent: true,
+				TitlebarAppearsTransparent: false,
 				HideTitle:                  true,
 				HideTitleBar:               false,
 				FullSizeContent:            true,
 				UseToolbar:                 false,
 			},
-			WebviewIsTransparent: true,
-			WindowIsTranslucent:  true,
+			WebviewIsTransparent: false,
+			WindowIsTranslucent:  false,
 			About: &mac.AboutInfo{
 				Title:   "Volt",
 				Message: "Knowledge management for power users",

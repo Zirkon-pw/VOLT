@@ -31,12 +31,12 @@
   border: none;
   background: transparent;
   color: var(--color-icon);
-  border-radius: 14px;
+  border-radius: 12px;
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
 
   &:hover {
-    background: color-mix(in srgb, var(--surface-shell-pill) 86%, transparent);
+    background: color-mix(in srgb, var(--surface-solid-secondary) 88%, var(--color-bg-hover));
     color: var(--color-icon-hover);
     box-shadow: none;
   }
@@ -60,7 +60,7 @@
   color: var(--color-text-secondary);
   cursor: pointer;
   border: none;
-  border-radius: 12px 12px 0 0;
+  border-radius: 10px 10px 0 0;
   white-space: nowrap;
   transition: color var(--transition-fast),
     background-color var(--transition-fast),
@@ -68,7 +68,7 @@
   user-select: none;
 
   &:hover {
-    background: color-mix(in srgb, var(--surface-shell-pill) 72%, transparent);
+    background: color-mix(in srgb, var(--surface-solid-secondary) 74%, var(--color-bg-hover));
     color: var(--color-text-primary);
     box-shadow: none;
   }
@@ -76,7 +76,7 @@
 
 .active {
   color: var(--color-accent);
-  background: color-mix(in srgb, var(--surface-shell-pill) 58%, transparent);
+  background: transparent;
   box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--color-accent) 74%, transparent);
 }
 
@@ -105,7 +105,7 @@
     color var(--transition-fast);
 
   &:hover {
-    background-color: color-mix(in srgb, var(--surface-shell-pill) 92%, transparent);
+    background-color: color-mix(in srgb, var(--surface-solid-secondary) 90%, var(--color-bg-hover));
     color: var(--color-text-primary);
   }
 }

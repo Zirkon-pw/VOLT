@@ -5,10 +5,9 @@
   min-height: 0;
   padding: var(--space-2);
   box-sizing: border-box;
-  background: var(--surface-translucent-primary);
+  background: var(--surface-shell-root);
   border-radius: var(--window-radius);
-  border: 1px solid color-mix(in srgb, var(--surface-border-primary) 88%, transparent);
-  backdrop-filter: blur(var(--chrome-blur-strong));
+  border: none;
 }
 
 .surface {
@@ -18,7 +17,7 @@
   min-height: 0;
   overflow: hidden;
   background: var(--surface-solid-primary);
-  border: 1px solid var(--surface-border-primary);
+  border: none;
   border-radius: var(--surface-radius);
 }
 

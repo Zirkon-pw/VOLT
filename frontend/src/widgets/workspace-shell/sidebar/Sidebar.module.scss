@@ -15,21 +15,21 @@
   height: 100%;
   min-height: 0;
   border-radius: var(--surface-radius);
-  background: var(--surface-shell-panel);
+  background: var(--surface-solid-primary);
   border: none;
   box-shadow: none;
   overflow: hidden;
-  backdrop-filter: blur(var(--chrome-blur)) saturate(108%);
+  backdrop-filter: none;
 }
 
 .rail {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 48px;
-  min-width: 48px;
+  width: 56px;
+  min-width: 56px;
   min-height: 0;
-  padding: var(--space-3) var(--space-1) var(--space-3) var(--space-2);
+  padding: var(--space-2) var(--space-2) var(--space-3);
   position: relative;
   background: transparent;
   border: none;
@@ -67,7 +67,7 @@
   backdrop-filter: none;
   overflow: hidden;
   transition: width 0.15s ease;
-  padding: var(--space-3) var(--space-2) var(--space-3) var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
 
   &::before {
     content: '';
@@ -85,17 +85,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border: none;
   background: transparent;
   color: var(--color-icon);
-  border-radius: 14px;
+  border-radius: 12px;
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
 
   &:hover {
-    background: color-mix(in srgb, var(--surface-shell-pill) 86%, transparent);
+    background: color-mix(in srgb, var(--surface-solid-primary) 92%, var(--color-bg-hover));
     color: var(--color-icon-hover);
     box-shadow: none;
   }
@@ -119,7 +119,7 @@
 }
 
 .icon-button-drag-over {
-  background: color-mix(in srgb, var(--surface-shell-pill) 88%, transparent);
+  background: color-mix(in srgb, var(--surface-solid-primary) 92%, var(--color-bg-active));
   color: var(--color-icon-hover);
   box-shadow: inset 2px 0 0 color-mix(in srgb, var(--color-accent) 56%, transparent);
 }
@@ -131,12 +131,12 @@
   align-items: center;
   justify-content: center;
   width: 28px;
-  height: 44px;
+  height: 36px;
   padding: 0;
   border: none;
-  border-radius: 999px;
-  background: var(--surface-shell-pill);
-  backdrop-filter: blur(var(--chrome-blur)) saturate(112%);
+  border-radius: 10px;
+  background: var(--surface-solid-primary);
+  backdrop-filter: none;
   color: var(--color-icon);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
@@ -145,7 +145,7 @@
   pointer-events: auto;
 
   &:hover {
-    background: color-mix(in srgb, var(--surface-shell-pill) 92%, var(--color-bg-hover));
+    background: color-mix(in srgb, var(--surface-solid-tertiary) 88%, var(--color-bg-hover));
     color: var(--color-icon-hover);
     box-shadow: none;
   }

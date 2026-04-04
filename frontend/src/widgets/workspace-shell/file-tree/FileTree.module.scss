@@ -31,13 +31,13 @@
   user-select: none;
 
   &:hover {
-    background: color-mix(in srgb, var(--surface-shell-pill) 74%, transparent);
+    background: color-mix(in srgb, var(--surface-solid-primary) 90%, var(--color-bg-hover));
     box-shadow: none;
   }
 }
 
 .item-selected {
-  background: color-mix(in srgb, var(--color-accent) 10%, var(--surface-shell-pill));
+  background: color-mix(in srgb, var(--surface-solid-primary) 92%, var(--color-selection-bg));
   box-shadow: none;
 }
 

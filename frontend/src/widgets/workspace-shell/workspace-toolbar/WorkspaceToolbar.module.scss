@@ -13,14 +13,14 @@
   width: 32px;
   height: 32px;
   border: none;
-  border-radius: 14px;
+  border-radius: 12px;
   background: transparent;
   color: var(--color-text-secondary);
   cursor: pointer;
   transition: background-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
 
   &:hover {
-    background: color-mix(in srgb, var(--surface-shell-pill) 84%, transparent);
+    background: color-mix(in srgb, var(--surface-solid-secondary) 88%, var(--color-bg-hover));
     color: var(--color-text-primary);
     box-shadow: none;
   }

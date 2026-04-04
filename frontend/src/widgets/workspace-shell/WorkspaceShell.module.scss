@@ -1,11 +1,15 @@
 .layout {
+  position: relative;
   display: flex;
   gap: var(--space-3);
   height: 100%;
   min-width: 0;
   min-height: 0;
+  padding: var(--space-1);
+  box-sizing: border-box;
   overflow: hidden;
-  background: transparent;
+  border-radius: 0;
+  background: var(--surface-shell-root);
 }
 
 .main {
@@ -18,10 +22,10 @@
   min-height: 0;
   overflow: hidden;
   border-radius: var(--surface-radius);
-  background: var(--surface-shell-panel);
+  background: var(--surface-solid-primary);
   border: none;
   box-shadow: none;
-  backdrop-filter: blur(var(--chrome-blur)) saturate(108%);
+  backdrop-filter: none;
 }
 
 .chromeStack {
@@ -30,15 +34,15 @@
   flex-direction: column;
   gap: 0;
   margin: 0;
-  padding: var(--space-3) var(--space-4) 0;
+  padding: var(--space-2) var(--space-3) 0;
   background: transparent;
   overflow: visible;
 
   &::after {
     content: '';
     position: absolute;
-    left: var(--space-4);
-    right: var(--space-4);
+    left: var(--space-3);
+    right: var(--space-3);
     bottom: 0;
     height: 1px;
     pointer-events: none;
@@ -53,7 +57,7 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  margin: var(--space-2) 0 0;
+  margin: var(--space-1) 0 0;
   border-radius: 0;
   background: transparent;
   border: none;
@@ -61,8 +65,8 @@
 
 .breadcrumbsOverlay {
   position: absolute;
-  top: var(--space-3);
-  left: var(--space-3);
+  top: var(--space-2);
+  left: var(--space-2);
   z-index: 2;
   pointer-events: none;
 
@@ -128,18 +132,18 @@
   align-items: center;
   justify-content: center;
   width: 28px;
-  height: 44px;
+  height: 36px;
   padding: 0;
   border: none;
-  border-radius: 999px;
-  background: var(--surface-shell-pill);
-  backdrop-filter: blur(var(--chrome-blur)) saturate(112%);
+  border-radius: 10px;
+  background: var(--surface-solid-tertiary);
+  backdrop-filter: none;
   color: var(--color-icon);
   cursor: pointer;
   transition: background-color var(--transition-fast), color var(--transition-fast);
 
   &:hover {
-    background: var(--color-bg-hover);
+    background: color-mix(in srgb, var(--surface-solid-secondary) 90%, var(--color-bg-hover));
     color: var(--color-text-primary);
   }
 }
@@ -169,10 +173,6 @@
 }
 
 @media (max-width: 960px) {
-  .layout {
-    gap: var(--space-2);
-  }
-
   .chromeStack {
     padding: var(--space-2) var(--space-3) 0;
   }
