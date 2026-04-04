@@ -36,7 +36,7 @@ func main() {
 		Bind:             container.Bindings(),
 		Mac: &mac.Options{
 			TitleBar: &mac.TitleBar{
-				TitlebarAppearsTransparent: false,
+				TitlebarAppearsTransparent: true,
 				HideTitle:                  true,
 				HideTitleBar:               false,
 				FullSizeContent:            true,
