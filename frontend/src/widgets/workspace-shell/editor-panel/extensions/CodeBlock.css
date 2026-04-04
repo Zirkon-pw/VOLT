@@ -126,6 +126,12 @@
   transform: translateY(0) scale(1);
 }
 
+.codeblock-lang-dropdown[data-presentation='sheet'] {
+  width: min(calc(100vw - 24px), 560px) !important;
+  max-height: min(52vh, 360px);
+  border-radius: calc(var(--radius-2xl) + 2px);
+}
+
 .codeblock-lang-search {
   width: 100%;
   padding: var(--space-2) var(--space-3);
@@ -189,6 +195,24 @@
   padding: var(--space-2) var(--space-3);
   color: var(--color-text-tertiary);
   font-size: var(--font-size-sm);
+}
+
+@media (max-width: 768px) {
+  .codeblock-lang-button {
+    top: var(--space-2);
+    right: var(--space-2);
+    min-height: 28px;
+  }
+
+  .codeblock-lang-search {
+    min-height: 42px;
+  }
+
+  .codeblock-lang-item {
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+  }
 }
 
 pre code[class*="language-"] {

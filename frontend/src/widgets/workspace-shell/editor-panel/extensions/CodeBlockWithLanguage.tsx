@@ -3,6 +3,7 @@ import { all, createLowlight } from 'lowlight';
 import type { Node as PmNode } from '@tiptap/pm/model';
 import type { EditorView, ViewMutationRecord } from '@tiptap/pm/view';
 import { translate } from '@shared/i18n';
+import { getFloatingMenuPresentation } from '../hooks/useEditorResponsiveMode';
 
 import './CodeBlock.css';
 
@@ -98,6 +99,7 @@ function createLanguageSelector(
   dropdown.style.width = `${DROPDOWN_WIDTH}px`;
   dropdown.dataset.open = 'false';
   dropdown.dataset.position = 'below';
+  dropdown.dataset.presentation = 'popover';
 
   const searchInput = document.createElement('input');
   searchInput.type = 'text';
@@ -148,6 +150,21 @@ function createLanguageSelector(
   }
 
   function updateDropdownPosition() {
+    const presentation = getFloatingMenuPresentation();
+    dropdown.dataset.presentation = presentation;
+
+    if (presentation === 'sheet') {
+      dropdown.style.left = `${VIEWPORT_PADDING}px`;
+      dropdown.style.top = 'auto';
+      dropdown.style.bottom = `${VIEWPORT_PADDING}px`;
+      dropdown.style.width = `calc(100vw - ${VIEWPORT_PADDING * 2}px)`;
+      dropdown.style.maxHeight = 'min(52vh, 360px)';
+      dropdown.dataset.position = 'below';
+      return;
+    }
+
+    dropdown.style.bottom = 'auto';
+    dropdown.style.width = `${DROPDOWN_WIDTH}px`;
     const buttonRect = button.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;

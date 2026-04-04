@@ -16,12 +16,13 @@ export interface SlashCommandMenuHandle {
 interface SlashCommandMenuProps {
   items: SlashCommandItem[];
   command: (item: SlashCommandItem) => void;
+  presentation?: 'popover' | 'sheet';
 }
 
 export const SlashCommandMenu = forwardRef<
   SlashCommandMenuHandle,
   SlashCommandMenuProps
->(({ items, command }, ref) => {
+>(({ items, command, presentation = 'popover' }, ref) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -61,7 +62,7 @@ export const SlashCommandMenu = forwardRef<
   return (
     <div
       ref={containerRef}
-      className={styles.menu}
+      className={`${styles.menu} ${presentation === 'sheet' ? styles.menuSheet : ''}`}
       data-testid="slash-command-menu"
       role="listbox"
     >

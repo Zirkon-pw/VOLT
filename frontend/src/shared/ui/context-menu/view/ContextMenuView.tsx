@@ -7,26 +7,31 @@ interface ContextMenuViewProps {
   items: ContextMenuItem[];
   position: { x: number; y: number };
   onClose: () => void;
+  presentation: 'popover' | 'sheet';
 }
 
-export function ContextMenuView({ items, position, onClose }: ContextMenuViewProps) {
+export function ContextMenuView({ items, position, onClose, presentation }: ContextMenuViewProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (presentation !== 'popover') {
+      return;
+    }
+
     const menu = menuRef.current;
     if (!menu) return;
 
     const rect = menu.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
+    const maxLeft = Math.max(4, viewportWidth - rect.width - 4);
+    const maxTop = Math.max(4, viewportHeight - rect.height - 4);
+    const clampedLeft = Math.min(Math.max(position.x, 4), maxLeft);
+    const clampedTop = Math.min(Math.max(position.y, 4), maxTop);
 
-    if (rect.right > viewportWidth) {
-      menu.style.left = `${viewportWidth - rect.width - 4}px`;
-    }
-    if (rect.bottom > viewportHeight) {
-      menu.style.top = `${viewportHeight - rect.height - 4}px`;
-    }
-  }, [position]);
+    menu.style.left = `${clampedLeft}px`;
+    menu.style.top = `${clampedTop}px`;
+  }, [position, presentation]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -57,10 +62,10 @@ export function ContextMenuView({ items, position, onClose }: ContextMenuViewPro
       />
       <div
         ref={menuRef}
-        className={styles.menu}
+        className={presentation === 'sheet' ? styles.sheet : styles.menu}
         data-testid="context-menu"
         role="menu"
-        style={{ left: position.x, top: position.y }}
+        style={presentation === 'popover' ? { left: position.x, top: position.y } : undefined}
       >
         {items.map((item, index) => {
           if (item.separator) {
@@ -70,10 +75,15 @@ export function ContextMenuView({ items, position, onClose }: ContextMenuViewPro
             <button
               key={index}
               type="button"
-              className={`${styles.item} ${item.danger ? styles.danger : ''}`}
+              className={[
+                styles.item,
+                item.danger ? styles.danger : '',
+                item.active ? styles.active : '',
+              ].filter(Boolean).join(' ')}
               data-testid="context-menu-item"
               disabled={item.disabled}
               role="menuitem"
+              aria-label={item.ariaLabel ?? item.label}
               onClick={() => {
                 item.onClick();
                 onClose();
@@ -85,6 +95,9 @@ export function ContextMenuView({ items, position, onClose }: ContextMenuViewPro
                 </span>
               )}
               <span className={styles.label}>{item.label}</span>
+              {item.shortcut && (
+                <span className={styles.shortcut}>{item.shortcut}</span>
+              )}
             </button>
           );
         })}

@@ -96,3 +96,17 @@
     transform: translateY(0);
   }
 }
+
+@media (max-width: 768px) {
+  .overlay {
+    align-items: flex-end;
+  }
+
+  .modal {
+    max-width: none;
+    max-height: min(72vh, 560px);
+    margin: 0;
+    padding: var(--space-4);
+    border-radius: calc(var(--radius-2xl) + 2px) calc(var(--radius-2xl) + 2px) 0 0;
+  }
+}

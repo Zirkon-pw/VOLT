@@ -7,10 +7,14 @@ export interface ContextMenuItem {
   danger?: boolean;
   disabled?: boolean;
   separator?: boolean;
+  shortcut?: string;
+  active?: boolean;
+  ariaLabel?: string;
 }
 
 export interface ContextMenuProps {
   items: ContextMenuItem[];
   position: { x: number; y: number };
   onClose: () => void;
+  presentation?: 'popover' | 'sheet';
 }

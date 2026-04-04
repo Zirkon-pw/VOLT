@@ -37,6 +37,11 @@
   transform: translate(-50%, 6px);
 }
 
+.addHandleTouch {
+  width: 26px;
+  height: 26px;
+}
+
 .selectionTarget {
   position: absolute;
   display: inline-flex;
@@ -72,6 +77,10 @@
   min-height: 24px;
 }
 
+.selectionTargetTouch {
+  border-radius: var(--radius-md);
+}
+
 .selectionTargetActive {
   background: color-mix(in srgb, var(--color-accent) 12%, var(--surface-solid-secondary));
   border-color: color-mix(in srgb, var(--color-accent) 30%, var(--color-border));
@@ -84,7 +93,9 @@
   z-index: calc(var(--z-editor-chrome) + 1);
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-1);
+  max-width: min(100%, 520px);
   padding: var(--space-1);
   border: 1px solid var(--surface-border-primary);
   border-radius: calc(var(--radius-xl) - 2px);
@@ -157,4 +168,28 @@
   background: var(--surface-solid-primary);
   box-shadow: none;
   overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    max-width: calc(100% - 24px);
+  }
+
+  .actionBtn,
+  .iconBtn {
+    min-height: 36px;
+    padding: 0 var(--space-3);
+    font-size: 12px;
+  }
+
+  .iconBtn {
+    width: 36px;
+  }
+
+  .colorPanel {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    margin-top: var(--space-2);
+  }
 }

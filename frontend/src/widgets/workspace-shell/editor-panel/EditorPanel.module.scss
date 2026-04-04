@@ -3,6 +3,7 @@
   display: flex;
   flex: 1;
   min-height: 0;
+  min-width: 0;
   background: transparent;
 }
 
@@ -104,4 +105,28 @@
 .empty-text {
   font-size: var(--font-size-md);
   color: var(--color-text-tertiary);
+}
+
+@media (max-width: 760px) {
+  .find-panel {
+    left: var(--space-2);
+    right: var(--space-2);
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  .find-input-wrap {
+    min-width: 0;
+    flex: 1 1 180px;
+  }
+
+  .find-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .find-count {
+    min-width: 0;
+    text-align: left;
+  }
 }

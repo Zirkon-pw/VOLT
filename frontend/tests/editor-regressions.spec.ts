@@ -126,7 +126,7 @@ test('closes the color picker on outside click', async ({ page }) => {
   const picker = page.getByTestId('color-picker');
   await expect(picker).toBeVisible();
 
-  await page.locator('[data-testid="markdown-editor-surface"]').click({ position: { x: 8, y: 8 } });
+  await editor.click({ position: { x: 12, y: 96 } });
   await expect(picker).toBeHidden();
 });
 
@@ -322,15 +322,15 @@ test('saves and reloads embed blocks without losing markdown structure', async (
     .toContain('<volt-embed url="https://example.com/article"></volt-embed>');
 });
 
-test('shows quiet table controls, lets you target rows and columns, and keeps the toolbar stable', async ({ page }) => {
+test('shows selection-driven table controls, lets you target rows and columns, and keeps the toolbar stable', async ({ page }) => {
   const firstCell = page.locator('.ProseMirror td').first();
 
-  await firstCell.hover();
+  await firstCell.click();
   await expect(page.getByTestId('table-add-col')).toBeVisible();
   await expect(page.getByTestId('table-add-row')).toBeVisible();
   await expect(page.getByTestId('table-select-col')).toBeVisible();
   await expect(page.getByTestId('table-select-row')).toBeVisible();
-  await expect(page.getByTestId('table-toolbar')).toBeHidden();
+  await expect(page.getByTestId('table-toolbar')).toBeVisible();
 
   await page.getByTestId('table-select-row').click();
   await expect(page.locator('.ProseMirror .selectedCell')).toHaveCount(2);
@@ -523,6 +523,80 @@ test('opens a custom context menu, closes it with escape and outside click, and 
   await expect(input).toBeVisible();
   await input.click({ button: 'right' });
   await expect(page.getByTestId('context-menu')).toHaveCount(0);
+});
+
+test('opens the editor context menu from the keyboard and launches the link picker', async ({ page }) => {
+  const editor = page.locator('.ProseMirror');
+
+  await editor.click();
+  await page.keyboard.press(`${modKey}+End`);
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Shift+F10');
+
+  await expect(page.getByTestId('context-menu')).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Undo' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Heading 1' })).toHaveCount(0);
+  await expect(page.getByRole('menuitem', { name: 'Table' })).toHaveCount(0);
+  await page.getByRole('menuitem', { name: 'Add link' }).click();
+  await expect(page.getByTestId('link-file-picker')).toBeVisible();
+});
+
+test('opens editor table actions from the context menu', async ({ page }) => {
+  const firstCell = page.locator('.ProseMirror td').first();
+
+  await firstCell.click({ button: 'right' });
+  await expect(page.getByTestId('context-menu')).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Select row' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Select column' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Select table' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Heading 1' })).toHaveCount(0);
+});
+
+test('keeps editor menus floating on small screens and still opens the touch context menu', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  const editor = page.locator('.ProseMirror');
+  await editor.click();
+  await page.keyboard.press(`${modKey}+a`);
+  await expect(page.getByTestId('text-bubble-menu')).toBeVisible();
+  await expect(page.getByTestId('text-bubble-sheet')).toHaveCount(0);
+  await expectNoAppOverflow(page);
+
+  await page.keyboard.press(`${modKey}+F`);
+  await expect(page.getByTestId('find-in-file-panel')).toBeVisible();
+  await expectNoAppOverflow(page);
+  await page.keyboard.press('Escape');
+
+  await page.evaluate(async () => {
+    const target = document.querySelector('.ProseMirror p');
+    if (!(target instanceof HTMLElement)) {
+      throw new Error('Editor paragraph not found');
+    }
+
+    const rect = target.getBoundingClientRect();
+    const x = rect.left + 28;
+    const y = rect.top + rect.height / 2;
+
+    target.dispatchEvent(new PointerEvent('pointerdown', {
+      bubbles: true,
+      pointerType: 'touch',
+      clientX: x,
+      clientY: y,
+    }));
+
+    await new Promise((resolve) => window.setTimeout(resolve, 450));
+
+    target.dispatchEvent(new PointerEvent('pointerup', {
+      bubbles: true,
+      pointerType: 'touch',
+      clientX: x,
+      clientY: y,
+    }));
+  });
+
+  await expect(page.getByTestId('context-menu')).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Undo' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Heading 1' })).toHaveCount(0);
 });
 
 test('sets the code block language from the floating selector and closes it on escape', async ({ page }) => {

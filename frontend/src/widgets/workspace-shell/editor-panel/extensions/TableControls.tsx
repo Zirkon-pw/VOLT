@@ -4,6 +4,7 @@ import { CellSelection, findCellPos, isInTable, selectedRect } from '@tiptap/pm/
 import { useI18n } from '@app/providers/I18nProvider';
 import { ColorPicker } from '@shared/ui/color-picker';
 import { Icon } from '@shared/ui/icon';
+import type { EditorResponsiveMode } from '../hooks/useEditorResponsiveMode';
 import styles from './TableControls.module.scss';
 
 const CELL_COLORS = [
@@ -21,6 +22,7 @@ interface TableControlsProps {
   editor: Editor;
   scrollContainer: HTMLElement | null;
   overlayContainer: HTMLElement | null;
+  mode: EditorResponsiveMode;
 }
 
 interface HandlePos {
@@ -58,7 +60,7 @@ interface AxisSelectionState {
   rect: ReturnType<typeof selectedRect>;
 }
 
-export function TableControls({ editor, scrollContainer, overlayContainer }: TableControlsProps) {
+export function TableControls({ editor, scrollContainer, overlayContainer, mode }: TableControlsProps) {
   const { t } = useI18n();
   const [addHandles, setAddHandles] = useState<HandlePos[]>([]);
   const [handlesVisible, setHandlesVisible] = useState(false);
@@ -85,10 +87,10 @@ export function TableControls({ editor, scrollContainer, overlayContainer }: Tab
     [editor.view.dom.parentElement, scrollContainer],
   );
 
-  const updatePositions = useCallback((hoveredCell?: CellInfo | null) => {
+  const updatePositions = useCallback(() => {
     const selectedTable = editor.isActive('table') ? findTableElement(editor) : null;
     const selectedCell = editor.isActive('table') ? findSelectedCell(editor) : null;
-    const tableNode = hoveredCell?.table ?? selectedCell?.table ?? selectedTable;
+    const tableNode = selectedCell?.table ?? selectedTable;
     const overlay = overlayContainer;
 
     if (!tableNode || !overlay) {
@@ -141,12 +143,11 @@ export function TableControls({ editor, scrollContainer, overlayContainer }: Tab
         top: clamp(tableRect.bottom - overlayRect.top, 10, Math.max(10, overlayHeight - 10)),
       },
     ]);
-    setHandlesVisible(Boolean(hoveredCell) || Boolean(selectedTable));
+    setHandlesVisible(Boolean(selectedCell) || Boolean(selectedTable));
 
     const axisSelection = getAxisSelectionState(editor);
-    const targetCell = hoveredCell ?? selectedCell;
-    if (targetCell) {
-      setSelectionTargets(buildSelectionTargets(targetCell, overlayRect, axisSelection));
+    if (selectedCell) {
+      setSelectionTargets(buildSelectionTargets(selectedCell, overlayRect, axisSelection, mode));
     } else {
       setSelectionTargets([]);
     }
@@ -161,19 +162,19 @@ export function TableControls({ editor, scrollContainer, overlayContainer }: Tab
     const toolbarHeight = toolbarRef.current?.offsetHeight ?? 48;
     const containerWidth = overlay.clientWidth;
     const containerHeight = overlay.clientHeight;
-    const minAnchorLeft = toolbarWidth + 12;
-    const maxAnchorLeft = Math.max(minAnchorLeft, containerWidth - 12);
-    const anchorLeft = tableRect.right - overlayRect.left;
+    const minLeftEdge = 12;
+    const maxLeftEdge = Math.max(minLeftEdge, containerWidth - toolbarWidth - 12);
+    const leftEdge = clamp(tableRect.right - overlayRect.left - toolbarWidth, minLeftEdge, maxLeftEdge);
 
     setToolbarPos({
-      left: Math.min(Math.max(anchorLeft, minAnchorLeft), maxAnchorLeft),
+      left: leftEdge + toolbarWidth,
       top: clamp(
         tableRect.top - overlayRect.top,
         toolbarHeight + 12,
         Math.max(toolbarHeight + 12, containerHeight - 12),
       ),
     });
-  }, [editor, overlayContainer]);
+  }, [editor, mode, overlayContainer]);
 
   useEffect(() => {
     const syncControls = () => {
@@ -203,30 +204,24 @@ export function TableControls({ editor, scrollContainer, overlayContainer }: Tab
   }, [editor, getContainer, updatePositions]);
 
   useEffect(() => {
-    const container = getContainer();
-    if (!container) {
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => updatePositions());
+
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+    };
+  }, [showColors, updatePositions]);
+
+  useEffect(() => {
+    if (!toolbarPos) {
       return undefined;
     }
 
-    const handleMouseMove = (event: PointerEvent) => {
-      const hoveredCell = getCellAtCoords(editor, event.clientX, event.clientY);
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => updatePositions(hoveredCell));
-    };
-
-    const handleMouseLeave = () => {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => updatePositions(null));
-    };
-
-    container.addEventListener('pointermove', handleMouseMove);
-    container.addEventListener('pointerleave', handleMouseLeave);
-
+    const frame = requestAnimationFrame(() => updatePositions());
     return () => {
-      container.removeEventListener('pointermove', handleMouseMove);
-      container.removeEventListener('pointerleave', handleMouseLeave);
+      cancelAnimationFrame(frame);
     };
-  }, [editor, getContainer, updatePositions]);
+  }, [toolbarPos?.left, toolbarPos?.top, updatePositions]);
 
   useEffect(() => {
     if (!showColors) {
@@ -296,7 +291,12 @@ export function TableControls({ editor, scrollContainer, overlayContainer }: Tab
           key={target.type}
           type="button"
           data-testid={`table-select-${target.type}`}
-          className={`${styles.selectionTarget} ${target.type === 'row' ? styles.selectionTargetRow : styles.selectionTargetCol} ${target.active ? styles.selectionTargetActive : ''}`}
+          className={[
+            styles.selectionTarget,
+            target.type === 'row' ? styles.selectionTargetRow : styles.selectionTargetCol,
+            target.active ? styles.selectionTargetActive : '',
+            mode === 'touch' ? styles.selectionTargetTouch : '',
+          ].filter(Boolean).join(' ')}
           style={{
             left: target.left,
             top: target.top,
@@ -305,7 +305,7 @@ export function TableControls({ editor, scrollContainer, overlayContainer }: Tab
           }}
           onMouseDown={stopInteraction}
           onClick={() => selectAxis(target.type, target.cellPos)}
-          title={target.type === 'row' ? 'Select row' : 'Select column'}
+          title={target.type === 'row' ? t('editor.table.selectRow') : t('editor.table.selectColumn')}
         >
           <Icon name={target.type === 'row' ? 'rows' : 'columns'} size={12} />
         </button>
@@ -316,7 +316,11 @@ export function TableControls({ editor, scrollContainer, overlayContainer }: Tab
           key={handle.type}
           type="button"
           data-testid={`table-add-${handle.type}`}
-          className={`${styles.addHandle} ${handle.type === 'row' ? styles.addHandleRow : styles.addHandleCol}`}
+          className={[
+            styles.addHandle,
+            handle.type === 'row' ? styles.addHandleRow : styles.addHandleCol,
+            mode === 'touch' ? styles.addHandleTouch : '',
+          ].filter(Boolean).join(' ')}
           style={{
             left: handle.left,
             top: handle.top,
@@ -467,16 +471,6 @@ function findSelectedCell(editor: Editor): CellInfo | null {
   return cell ? buildCellInfo(editor, cell) : null;
 }
 
-function getCellAtCoords(editor: Editor, clientX: number, clientY: number): CellInfo | null {
-  const element = document.elementFromPoint(clientX, clientY);
-  const cell = element instanceof HTMLElement ? element.closest('td,th') : null;
-  if (!(cell instanceof HTMLTableCellElement)) {
-    return null;
-  }
-
-  return buildCellInfo(editor, cell);
-}
-
 function findCellElementAtPos(editor: Editor, pos: number): HTMLTableCellElement | null {
   const domAtPos = editor.view.domAtPos(pos);
   const element = domAtPos.node instanceof HTMLElement ? domAtPos.node : domAtPos.node.parentElement;
@@ -534,9 +528,12 @@ function buildSelectionTargets(
   cellInfo: CellInfo,
   overlayRect: DOMRect,
   axisSelection: AxisSelectionState | null,
+  mode: EditorResponsiveMode,
 ): SelectionTarget[] {
   const tableRect = cellInfo.table.getBoundingClientRect();
   const cellRect = cellInfo.cell.getBoundingClientRect();
+  const targetThickness = mode === 'touch' ? 20 : 14;
+  const targetOffset = mode === 'touch' ? 24 : 18;
   const rowActive = Boolean(
     axisSelection?.rowSelection
     && cellInfo.rowIndex >= axisSelection.rect.top
@@ -552,18 +549,18 @@ function buildSelectionTargets(
     {
       type: 'col',
       left: Math.max(6, cellRect.left - overlayRect.left),
-      top: Math.max(6, tableRect.top - overlayRect.top - 18),
-      width: Math.max(22, cellRect.width),
-      height: 14,
+      top: Math.max(6, tableRect.top - overlayRect.top - targetOffset),
+      width: Math.max(mode === 'touch' ? 30 : 22, cellRect.width),
+      height: targetThickness,
       cellPos: cellInfo.cellPos,
       active: colActive,
     },
     {
       type: 'row',
-      left: Math.max(6, tableRect.left - overlayRect.left - 18),
+      left: Math.max(6, tableRect.left - overlayRect.left - targetOffset),
       top: Math.max(6, cellRect.top - overlayRect.top),
-      width: 14,
-      height: Math.max(22, cellRect.height),
+      width: targetThickness,
+      height: Math.max(mode === 'touch' ? 30 : 22, cellRect.height),
       cellPos: cellInfo.cellPos,
       active: rowActive,
     },

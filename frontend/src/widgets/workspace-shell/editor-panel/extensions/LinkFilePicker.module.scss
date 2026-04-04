@@ -114,3 +114,27 @@
   color: var(--color-text-tertiary);
   font-size: var(--font-size-sm);
 }
+
+@media (max-width: 768px) {
+  .overlay {
+    align-items: flex-end;
+    justify-content: stretch;
+    padding-top: 0;
+    background-color: color-mix(in srgb, var(--overlay-backdrop) 88%, transparent);
+  }
+
+  .picker {
+    width: 100%;
+    max-height: min(72vh, 560px);
+    border-radius: calc(var(--radius-2xl) + 2px) calc(var(--radius-2xl) + 2px) 0 0;
+  }
+
+  .searchWrap {
+    padding: var(--space-4);
+  }
+
+  .item {
+    min-height: 46px;
+    padding: var(--space-3) var(--space-4);
+  }
+}
