@@ -5,6 +5,7 @@ import { useI18n } from '@app/providers/I18nProvider';
 import { ensureExplicitRelativePath } from '@shared/lib/fileTree';
 import { ColorPicker } from '@shared/ui/color-picker';
 import { Icon } from '@shared/ui/icon';
+import type { EditorResponsiveMode } from '../hooks/useEditorResponsiveMode';
 import styles from './TextBubbleMenu.module.scss';
 
 const TEXT_COLORS = [
@@ -31,6 +32,7 @@ const HIGHLIGHT_COLORS = [
 
 interface TextBubbleMenuProps {
   editor: Editor;
+  mode: EditorResponsiveMode;
 }
 
 function normalizeUrl(raw: string): string {
@@ -46,12 +48,13 @@ function normalizeUrl(raw: string): string {
   return ensureExplicitRelativePath(trimmed);
 }
 
-export function TextBubbleMenu({ editor }: TextBubbleMenuProps) {
+export function TextBubbleMenu({ editor, mode }: TextBubbleMenuProps) {
   const { t } = useI18n();
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [showColors, setShowColors] = useState(false);
   const [showHighlight, setShowHighlight] = useState(false);
+  const [, setRevision] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
   const linkInputRef = useRef<HTMLInputElement>(null);
   const savedSelectionRef = useRef<{ from: number; to: number } | null>(null);
@@ -71,13 +74,49 @@ export function TextBubbleMenu({ editor }: TextBubbleMenuProps) {
     event.preventDefault();
   };
 
-  const closeTransientPanels = useCallback(() => {
+  const rememberSelection = useCallback(() => {
+    const { from, to } = editor.state.selection;
+    savedSelectionRef.current = { from, to };
+  }, [editor]);
+
+  const restoreSelection = useCallback(() => {
+    const saved = savedSelectionRef.current;
+    if (!saved) {
+      editor.chain().focus().run();
+      return;
+    }
+
+    try {
+      editor.chain().focus().setTextSelection(saved).run();
+    } catch {
+      editor.chain().focus().run();
+    }
+  }, [editor]);
+
+  const closeTransientPanels = useCallback(({ restoreEditorFocus = false }: { restoreEditorFocus?: boolean } = {}) => {
     setShowColors(false);
     setShowHighlight(false);
     setShowLinkInput(false);
     setLinkUrl('');
+    if (restoreEditorFocus) {
+      restoreSelection();
+    }
     savedSelectionRef.current = null;
-  }, []);
+  }, [restoreSelection]);
+
+  useEffect(() => {
+    const notifyUpdate = () => {
+      setRevision((current) => current + 1);
+    };
+
+    editor.on('selectionUpdate', notifyUpdate);
+    editor.on('update', notifyUpdate);
+
+    return () => {
+      editor.off('selectionUpdate', notifyUpdate);
+      editor.off('update', notifyUpdate);
+    };
+  }, [editor]);
 
   useEffect(() => {
     if (!showLinkInput && !showColors && !showHighlight) {
@@ -88,21 +127,21 @@ export function TextBubbleMenu({ editor }: TextBubbleMenuProps) {
       if (menuRef.current?.contains(event.target as Node)) {
         return;
       }
-      closeTransientPanels();
+      closeTransientPanels({ restoreEditorFocus: true });
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        closeTransientPanels();
+        closeTransientPanels({ restoreEditorFocus: true });
       }
     };
 
-    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('pointerdown', handlePointerDown);
     document.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [closeTransientPanels, showColors, showHighlight, showLinkInput]);
@@ -111,10 +150,10 @@ export function TextBubbleMenu({ editor }: TextBubbleMenuProps) {
   const toggleItalic = () => editor.chain().focus().toggleItalic().run();
   const toggleUnderline = () => editor.chain().focus().toggleUnderline().run();
   const toggleStrike = () => editor.chain().focus().toggleStrike().run();
+  const toggleCode = () => editor.chain().focus().toggleCode().run();
 
   const openLinkInput = () => {
-    const { from, to } = editor.state.selection;
-    savedSelectionRef.current = { from, to };
+    rememberSelection();
     const existingUrl = editor.getAttributes('link').href ?? '';
     setLinkUrl(existingUrl);
     setShowLinkInput(true);
@@ -159,9 +198,7 @@ export function TextBubbleMenu({ editor }: TextBubbleMenuProps) {
       applyLink();
     } else if (e.key === 'Escape') {
       e.preventDefault();
-      savedSelectionRef.current = null;
-      setShowLinkInput(false);
-      setLinkUrl('');
+      closeTransientPanels({ restoreEditorFocus: true });
     }
   };
 
@@ -182,12 +219,18 @@ export function TextBubbleMenu({ editor }: TextBubbleMenuProps) {
   };
 
   const toggleColorsPanel = () => {
+    if (!showColors) {
+      rememberSelection();
+    }
     setShowColors((v) => !v);
     setShowHighlight(false);
     setShowLinkInput(false);
   };
 
   const toggleHighlightPanel = () => {
+    if (!showHighlight) {
+      rememberSelection();
+    }
     setShowHighlight((v) => !v);
     setShowColors(false);
     setShowLinkInput(false);
@@ -196,135 +239,155 @@ export function TextBubbleMenu({ editor }: TextBubbleMenuProps) {
   const currentColor = editor.getAttributes('textStyle').color ?? null;
   const currentHighlight = editor.getAttributes('highlight').color ?? null;
 
-  return (
-    <BubbleMenu editor={editor} shouldShow={shouldShow} updateDelay={0}>
-      <div ref={menuRef} className={styles.menu} data-testid="text-bubble-menu">
-        <div className={styles.toolbar}>
-          <button
-            type="button"
-            className={`${styles.btn} ${editor.isActive('bold') ? styles.btnActive : ''}`}
-            onMouseDown={handleToolbarMouseDown}
-            onClick={toggleBold}
-            title="Bold"
-          >
-            <Icon name="bold" size={14} />
-          </button>
-          <button
-            type="button"
-            className={`${styles.btn} ${editor.isActive('italic') ? styles.btnActive : ''}`}
-            onMouseDown={handleToolbarMouseDown}
-            onClick={toggleItalic}
-            title="Italic"
-          >
-            <Icon name="italic" size={14} />
-          </button>
-          <button
-            type="button"
-            className={`${styles.btn} ${editor.isActive('underline') ? styles.btnActive : ''}`}
-            onMouseDown={handleToolbarMouseDown}
-            onClick={toggleUnderline}
-            title="Underline"
-          >
-            <span className={styles.underlineIcon}>U</span>
-          </button>
-          <button
-            type="button"
-            className={`${styles.btn} ${editor.isActive('strike') ? styles.btnActive : ''}`}
-            onMouseDown={handleToolbarMouseDown}
-            onClick={toggleStrike}
-            title="Strikethrough"
-          >
-            <Icon name="strikethrough" size={14} />
-          </button>
+  const menuClassName = [
+    styles.menu,
+    mode !== 'desktop' ? styles.menuCompact : '',
+  ].filter(Boolean).join(' ');
 
-          <div className={styles.divider} />
+  const menuBody = (
+    <div ref={menuRef} className={menuClassName} data-testid="text-bubble-menu">
+      <div className={styles.toolbar}>
+        <button
+          type="button"
+          className={`${styles.btn} ${editor.isActive('bold') ? styles.btnActive : ''}`}
+          onMouseDown={handleToolbarMouseDown}
+          onClick={toggleBold}
+          title="Bold"
+        >
+          <Icon name="bold" size={14} />
+        </button>
+        <button
+          type="button"
+          className={`${styles.btn} ${editor.isActive('italic') ? styles.btnActive : ''}`}
+          onMouseDown={handleToolbarMouseDown}
+          onClick={toggleItalic}
+          title="Italic"
+        >
+          <Icon name="italic" size={14} />
+        </button>
+        <button
+          type="button"
+          className={`${styles.btn} ${editor.isActive('underline') ? styles.btnActive : ''}`}
+          onMouseDown={handleToolbarMouseDown}
+          onClick={toggleUnderline}
+          title="Underline"
+        >
+          <span className={styles.underlineIcon}>U</span>
+        </button>
+        <button
+          type="button"
+          className={`${styles.btn} ${editor.isActive('strike') ? styles.btnActive : ''}`}
+          onMouseDown={handleToolbarMouseDown}
+          onClick={toggleStrike}
+          title="Strikethrough"
+        >
+          <Icon name="strikethrough" size={14} />
+        </button>
+        <button
+          type="button"
+          data-testid="text-bubble-inline-code"
+          className={`${styles.btn} ${editor.isActive('code') ? styles.btnActive : ''}`}
+          onMouseDown={handleToolbarMouseDown}
+          onClick={toggleCode}
+          title={t('editor.bubble.inlineCode')}
+        >
+          <Icon name="code" size={14} />
+        </button>
 
+        <div className={styles.divider} />
+
+        <button
+          type="button"
+          className={`${styles.btn} ${editor.isActive('link') ? styles.btnActive : ''}`}
+          onMouseDown={handleToolbarMouseDown}
+          onClick={openLinkInput}
+          title="Link"
+        >
+          <Icon name="link" size={14} />
+        </button>
+
+        <div className={styles.divider} />
+
+        <button
+          type="button"
+          className={`${styles.btn} ${showColors || currentColor ? styles.btnActive : ''}`}
+          onMouseDown={handleToolbarMouseDown}
+          onClick={toggleColorsPanel}
+          title="Text color"
+        >
+          <span className={styles.colorIndicator} style={{ borderBottomColor: currentColor ?? 'var(--color-text-primary)' }}>
+            A
+          </span>
+        </button>
+        <button
+          type="button"
+          className={`${styles.btn} ${showHighlight || editor.isActive('highlight') ? styles.btnActive : ''}`}
+          onMouseDown={handleToolbarMouseDown}
+          onClick={toggleHighlightPanel}
+          title="Highlight"
+        >
+          <span className={styles.highlightIcon}>H</span>
+        </button>
+      </div>
+
+      {showLinkInput && (
+        <div className={styles.linkInput}>
+          <input
+            ref={linkInputRef}
+            type="url"
+            value={linkUrl}
+            data-native-context-menu="true"
+            onChange={(e) => setLinkUrl(e.target.value)}
+            onKeyDown={handleLinkKeyDown}
+            placeholder="https://..."
+            className={styles.linkField}
+          />
           <button
             type="button"
-            className={`${styles.btn} ${editor.isActive('link') ? styles.btnActive : ''}`}
+            className={styles.linkBtn}
             onMouseDown={handleToolbarMouseDown}
-            onClick={openLinkInput}
-            title="Link"
+            onClick={applyLink}
+            title="Apply link"
           >
-            <Icon name="link" size={14} />
+            <Icon name="checkSquare" size={14} />
           </button>
-
-          <div className={styles.divider} />
-
-          <button
-            type="button"
-            className={`${styles.btn} ${showColors || currentColor ? styles.btnActive : ''}`}
-            onMouseDown={handleToolbarMouseDown}
-            onClick={toggleColorsPanel}
-            title="Text color"
-          >
-            <span className={styles.colorIndicator} style={{ borderBottomColor: currentColor ?? 'var(--color-text-primary)' }}>
-              A
-            </span>
-          </button>
-          <button
-            type="button"
-            className={`${styles.btn} ${showHighlight || editor.isActive('highlight') ? styles.btnActive : ''}`}
-            onMouseDown={handleToolbarMouseDown}
-            onClick={toggleHighlightPanel}
-            title="Highlight"
-          >
-            <span className={styles.highlightIcon}>H</span>
-          </button>
-        </div>
-
-        {showLinkInput && (
-          <div className={styles.linkInput}>
-            <input
-              ref={linkInputRef}
-              type="url"
-              value={linkUrl}
-              onChange={(e) => setLinkUrl(e.target.value)}
-              onKeyDown={handleLinkKeyDown}
-              placeholder="https://..."
-              className={styles.linkField}
-            />
+          {editor.isActive('link') && (
             <button
               type="button"
-              className={styles.linkBtn}
+              className={`${styles.removeLinkButton} ${styles.linkBtnDanger}`}
               onMouseDown={handleToolbarMouseDown}
-              onClick={applyLink}
-              title="Apply link"
+              onClick={removeLink}
             >
-              <Icon name="checkSquare" size={14} />
+              {t('editor.link.remove')}
             </button>
-            {editor.isActive('link') && (
-              <button
-                type="button"
-                className={`${styles.removeLinkButton} ${styles.linkBtnDanger}`}
-                onMouseDown={handleToolbarMouseDown}
-                onClick={removeLink}
-              >
-                {t('editor.link.remove')}
-              </button>
-            )}
-          </div>
-        )}
+          )}
+        </div>
+      )}
 
-        {showColors && (
-          <ColorPicker
-            value={currentColor}
-            onChange={setColor}
-            onPresetClick={() => setShowColors(false)}
-            presets={TEXT_COLORS}
-          />
-        )}
+      {showColors && (
+        <ColorPicker
+          value={currentColor}
+          onChange={setColor}
+          onPresetClick={() => setShowColors(false)}
+          presets={TEXT_COLORS}
+        />
+      )}
 
-        {showHighlight && (
-          <ColorPicker
-            value={currentHighlight}
-            onChange={setHighlight}
-            onPresetClick={() => setShowHighlight(false)}
-            presets={HIGHLIGHT_COLORS}
-            showAlpha
-          />
-        )}
-      </div>
+      {showHighlight && (
+        <ColorPicker
+          value={currentHighlight}
+          onChange={setHighlight}
+          onPresetClick={() => setShowHighlight(false)}
+          presets={HIGHLIGHT_COLORS}
+          showAlpha
+        />
+      )}
+    </div>
+  );
+
+  return (
+    <BubbleMenu editor={editor} shouldShow={shouldShow} updateDelay={0}>
+      {menuBody}
     </BubbleMenu>
   );
 }

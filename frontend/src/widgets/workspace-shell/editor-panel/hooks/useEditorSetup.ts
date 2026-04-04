@@ -1,5 +1,6 @@
 import { useEditor, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import Code from '@tiptap/extension-code';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import TaskList from '@tiptap/extension-task-list';
@@ -16,9 +17,10 @@ import Highlight from '@tiptap/extension-highlight';
 import { Markdown } from 'tiptap-markdown';
 import 'katex/dist/katex.min.css';
 import { translate } from '@shared/i18n';
+import { isSingleHttpUrl } from '@shared/lib/remoteUrl';
 import { SlashCommand } from '../extensions/slashCommand';
 import { CodeBlockWithLanguage } from '../extensions/CodeBlockWithLanguage';
-import { MathInline } from '../extensions/MathInline';
+import { EmbedBlock } from '../extensions/EmbedBlock';
 import { MathBlock } from '../extensions/MathBlock';
 import { FindInFileHighlights } from '../extensions/FindInFileHighlights';
 
@@ -37,8 +39,10 @@ export function useEditorSetup({
     editable,
     extensions: [
       StarterKit.configure({
+        code: false,
         codeBlock: false,
       }),
+      Code,
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
@@ -81,7 +85,7 @@ export function useEditorSetup({
       Color,
       Underline,
       Highlight.configure({ multicolor: true }),
-      MathInline,
+      EmbedBlock,
       MathBlock,
       FindInFileHighlights,
       Markdown.configure({
@@ -93,6 +97,34 @@ export function useEditorSetup({
     ],
     onUpdate: ({ editor: ed }) => {
       onUpdate?.(ed as Editor);
+    },
+    editorProps: {
+      handlePaste(view, event) {
+        const text = event.clipboardData?.getData('text/plain') ?? '';
+        if (!isSingleHttpUrl(text)) {
+          return false;
+        }
+
+        const { selection, schema } = view.state;
+        if (!selection.empty) {
+          return false;
+        }
+
+        const parent = selection.$from.parent;
+        if (parent.type.name !== 'paragraph' || parent.textContent.trim() !== '') {
+          return false;
+        }
+
+        const embedBlock = schema.nodes.embedBlock;
+        if (!embedBlock) {
+          return false;
+        }
+
+        event.preventDefault();
+        const tr = view.state.tr.replaceSelectionWith(embedBlock.create({ url: text.trim() })).scrollIntoView();
+        view.dispatch(tr);
+        return true;
+      },
     },
   });
 

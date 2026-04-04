@@ -28,6 +28,7 @@ type Container struct {
 	pluginCatalog   *wailshandler.PluginCatalogHandler
 	pluginRuntime   *wailshandler.PluginRuntimeHandler
 	imageHandler    *wailshandler.ImageHandler
+	linkPreview     *wailshandler.LinkPreviewHandler
 	settingsHandler *wailshandler.SettingsHandler
 }
 
@@ -60,6 +61,7 @@ func NewContainer() *Container {
 	manager := commandbase.MustNewManager(
 		commandvolt.NewListCommand(voltStore),
 		commandvolt.NewCreateCommand(voltStore),
+		commandvolt.NewCreateInParentCommand(voltStore),
 		commandvolt.NewDeleteCommand(voltStore),
 		commandfile.NewReadCommand(fileRepo),
 		commandfile.NewSaveCommand(fileRepo),
@@ -88,6 +90,7 @@ func NewContainer() *Container {
 		commandssystem.NewCopyImageCommand(),
 		commandssystem.NewSaveImageBase64Command(),
 		commandssystem.NewReadImageBase64Command(),
+		commandssystem.NewResolveLinkPreviewCommand(),
 		commandssystem.NewStartPluginProcessCommand(processService),
 		commandssystem.NewCancelPluginProcessCommand(processService),
 	)
@@ -100,6 +103,7 @@ func NewContainer() *Container {
 	pluginCatalog := wailshandler.NewPluginCatalogHandler(manager, localization)
 	pluginRuntime := wailshandler.NewPluginRuntimeHandler(manager, localization)
 	imageHandler := wailshandler.NewImageHandler(manager, localization)
+	linkPreview := wailshandler.NewLinkPreviewHandler(manager, localization)
 	settingsHandler := wailshandler.NewSettingsHandler(manager)
 
 	return &Container{
@@ -111,6 +115,7 @@ func NewContainer() *Container {
 		pluginCatalog:   pluginCatalog,
 		pluginRuntime:   pluginRuntime,
 		imageHandler:    imageHandler,
+		linkPreview:     linkPreview,
 		settingsHandler: settingsHandler,
 	}
 }
@@ -124,6 +129,7 @@ func (c *Container) Bindings() []interface{} {
 		c.pluginCatalog,
 		c.pluginRuntime,
 		c.imageHandler,
+		c.linkPreview,
 		c.settingsHandler,
 	}
 }

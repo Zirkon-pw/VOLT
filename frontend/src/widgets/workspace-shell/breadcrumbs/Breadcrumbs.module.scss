@@ -1,18 +1,20 @@
 .bar {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  height: 28px;
-  padding: 0 var(--space-3);
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-bg-secondary);
-  gap: var(--space-1);
+  min-height: 34px;
+  width: fit-content;
+  padding: 0;
+  background: none;
+  gap: var(--space-2);
   flex-shrink: 0;
+  min-width: 0;
+  box-shadow: none;
 }
 
 .navButtons {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-1);
   margin-right: var(--space-2);
 }
 
@@ -20,17 +22,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: 12px;
   background: transparent;
   color: var(--color-text-secondary);
   cursor: pointer;
   transition: background-color var(--transition-fast), color var(--transition-fast);
 
   &:hover:not(:disabled) {
-    background: var(--color-bg-hover);
+    background: color-mix(in srgb, var(--surface-solid-secondary) 90%, var(--color-bg-hover));
     color: var(--color-text-primary);
   }
 
@@ -42,11 +44,17 @@
 }
 
 .crumbs {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-1);
   min-width: 0;
   overflow: hidden;
+  width: fit-content;
+  max-width: min(100%, 920px);
+  padding: var(--space-1);
+  border-radius: 999px;
+  background: var(--surface-solid-secondary);
+  border: none;
 }
 
 .separator {
@@ -55,6 +63,11 @@
 }
 
 .crumb {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  height: 26px;
+  padding: 0 var(--space-2);
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   white-space: nowrap;
@@ -63,9 +76,27 @@
 }
 
 .activeCrumb {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  height: 26px;
+  padding: 0 var(--space-2);
+  border-radius: 999px;
+  background: var(--surface-solid-primary);
   font-size: var(--font-size-xs);
-  color: var(--color-text-primary);
+  color: var(--color-accent);
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+@media (max-width: 800px) {
+  .bar {
+    padding: 0 var(--space-2);
+  }
+
+  .navButtons {
+    margin-right: var(--space-1);
+  }
 }

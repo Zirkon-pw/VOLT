@@ -1,6 +1,4 @@
 export const SIDEBAR = {
-  MIN_WIDTH: 180,
-  MAX_WIDTH: 400,
   DEFAULT_WIDTH: 240,
   STORAGE_KEY: 'volt-sidebar-width',
   BUTTON_ORDER_STORAGE_KEY: 'volt-sidebar-button-order',

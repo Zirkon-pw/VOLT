@@ -336,6 +336,51 @@ export namespace settings {
 
 }
 
+export namespace system {
+	
+	export class ResolveLinkPreviewResponse {
+	    Kind: string;
+	    URL: string;
+	    Title: string;
+	    Description: string;
+	    SiteName: string;
+	    ImageURL: string;
+	    Owner: string;
+	    Repo: string;
+	    Stars: number;
+	    Language: string;
+	    SourceURL: string;
+	    EmbedURL: string;
+	    MimeType: string;
+	    PosterURL: string;
+	    Provider: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ResolveLinkPreviewResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Kind = source["Kind"];
+	        this.URL = source["URL"];
+	        this.Title = source["Title"];
+	        this.Description = source["Description"];
+	        this.SiteName = source["SiteName"];
+	        this.ImageURL = source["ImageURL"];
+	        this.Owner = source["Owner"];
+	        this.Repo = source["Repo"];
+	        this.Stars = source["Stars"];
+	        this.Language = source["Language"];
+	        this.SourceURL = source["SourceURL"];
+	        this.EmbedURL = source["EmbedURL"];
+	        this.MimeType = source["MimeType"];
+	        this.PosterURL = source["PosterURL"];
+	        this.Provider = source["Provider"];
+	    }
+	}
+
+}
+
 export namespace volt {
 	
 	export class Volt {

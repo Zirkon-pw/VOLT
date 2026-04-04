@@ -1,22 +1,22 @@
 .picker {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 8px;
+  gap: var(--space-3);
+  padding: var(--space-3);
   width: 240px;
 }
 
 .presets {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .presetSwatch {
   width: 20px;
   height: 20px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
+  border: 1px solid color-mix(in srgb, var(--color-border) 92%, transparent);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -24,15 +24,16 @@
   transition: transform 0.1s;
   color: var(--color-text-tertiary);
   padding: 0;
+  box-shadow: none;
 
   &:hover {
-    transform: scale(1.15);
+    transform: scale(1.08);
   }
 }
 
 .presetActive {
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 1px var(--color-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 22%, transparent);
 }
 
 .saturationArea {
@@ -63,7 +64,7 @@
   height: 12px;
   border: 2px solid #fff;
   border-radius: 50%;
-  box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
+  box-shadow: none;
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
@@ -114,10 +115,10 @@
   top: 50%;
   width: 14px;
   height: 14px;
-  background: #fff;
+  background: var(--color-surface-raised);
   border: 2px solid var(--color-border-strong);
   border-radius: 50%;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
@@ -125,20 +126,20 @@
 .inputRow {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .preview {
   width: 24px;
   height: 24px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
+  border: 1px solid color-mix(in srgb, var(--color-border) 92%, transparent);
   flex-shrink: 0;
 }
 
 .fieldGroup {
   display: flex;
-  gap: 4px;
+  gap: var(--space-1);
   flex: 1;
   min-width: 0;
 }
@@ -147,7 +148,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-1);
   flex: 1;
   min-width: 0;
 
@@ -160,17 +161,18 @@
   input {
     width: 100%;
     min-width: 0;
-    padding: 2px 3px;
+    padding: 2px var(--space-1);
     font-size: var(--font-size-xs);
     text-align: center;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
-    background: var(--color-bg-primary);
+    background: color-mix(in srgb, var(--color-surface-raised) 88%, var(--color-bg-primary));
     color: var(--color-text-primary);
     outline: none;
 
     &:focus {
       border-color: var(--color-accent);
+      box-shadow: 0 0 0 2px var(--color-focus-ring);
     }
 
     /* Hide number spinners */

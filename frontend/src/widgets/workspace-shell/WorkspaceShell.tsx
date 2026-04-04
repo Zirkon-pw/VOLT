@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTabStore, type FileTab } from '@entities/tab';
 import { useNavigationStore } from '@entities/navigation';
+import { type PaneId, useWorkspaceViewStore } from '@entities/workspace-view';
 import { SearchPopup } from '@features/workspace-search';
+import { usePluginRegistryStore } from '@entities/plugin';
+import { Icon } from '@shared/ui/icon';
 import { PluginPageHost } from '@widgets/plugin-page';
 import { SIDEBAR } from '@shared/config/constants';
 import { Breadcrumbs } from './breadcrumbs/Breadcrumbs';
@@ -17,15 +20,26 @@ interface WorkspaceShellProps {
   voltPath: string;
 }
 
+const EMPTY_TABS: FileTab[] = [];
+
 export function WorkspaceShell({ voltId, voltPath }: WorkspaceShellProps) {
-  const activeTabs = useTabStore((state) => state.activeTabs);
-  const allTabs = useTabStore((state) => state.tabs);
+  const activeTabId = useTabStore((state) => state.activeTabs[voltId] ?? null);
+  const voltTabs = useTabStore((state) => state.tabs[voltId] ?? EMPTY_TABS);
+  const setActiveTab = useTabStore((state) => state.setActiveTab);
+  const workspaceView = useWorkspaceViewStore((state) => state.views[voltId]);
+  const setActivePane = useWorkspaceViewStore((state) => state.setActivePane);
+  const setSplitRatio = useWorkspaceViewStore((state) => state.setSplitRatio);
+  const closeSecondary = useWorkspaceViewStore((state) => state.closeSecondary);
+  const syncTabs = useWorkspaceViewStore((state) => state.syncTabs);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchInitialQuery, setSearchInitialQuery] = useState('');
   const [searchOpenToken, setSearchOpenToken] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem(SIDEBAR.COLLAPSED_STORAGE_KEY) === 'true',
   );
+  const hasToolbarButtons = usePluginRegistryStore((state) => state.toolbarButtons.length > 0);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const splitDraggingRef = useRef(false);
 
   const openSearch = useCallback((initialQuery = '') => {
     setSearchInitialQuery(initialQuery);
@@ -56,26 +70,105 @@ export function WorkspaceShell({ voltId, voltPath }: WorkspaceShellProps) {
     onOpenFindInFile: openFindInFile,
   });
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => e.preventDefault();
-    document.addEventListener('contextmenu', handler);
-    return () => document.removeEventListener('contextmenu', handler);
-  }, []);
-
-  const activeTabId = activeTabs[voltId] ?? null;
-  const voltTabs: FileTab[] = allTabs[voltId] ?? [];
   const activeTab = voltTabs.find((tab) => tab.id === activeTabId) ?? null;
-
-  const isPluginTab = activeTab?.type === 'plugin';
+  const primaryTab = voltTabs.find((tab) => tab.id === workspaceView?.primaryTabId) ?? activeTab ?? null;
+  const secondaryTab = voltTabs.find((tab) => tab.id === workspaceView?.secondaryTabId) ?? null;
   const activeFilePath = activeTab?.type === 'file' ? activeTab.filePath : null;
+  const hasChromeStack = voltTabs.length > 0 || hasToolbarButtons || Boolean(primaryTab?.filePath);
+  const splitRatio = workspaceView?.splitRatio ?? 0.5;
+  const hasSecondaryPane = Boolean(secondaryTab);
 
   const pushNavigation = useNavigationStore((state) => state.push);
+
+  useEffect(() => {
+    syncTabs(voltId, voltTabs, activeTabId);
+  }, [activeTabId, syncTabs, voltId, voltTabs]);
 
   useEffect(() => {
     if (activeFilePath) {
       pushNavigation(voltId, activeFilePath);
     }
   }, [activeFilePath, voltId, pushNavigation]);
+
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => {
+      if (!splitDraggingRef.current) {
+        return;
+      }
+
+      const content = contentRef.current;
+      if (!content) {
+        return;
+      }
+
+      const rect = content.getBoundingClientRect();
+      if (rect.width <= 0) {
+        return;
+      }
+
+      const nextRatio = (event.clientX - rect.left) / rect.width;
+      setSplitRatio(voltId, nextRatio);
+    };
+
+    const handleMouseUp = () => {
+      if (!splitDraggingRef.current) {
+        return;
+      }
+
+      splitDraggingRef.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [setSplitRatio, voltId]);
+
+  const focusPane = useCallback((paneId: PaneId, tab: FileTab | null) => {
+    setActivePane(voltId, paneId);
+    if (tab) {
+      setActiveTab(voltId, tab.id);
+    }
+  }, [setActivePane, setActiveTab, voltId]);
+
+  const startSplitResize = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    splitDraggingRef.current = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, []);
+
+  const renderTabSurface = useCallback((tab: FileTab | null) => {
+    if (!tab) {
+      return (
+        <div className={styles.emptyPane}>
+          <span className={styles.emptyPaneText}>Open a file to start working.</span>
+        </div>
+      );
+    }
+
+    if (tab.type === 'plugin') {
+      return (
+        <PluginPageHost
+          pageId={tab.pluginPageId ?? ''}
+          className={styles.pluginPage}
+        />
+      );
+    }
+
+    return (
+      <FileViewHost
+        voltId={voltId}
+        voltPath={voltPath}
+        filePath={tab.filePath}
+      />
+    );
+  }, [voltId, voltPath]);
 
   return (
     <div className={styles.layout}>
@@ -87,22 +180,73 @@ export function WorkspaceShell({ voltId, voltPath }: WorkspaceShellProps) {
         onToggleCollapse={toggleSidebar}
       />
       <div className={styles.main}>
-        <FileTabs voltId={voltId} />
-        <WorkspaceToolbar />
-        <Breadcrumbs voltId={voltId} />
-        <div className={styles.content}>
-          {isPluginTab ? (
-            <PluginPageHost
-              pageId={activeTab?.pluginPageId ?? ''}
-              className={styles.pluginPage}
-            />
-          ) : (
-            <FileViewHost
-              voltId={voltId}
-              voltPath={voltPath}
-              filePath={activeFilePath}
-            />
-          )}
+        {hasChromeStack ? (
+          <div className={styles.chromeStack}>
+            <FileTabs voltId={voltId} />
+            <WorkspaceToolbar />
+          </div>
+        ) : null}
+        <div ref={contentRef} className={styles.content}>
+          <div className={styles.breadcrumbsOverlay}>
+            <Breadcrumbs voltId={voltId} />
+          </div>
+          <div className={styles.paneLayout}>
+            <div
+              className={[
+                styles.workspacePane,
+                workspaceView?.activePane === 'primary' ? styles.workspacePaneActive : '',
+              ].filter(Boolean).join(' ')}
+              style={hasSecondaryPane ? { flexBasis: `${splitRatio * 100}%` } : undefined}
+              onMouseDownCapture={() => focusPane('primary', primaryTab)}
+              data-pane-id="primary"
+              data-tab-id={primaryTab?.id ?? ''}
+              data-testid="workspace-pane-primary"
+            >
+              {renderTabSurface(primaryTab)}
+            </div>
+            {hasSecondaryPane ? (
+              <>
+                <div
+                  className={styles.splitSeam}
+                  onMouseDown={startSplitResize}
+                  role="separator"
+                  aria-orientation="vertical"
+                  aria-label="Resize workspace panes"
+                  data-testid="workspace-split-seam"
+                >
+                  <button
+                    type="button"
+                    className={styles.secondaryClose}
+                    data-testid="workspace-secondary-close"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      closeSecondary(voltId);
+                      if (primaryTab) {
+                        setActiveTab(voltId, primaryTab.id);
+                      }
+                    }}
+                    aria-label="Close secondary pane"
+                    title="Close secondary pane"
+                  >
+                    <Icon name="close" size={14} />
+                  </button>
+                </div>
+                <div
+                  className={[
+                    styles.workspacePane,
+                    workspaceView?.activePane === 'secondary' ? styles.workspacePaneActive : '',
+                  ].filter(Boolean).join(' ')}
+                  style={{ flexBasis: `${(1 - splitRatio) * 100}%` }}
+                  onMouseDownCapture={() => focusPane('secondary', secondaryTab)}
+                  data-pane-id="secondary"
+                  data-tab-id={secondaryTab?.id ?? ''}
+                  data-testid="workspace-pane-secondary"
+                >
+                  {renderTabSurface(secondaryTab)}
+                </div>
+              </>
+            ) : null}
+          </div>
         </div>
       </div>
       <SearchPopup

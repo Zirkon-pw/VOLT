@@ -18,9 +18,9 @@
 
 .permission-item {
   padding: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-secondary);
+  border: 1px solid color-mix(in srgb, var(--color-border) 90%, transparent);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface-solid-secondary) 94%, var(--color-bg-secondary));
 }
 
 .permission-label {
@@ -45,16 +45,16 @@
 .secondary-button,
 .primary-button {
   padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
   cursor: pointer;
   transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .secondary-button {
-  border: 1px solid var(--color-border);
-  background: transparent;
-  color: var(--color-text-secondary);
+  border: 1px solid color-mix(in srgb, var(--color-border) 90%, transparent);
+  background: color-mix(in srgb, var(--color-surface-raised) 84%, var(--color-bg-secondary));
+  color: var(--color-text-primary);
 
   &:hover {
     background: var(--color-bg-hover);
@@ -65,9 +65,9 @@
 .primary-button {
   border: 1px solid var(--color-accent);
   background: var(--color-accent);
-  color: white;
+  color: var(--color-accent-text);
 
   &:hover {
-    filter: brightness(0.96);
+    background: var(--color-accent-hover);
   }
 }

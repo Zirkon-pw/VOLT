@@ -1,32 +1,43 @@
 .overlay {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--z-dialog-overlay);
   display: flex;
   align-items: flex-start;
   justify-content: center;
   padding-top: 20vh;
-  background-color: rgba(0, 0, 0, 0.25);
+  background-color: var(--overlay-backdrop);
 }
 
 .picker {
+  position: relative;
   width: 420px;
   max-height: 400px;
   display: flex;
   flex-direction: column;
-  background-color: var(--color-bg-primary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.16);
+  isolation: isolate;
+  background: var(--surface-solid-primary);
+  border: 1px solid var(--surface-border-primary);
+  border-radius: var(--radius-2xl);
+  box-shadow: none;
   overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-border) 16%, transparent);
+  }
 }
 
 .searchWrap {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-3);
+  border-bottom: 1px solid color-mix(in srgb, var(--chrome-border) 86%, transparent);
   color: var(--color-text-tertiary);
 }
 
@@ -54,27 +65,29 @@
   align-items: center;
   gap: var(--space-3);
   width: 100%;
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-2) var(--space-3);
   border: none;
+  border-radius: 16px;
   background: transparent;
   cursor: pointer;
   text-align: left;
   color: var(--color-text-secondary);
-  transition: background-color var(--transition-fast);
+  transition: background-color var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
 
   &:hover {
-    background-color: var(--color-bg-hover);
+    background: var(--color-bg-hover);
   }
 }
 
 .itemSelected {
-  background-color: var(--color-bg-hover);
+  background: var(--color-bg-hover);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--surface-border-secondary) 84%, transparent);
 }
 
 .itemText {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--space-1);
   min-width: 0;
 }
 
@@ -100,4 +113,28 @@
   text-align: center;
   color: var(--color-text-tertiary);
   font-size: var(--font-size-sm);
+}
+
+@media (max-width: 768px) {
+  .overlay {
+    align-items: flex-end;
+    justify-content: stretch;
+    padding-top: 0;
+    background-color: color-mix(in srgb, var(--overlay-backdrop) 88%, transparent);
+  }
+
+  .picker {
+    width: 100%;
+    max-height: min(72vh, 560px);
+    border-radius: calc(var(--radius-2xl) + 2px) calc(var(--radius-2xl) + 2px) 0 0;
+  }
+
+  .searchWrap {
+    padding: var(--space-4);
+  }
+
+  .item {
+    min-height: 46px;
+    padding: var(--space-3) var(--space-4);
+  }
 }

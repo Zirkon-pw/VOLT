@@ -1,0 +1,33 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 0;
+  padding: var(--space-2);
+  box-sizing: border-box;
+  background: var(--surface-shell-root);
+  border-radius: var(--window-radius);
+  border: none;
+}
+
+.surface {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--surface-solid-primary);
+  border: none;
+  border-radius: var(--surface-radius);
+}
+
+.message {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}

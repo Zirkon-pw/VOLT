@@ -3,8 +3,7 @@
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-bg-secondary);
+  background: color-mix(in srgb, var(--color-surface-chrome) 76%, var(--color-bg-secondary));
   flex-shrink: 0;
 }
 
@@ -14,9 +13,10 @@
   justify-content: space-between;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-primary);
+  border: 1px solid color-mix(in srgb, var(--color-border) 90%, transparent);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-surface-raised) 88%, var(--color-bg-primary));
+  box-shadow: none;
 }
 
 .main {

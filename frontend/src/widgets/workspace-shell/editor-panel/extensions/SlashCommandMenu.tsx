@@ -16,12 +16,13 @@ export interface SlashCommandMenuHandle {
 interface SlashCommandMenuProps {
   items: SlashCommandItem[];
   command: (item: SlashCommandItem) => void;
+  presentation?: 'popover' | 'sheet';
 }
 
 export const SlashCommandMenu = forwardRef<
   SlashCommandMenuHandle,
   SlashCommandMenuProps
->(({ items, command }, ref) => {
+>(({ items, command, presentation = 'popover' }, ref) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -59,12 +60,19 @@ export const SlashCommandMenu = forwardRef<
   if (items.length === 0) return null;
 
   return (
-    <div ref={containerRef} className={styles.menu}>
+    <div
+      ref={containerRef}
+      className={`${styles.menu} ${presentation === 'sheet' ? styles.menuSheet : ''}`}
+      data-testid="slash-command-menu"
+      role="listbox"
+    >
       {items.map((item, index) => (
         <button
           key={item.title}
           data-index={index}
+          data-testid="slash-command-item"
           className={`${styles.item} ${index === selectedIndex ? styles.selected : ''}`}
+          aria-selected={index === selectedIndex}
           onMouseDown={(event) => {
             event.preventDefault();
           }}

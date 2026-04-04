@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, type MouseEvent } from 'react';
 import type { SearchResult } from '@shared/api/search';
+import { getFileIconSource } from '@shared/lib/fileIcons';
 import { Icon } from '@shared/ui/icon';
 import styles from './SearchPopup.module.scss';
 
@@ -7,7 +8,7 @@ interface FileSearchResultsProps {
   results: SearchResult[];
   query: string;
   activeIndex: number;
-  onSelect: (result: SearchResult) => void;
+  onSelect: (result: SearchResult, event?: MouseEvent<HTMLDivElement>) => void;
   onHover: (index: number) => void;
   emptyLabel: string;
 }
@@ -30,11 +31,11 @@ export function FileSearchResults({
         <div
           key={`${result.filePath}-${result.line}`}
           className={`${styles.resultItem} ${i === activeIndex ? styles.active : ''}`}
-          onClick={() => onSelect(result)}
+          onClick={(event) => onSelect(result, event)}
           onMouseEnter={() => onHover(i)}
         >
           <span className={styles.resultIcon}>
-            {result.isName ? <Icon name="hash" size={14} /> : <Icon name="fileText" size={14} />}
+            <Icon name={getFileIconSource(result.filePath, false)} size={16} />
           </span>
           <div className={styles.resultContent}>
             <span
@@ -57,6 +58,9 @@ function SnippetText({ snippet, query }: { snippet: string; query: string }) {
   const parts = useMemo(() => {
     const lower = snippet.toLowerCase();
     const qLower = query.toLowerCase().trim();
+    if (!qLower) {
+      return [{ text: snippet, highlight: false }];
+    }
     const segments: { text: string; highlight: boolean }[] = [];
     let lastIndex = 0;
 

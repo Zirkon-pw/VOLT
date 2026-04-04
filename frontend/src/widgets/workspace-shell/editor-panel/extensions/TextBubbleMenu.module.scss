@@ -2,16 +2,30 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-popup, 0 4px 12px rgba(0, 0, 0, 0.15));
+  isolation: isolate;
+  background: var(--surface-solid-primary);
+  border: 1px solid var(--surface-border-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: none;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-border) 16%, transparent);
+  }
+}
+
+.menuCompact {
+  max-width: min(calc(100vw - 16px), 360px);
 }
 
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
 }
 
@@ -27,16 +41,17 @@
   color: var(--color-text-secondary);
   font-size: 13px;
   cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
 
   &:hover {
     background: var(--color-bg-hover);
     color: var(--color-text-primary);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--surface-border-secondary) 84%, transparent);
   }
 }
 
 .btnActive {
-  background: var(--color-bg-active, var(--color-bg-hover));
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--surface-solid-secondary));
   color: var(--color-accent);
 }
 
@@ -59,8 +74,8 @@
   font-weight: 700;
   font-size: 13px;
   line-height: 1;
-  background: #fef08a;
-  color: #000;
+  background: color-mix(in srgb, var(--color-tint-butter) 88%, transparent);
+  color: var(--color-text-primary);
   padding: 0 3px;
   border-radius: 2px;
 }
@@ -68,8 +83,8 @@
 .divider {
   width: 1px;
   height: 18px;
-  background: var(--color-border);
-  margin: 0 2px;
+  background: color-mix(in srgb, var(--surface-border-secondary) 88%, transparent);
+  margin: 0 var(--space-1);
 }
 
 .linkInput {
@@ -77,22 +92,23 @@
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid color-mix(in srgb, var(--surface-border-secondary) 88%, transparent);
 }
 
 .linkField {
   flex: 1;
   min-width: 200px;
-  padding: 4px 8px;
-  border: 1px solid var(--color-border);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--surface-border-secondary);
   border-radius: var(--radius-sm);
-  background: var(--color-bg-primary);
+  background: var(--surface-solid-secondary);
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
   outline: none;
 
   &:focus {
     border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
   }
 }
 
@@ -131,9 +147,9 @@
 
 .colorPicker {
   display: flex;
-  gap: 4px;
+  gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid color-mix(in srgb, var(--surface-border-secondary) 88%, transparent);
   flex-wrap: wrap;
 }
 
@@ -143,9 +159,9 @@
   justify-content: center;
   width: 24px;
   height: 24px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--surface-border-secondary);
   border-radius: var(--radius-sm);
-  background: transparent;
+  background: var(--surface-solid-secondary);
   font-weight: 700;
   font-size: 13px;
   cursor: pointer;
@@ -168,8 +184,9 @@
   justify-content: center;
   width: 24px;
   height: 24px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--surface-border-secondary);
   border-radius: var(--radius-sm);
+  background: var(--surface-solid-secondary);
   cursor: pointer;
   transition: transform var(--transition-fast);
 
@@ -182,4 +199,32 @@
 .highlightSwatchActive {
   border-color: var(--color-accent);
   border-width: 2px;
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding: var(--space-2);
+  }
+
+  .btn,
+  .linkBtn {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+  }
+
+  .divider {
+    display: none;
+  }
+
+  .linkInput {
+    flex-wrap: wrap;
+  }
+
+  .linkField {
+    min-width: 0;
+    width: 100%;
+  }
 }

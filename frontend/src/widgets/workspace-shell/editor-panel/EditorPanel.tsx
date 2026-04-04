@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 import { TextSelection } from '@tiptap/pm/state';
+import { flushSync } from 'react-dom';
 import { useAppSettingsStore } from '@entities/app-settings';
 import { useActiveFileStore } from '@entities/editor-session';
 import { useFileTreeStore } from '@entities/file-tree';
@@ -16,6 +17,7 @@ import { useImageHandlers } from './hooks/useImageHandlers';
 import { MarkdownEditorSurface } from './MarkdownEditorSurface';
 import { findInFileHighlightsPluginKey, type FindInFileMatch } from './extensions/FindInFileHighlights';
 import { LinkFilePicker } from './extensions/LinkFilePicker';
+import { EmbedUrlPicker } from './extensions/EmbedUrlPicker';
 import styles from './EditorPanel.module.scss';
 
 interface EditorPanelProps {
@@ -94,12 +96,19 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
     return voltTabs.find((tab) => tab.id === filePath) ?? null;
   });
 
-  const { save } = useAutoSave({ editor, voltId, voltPath, filePath, transformMarkdown: unresolveAll });
+  const { save, markPersisted, withTrackingSuppressed } = useAutoSave({
+    editor,
+    voltId,
+    voltPath,
+    filePath,
+    transformMarkdown: unresolveAll,
+  });
   const { handleDrop, handleDragOver, handlePaste } = useImageHandlers({
     editor, voltId, voltPath, filePath, imageDir, resolve, register, notifyFsMutation,
   });
 
   const [showLinkPicker, setShowLinkPicker] = useState(false);
+  const [showEmbedPicker, setShowEmbedPicker] = useState(false);
   const [showFindInFile, setShowFindInFile] = useState(false);
   const [findQuery, setFindQuery] = useState('');
   const [findMatches, setFindMatches] = useState<FindInFileMatch[]>([]);
@@ -107,7 +116,69 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
   const findInputRef = useRef<HTMLInputElement>(null);
   const findQueryRef = useRef('');
   const activeFindMatchRef = useRef<FindInFileMatch | null>(null);
-  const closeLinkPicker = useCallback(() => setShowLinkPicker(false), []);
+  const linkPickerSelectionRef = useRef<{ from: number; to: number } | null>(null);
+  const embedPickerSelectionRef = useRef<{ from: number; to: number } | null>(null);
+  const restoreSelection = useCallback((selection: { from: number; to: number } | null) => {
+    if (!editor) {
+      return;
+    }
+
+    try {
+      editor.view.focus();
+
+      if (selection) {
+        editor.chain().focus().setTextSelection(selection).run();
+        return;
+      }
+
+      editor.chain().focus().run();
+    } catch {
+      editor.chain().focus().run();
+    }
+  }, [editor]);
+  const restoreLinkSelection = useCallback(() => {
+    restoreSelection(linkPickerSelectionRef.current);
+  }, [restoreSelection]);
+  const restoreEmbedSelection = useCallback(() => {
+    restoreSelection(embedPickerSelectionRef.current);
+  }, [restoreSelection]);
+  const closeLinkPicker = useCallback((restoreSelection = true) => {
+    flushSync(() => {
+      setShowLinkPicker(false);
+    });
+
+    if (restoreSelection) {
+      restoreLinkSelection();
+    }
+  }, [restoreLinkSelection]);
+  const closeEmbedPicker = useCallback((restoreSelectionOnClose = true) => {
+    flushSync(() => {
+      setShowEmbedPicker(false);
+    });
+
+    if (restoreSelectionOnClose) {
+      restoreEmbedSelection();
+    }
+  }, [restoreEmbedSelection]);
+  const insertEmbedBlock = useCallback((url: string) => {
+    if (!editor) {
+      return;
+    }
+
+    const selection = embedPickerSelectionRef.current ?? {
+      from: editor.state.selection.from,
+      to: editor.state.selection.to,
+    };
+
+    editor
+      .chain()
+      .focus()
+      .setTextSelection(selection)
+      .insertContent({ type: 'embedBlock', attrs: { url } })
+      .run();
+
+    closeEmbedPicker(false);
+  }, [closeEmbedPicker, editor]);
 
   const closeFindInFile = useCallback(() => {
     setShowFindInFile(false);
@@ -179,9 +250,32 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
 
   useEffect(() => {
     if (!editor) return;
-    const handler = () => setShowLinkPicker(true);
+
+    const handler = () => {
+      linkPickerSelectionRef.current = {
+        from: editor.state.selection.from,
+        to: editor.state.selection.to,
+      };
+      setShowLinkPicker(true);
+    };
+
     window.addEventListener('volt:pick-link', handler);
     return () => window.removeEventListener('volt:pick-link', handler);
+  }, [editor]);
+
+  useEffect(() => {
+    if (!editor) return;
+
+    const handler = () => {
+      embedPickerSelectionRef.current = {
+        from: editor.state.selection.from,
+        to: editor.state.selection.to,
+      };
+      setShowEmbedPicker(true);
+    };
+
+    window.addEventListener('volt:pick-embed', handler);
+    return () => window.removeEventListener('volt:pick-embed', handler);
   }, [editor]);
 
   useEffect(() => {
@@ -222,6 +316,9 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
     if (filePath) return;
     loadedPathRef.current = null;
     clear();
+    linkPickerSelectionRef.current = null;
+    embedPickerSelectionRef.current = null;
+    setShowEmbedPicker(false);
     setShowFindInFile(false);
     setFindQuery('');
     setFindMatches([]);
@@ -286,8 +383,11 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
         if (cancelled) return;
         const content = await resolveAll(raw);
         if (cancelled) return;
-        editor.commands.setContent(content);
-        editor.commands.setTextSelection(1);
+        withTrackingSuppressed(() => {
+          editor.commands.setContent(content);
+          editor.commands.setTextSelection(1);
+        });
+        markPersisted(raw);
         loadedPathRef.current = filePath;
         emit('file-open', filePath);
       } catch (e) {
@@ -296,7 +396,19 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
     })();
 
     return () => { cancelled = true; };
-  }, [clear, consumePendingRename, editor, filePath, pendingRename, resolveAll, save, voltId, voltPath]);
+  }, [
+    clear,
+    consumePendingRename,
+    editor,
+    filePath,
+    markPersisted,
+    pendingRename,
+    resolveAll,
+    save,
+    voltId,
+    voltPath,
+    withTrackingSuppressed,
+  ]);
 
   useEffect(() => {
     if (!filePath) return;
@@ -391,9 +503,18 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
           editor={editor}
           voltId={voltId}
           filePath={filePath}
+          selection={linkPickerSelectionRef.current ?? {
+            from: editor.state.selection.from,
+            to: editor.state.selection.to,
+          }}
           onClose={closeLinkPicker}
         />
       )}
+      <EmbedUrlPicker
+        isOpen={showEmbedPicker}
+        onClose={closeEmbedPicker}
+        onSubmit={insertEmbedBlock}
+      />
     </>
   );
 }

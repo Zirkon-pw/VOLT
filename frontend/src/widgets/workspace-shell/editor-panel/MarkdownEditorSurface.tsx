@@ -1,7 +1,15 @@
-import { useCallback, useRef, type ClipboardEventHandler, type DragEventHandler } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ClipboardEventHandler,
+  type DragEventHandler,
+} from 'react';
 import { EditorContent, type Editor } from '@tiptap/react';
 import { useFileTreeStore } from '@entities/file-tree';
-import { useTabStore } from '@entities/tab';
+import { openFileInActivePane, openFileInSecondaryPane } from '@entities/workspace-view';
 import { PluginTaskStatusBanner } from '@features/plugin-task-status';
 import { getFileExtension } from '@shared/lib/fileTypes';
 import {
@@ -11,10 +19,19 @@ import {
   getPathBasename,
   getEntryDisplayName,
 } from '@shared/lib/fileTree';
-import { BrowserOpenURL } from '../../../../wailsjs/runtime/runtime';
+import { openExternalUrl } from '@shared/api/runtime/browser';
 import { DragHandle } from './extensions/DragHandle';
+import { EditorContextMenu } from './extensions/EditorContextMenu';
 import { TableControls } from './extensions/TableControls';
 import { TextBubbleMenu } from './extensions/TextBubbleMenu';
+import { useEditorResponsiveMode } from './hooks/useEditorResponsiveMode';
+import {
+  ensureEditorSelectionForTarget,
+  getEditorKeyboardMenuPosition,
+  getEditorMenuContext,
+  isNativeContextMenuTarget,
+  type EditorMenuContext,
+} from './lib/editorContext';
 import styles from './MarkdownEditorSurface.module.scss';
 
 interface MarkdownEditorSurfaceProps {
@@ -40,7 +57,94 @@ export function MarkdownEditorSurface({
   onDragOver,
   onPaste,
 }: MarkdownEditorSurfaceProps) {
-  const editorContentRef = useRef<HTMLDivElement>(null);
+  const [editorContentElement, setEditorContentElement] = useState<HTMLDivElement | null>(null);
+  const [overlayElement, setOverlayElement] = useState<HTMLDivElement | null>(null);
+  const [contextMenuState, setContextMenuState] = useState<{
+    context: EditorMenuContext;
+    position: { x: number; y: number };
+  } | null>(null);
+  const longPressTimerRef = useRef<number | null>(null);
+  const longPressPointRef = useRef<{ x: number; y: number } | null>(null);
+  const longPressTriggeredRef = useRef(false);
+  const lastSurfaceTargetRef = useRef<EventTarget | null>(null);
+  const responsiveMode = useEditorResponsiveMode({ element: editorContentElement });
+
+  const isWithinEditorSurfaceTarget = useCallback((target: EventTarget | null) => {
+    if (!(target instanceof Node)) {
+      return false;
+    }
+
+    return Boolean(
+      (editorContentElement && editorContentElement.contains(target))
+      || (overlayElement && overlayElement.contains(target)),
+    );
+  }, [editorContentElement, overlayElement]);
+
+  const closeContextMenu = useCallback(() => {
+    setContextMenuState(null);
+  }, []);
+
+  const openContextMenu = useCallback((position: { x: number; y: number }, target: EventTarget | null) => {
+    if (!editor || !isWithinEditorSurfaceTarget(target) || isNativeContextMenuTarget(target)) {
+      return;
+    }
+
+    lastSurfaceTargetRef.current = target;
+    ensureEditorSelectionForTarget(editor, {
+      target,
+      clientX: position.x,
+      clientY: position.y,
+    });
+
+    setContextMenuState({
+      context: getEditorMenuContext(editor, {
+        target,
+        clientX: position.x,
+        clientY: position.y,
+      }),
+      position,
+    });
+  }, [editor, isWithinEditorSurfaceTarget]);
+
+  const clearLongPress = useCallback(() => {
+    if (longPressTimerRef.current != null) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    longPressPointRef.current = null;
+  }, []);
+
+  useEffect(() => () => clearLongPress(), [clearLongPress]);
+
+  useEffect(() => {
+    if (!editor || contextMenuState == null) {
+      return undefined;
+    }
+
+    const handleSelectionChange = () => {
+      if (contextMenuState.context.tableState.active) {
+        const nextContext = getEditorMenuContext(editor, {
+          target: lastSurfaceTargetRef.current,
+        });
+        if (nextContext.tableState.active) {
+          return;
+        }
+      }
+      closeContextMenu();
+    };
+
+    const handleResize = () => {
+      closeContextMenu();
+    };
+
+    editor.on('selectionUpdate', handleSelectionChange);
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      editor.off('selectionUpdate', handleSelectionChange);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [closeContextMenu, contextMenuState, editor]);
 
   const handleLinkClick = useCallback(
     (e: React.MouseEvent) => {
@@ -61,7 +165,7 @@ export function MarkdownEditorSurface({
       e.stopPropagation();
 
       if (isExternalLink) {
-        BrowserOpenURL(href);
+        openExternalUrl(href);
         return;
       }
 
@@ -82,35 +186,141 @@ export function MarkdownEditorSurface({
           : resolvedPath;
       const displayName = getEntryDisplayName(getPathBasename(targetPath), false);
 
-      useTabStore.getState().openTab(
-        voltId,
-        targetPath,
-        displayName,
-      );
+      const shouldOpenSecondary = e.metaKey || e.ctrlKey;
+      if (shouldOpenSecondary) {
+        openFileInSecondaryPane(voltId, targetPath, displayName);
+      } else {
+        openFileInActivePane(voltId, targetPath, displayName);
+      }
     },
     [voltId, filePath],
   );
+
+  const panelProps = useMemo(() => ({
+    'data-editor-mode': responsiveMode,
+  }), [responsiveMode]);
 
   return (
     <div
       className={styles.panel}
       data-testid="markdown-editor-surface"
+      {...panelProps}
       onDrop={onDrop}
       onDragOver={onDragOver}
       onPaste={onPaste}
       onClickCapture={handleLinkClick}
+      onContextMenu={(event) => {
+        if (!isWithinEditorSurfaceTarget(event.target) || isNativeContextMenuTarget(event.target)) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        openContextMenu({ x: event.clientX, y: event.clientY }, event.target);
+      }}
+      onKeyDownCapture={(event) => {
+        if (!editor || isNativeContextMenuTarget(event.target) || !isWithinEditorSurfaceTarget(event.target)) {
+          return;
+        }
+
+        if (event.key !== 'ContextMenu' && !(event.shiftKey && event.key === 'F10')) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        editor.view.focus();
+        const domSelectionTarget = document.getSelection()?.anchorNode ?? null;
+        const lastSurfaceTarget = isWithinEditorSurfaceTarget(lastSurfaceTargetRef.current)
+          ? lastSurfaceTargetRef.current
+          : null;
+        const selectionTarget = lastSurfaceTarget
+          ?? (isWithinEditorSurfaceTarget(domSelectionTarget) ? domSelectionTarget : event.target);
+        ensureEditorSelectionForTarget(editor, {
+          target: selectionTarget,
+        });
+        const keyboardPosition = getEditorKeyboardMenuPosition(editor);
+        const keyboardTarget = document.elementFromPoint(keyboardPosition.x, keyboardPosition.y);
+        const resolvedKeyboardTarget = isWithinEditorSurfaceTarget(keyboardTarget) ? keyboardTarget : selectionTarget;
+        setContextMenuState({
+          context: getEditorMenuContext(editor, {
+            target: resolvedKeyboardTarget,
+            clientX: keyboardPosition.x,
+            clientY: keyboardPosition.y,
+          }),
+          position: keyboardPosition,
+        });
+      }}
+      onPointerDownCapture={(event) => {
+        if (!isWithinEditorSurfaceTarget(event.target) || isNativeContextMenuTarget(event.target)) {
+          if (responsiveMode === 'touch') {
+            clearLongPress();
+          }
+          return;
+        }
+
+        lastSurfaceTargetRef.current = event.target;
+        if (responsiveMode !== 'touch' || event.pointerType === 'mouse') {
+          clearLongPress();
+          return;
+        }
+
+        longPressTriggeredRef.current = false;
+        clearLongPress();
+        longPressPointRef.current = { x: event.clientX, y: event.clientY };
+        longPressTimerRef.current = window.setTimeout(() => {
+          longPressTriggeredRef.current = true;
+          openContextMenu({ x: event.clientX, y: event.clientY }, event.target);
+        }, 420);
+      }}
+      onPointerMoveCapture={(event) => {
+        if (responsiveMode !== 'touch' || longPressPointRef.current == null) {
+          return;
+        }
+
+        const deltaX = Math.abs(event.clientX - longPressPointRef.current.x);
+        const deltaY = Math.abs(event.clientY - longPressPointRef.current.y);
+        if (deltaX > 12 || deltaY > 12) {
+          clearLongPress();
+        }
+      }}
+      onPointerUpCapture={() => {
+        clearLongPress();
+      }}
+      onPointerCancelCapture={() => {
+        clearLongPress();
+      }}
     >
+      {editor && (
+        <TextBubbleMenu editor={editor} mode={responsiveMode} />
+      )}
       {showTaskStatusBanner && <PluginTaskStatusBanner voltPath={voltPath} filePath={filePath} />}
-      <div ref={editorContentRef} className={styles.editorContent}>
-        {!readOnly && editor && <TextBubbleMenu editor={editor} />}
-        {!readOnly && editor && (
-          <TableControls editor={editor} scrollContainer={editorContentRef.current} />
-        )}
-        {!readOnly && editor && (
-          <DragHandle editor={editor} scrollContainer={editorContentRef.current} />
-        )}
+      <div ref={setEditorContentElement} className={styles.editorContent}>
         <EditorContent editor={editor} />
       </div>
+      {editor && contextMenuState && (
+        <EditorContextMenu
+          editor={editor}
+          context={contextMenuState.context}
+          position={contextMenuState.position}
+          onClose={closeContextMenu}
+        />
+      )}
+      {!readOnly && editor && (
+        <div ref={setOverlayElement} className={styles.editorOverlay}>
+          <TableControls
+            editor={editor}
+            scrollContainer={editorContentElement}
+            overlayContainer={overlayElement}
+            mode={responsiveMode}
+          />
+          <DragHandle
+            editor={editor}
+            scrollContainer={editorContentElement}
+            overlayContainer={overlayElement}
+          />
+        </div>
+      )}
     </div>
   );
 }

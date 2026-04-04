@@ -1,1 +1,2 @@
-export { useTabStore, type FileTab, type TabType } from './model/tabStore';
+export { useTabStore } from './model/tabStore';
+export type { FileTab, TabType, OpenTabOptions } from './model/tabTypes';

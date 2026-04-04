@@ -7,6 +7,7 @@ import { usePluginRegistryStore } from '@entities/plugin';
 import { EDITOR } from '@shared/config/constants';
 import { translate } from '@shared/i18n';
 import type { IconSource } from '@shared/ui/icon';
+import { getFloatingMenuPresentation } from '../hooks/useEditorResponsiveMode';
 import {
   SlashCommandMenu,
   type SlashCommandMenuHandle,
@@ -122,18 +123,6 @@ export function getSlashCommandItems(): SlashCommandItem[] {
       },
     },
     {
-      title: translate('editor.slash.mathInline.title'),
-      description: translate('editor.slash.mathInline.description'),
-      icon: 'sigma',
-      command: (editor, range) =>
-        editor
-          .chain()
-          .focus()
-          .deleteRange(range)
-          .insertContent({ type: 'mathInline', attrs: { latex: '' } })
-          .run(),
-    },
-    {
       title: translate('editor.slash.mathBlock.title'),
       description: translate('editor.slash.mathBlock.description'),
       icon: 'sigma',
@@ -144,6 +133,15 @@ export function getSlashCommandItems(): SlashCommandItem[] {
           .deleteRange(range)
           .insertContent({ type: 'mathBlock', attrs: { latex: '' } })
           .run(),
+    },
+    {
+      title: translate('editor.slash.embed.title'),
+      description: translate('editor.slash.embed.description'),
+      icon: 'link',
+      command: (editor, range) => {
+        editor.chain().focus().deleteRange(range).run();
+        window.dispatchEvent(new CustomEvent('volt:pick-embed'));
+      },
     },
   ];
 }
@@ -193,12 +191,13 @@ export const SlashCommand = Extension.create({
 
           return {
             onStart: (props: any) => {
+              const presentation = getFloatingMenuPresentation();
               popup = document.createElement('div');
               popup.style.position = 'fixed';
               popup.style.zIndex = '1000';
               document.body.appendChild(popup);
 
-              updatePosition(popup, props.clientRect);
+              updatePosition(popup, props.clientRect, presentation);
 
               root = createRoot(popup);
               root.render(
@@ -206,27 +205,30 @@ export const SlashCommand = Extension.create({
                   ref: menuRef,
                   items: props.items,
                   command: props.command,
+                  presentation,
                 }),
               );
             },
 
             onUpdate: (props: any) => {
               if (!popup || !root) return;
+              const presentation = getFloatingMenuPresentation();
 
-              updatePosition(popup, props.clientRect);
+              updatePosition(popup, props.clientRect, presentation);
 
               root.render(
                 createElement(SlashCommandMenu, {
                   ref: menuRef,
                   items: props.items,
                   command: props.command,
+                  presentation,
                 }),
               );
             },
 
             onKeyDown: (props: any) => {
               if (props.event.key === 'Escape') {
-                return true;
+                return false;
               }
               return menuRef.current?.onKeyDown(props.event) ?? false;
             },
@@ -256,7 +258,15 @@ export const SlashCommand = Extension.create({
 function updatePosition(
   popup: HTMLDivElement,
   clientRect: (() => DOMRect | null) | undefined,
+  presentation: 'popover' | 'sheet',
 ) {
+  if (presentation === 'sheet') {
+    popup.style.left = `${window.innerWidth / 2}px`;
+    popup.style.top = `${window.innerHeight - 8}px`;
+    popup.style.transform = 'translate(-50%, -100%)';
+    return;
+  }
+
   const rect = clientRect?.();
   if (!rect) return;
 
@@ -274,6 +284,7 @@ function updatePosition(
 
   top = Math.max(horizontalPadding, top);
 
+  popup.style.transform = 'none';
   popup.style.left = `${left}px`;
   popup.style.top = `${top}px`;
 }

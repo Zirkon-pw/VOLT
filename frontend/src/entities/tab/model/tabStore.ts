@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { usePluginLogStore } from '@entities/plugin/model/pluginLogStore';
 import { usePluginRegistryStore } from '@entities/plugin/model/pluginRegistry';
+import { useWorkspaceViewStore } from '@entities/workspace-view/model/workspaceViewStore';
 import {
   getTabLabelFromPath,
   hasPathPrefix,
@@ -8,17 +9,7 @@ import {
 } from '@shared/lib/fileTree';
 import { validateHostEditorConfig } from '@shared/lib/plugin-runtime/hostEditorCatalog';
 import { resolveFileViewTarget } from '@shared/lib/plugin-runtime/fileViewResolution';
-
-export type TabType = 'file' | 'plugin';
-
-export interface FileTab {
-  id: string;
-  type: TabType;
-  filePath: string;
-  fileName: string;
-  isDirty: boolean;
-  pluginPageId?: string;
-}
+import type { FileTab, OpenTabOptions, TabType } from './tabTypes';
 
 interface PendingRename {
   oldPath: string;
@@ -29,8 +20,8 @@ interface TabState {
   tabs: Record<string, FileTab[]>;
   activeTabs: Record<string, string | null>;
   pendingRenames: Record<string, PendingRename | null>;
-  openTab: (voltId: string, filePath: string, fileName: string) => void;
-  openPluginTab: (voltId: string, pluginPageId: string, title: string) => void;
+  openTab: (voltId: string, filePath: string, fileName: string, options?: OpenTabOptions) => void;
+  openPluginTab: (voltId: string, pluginPageId: string, title: string, options?: OpenTabOptions) => void;
   closeTab: (voltId: string, tabId: string) => void;
   setActiveTab: (voltId: string, tabId: string) => void;
   setDirty: (voltId: string, tabId: string, dirty: boolean) => void;
@@ -48,22 +39,27 @@ export const useTabStore = create<TabState>((set, get) => ({
   activeTabs: {},
   pendingRenames: {},
 
-  openTab: (voltId, filePath, fileName) => {
+  openTab: (voltId, filePath, fileName, options) => {
     const { tabs, activeTabs } = get();
     const voltTabs = tabs[voltId] ?? [];
     const exists = voltTabs.find((t) => t.id === filePath);
     const normalizedFileName = getTabLabelFromPath(filePath) || fileName;
+    const shouldActivate = options?.activate ?? true;
 
     if (exists) {
+      const nextTabs = voltTabs.map((tab) => (
+        tab.id === filePath ? { ...tab, fileName: normalizedFileName } : tab
+      ));
+      const nextActiveTabs = shouldActivate ? { ...activeTabs, [voltId]: filePath } : activeTabs;
+
       set({
         tabs: {
           ...tabs,
-          [voltId]: voltTabs.map((tab) => (
-            tab.id === filePath ? { ...tab, fileName: normalizedFileName } : tab
-          )),
+          [voltId]: nextTabs,
         },
-        activeTabs: { ...activeTabs, [voltId]: filePath },
+        activeTabs: nextActiveTabs,
       });
+      useWorkspaceViewStore.getState().syncTabs(voltId, nextTabs, nextActiveTabs[voltId] ?? null);
     } else {
       const target = resolveFileViewTarget(filePath, usePluginRegistryStore.getState().fileViewers);
       if (target.type === 'plugin-host-editor') {
@@ -79,29 +75,36 @@ export const useTabStore = create<TabState>((set, get) => ({
       }
 
       const newTab: FileTab = { id: filePath, type: 'file', filePath, fileName: normalizedFileName, isDirty: false };
+      const nextTabs = [...voltTabs, newTab];
+      const nextActiveTabs = shouldActivate ? { ...activeTabs, [voltId]: filePath } : activeTabs;
       set({
-        tabs: { ...tabs, [voltId]: [...voltTabs, newTab] },
-        activeTabs: { ...activeTabs, [voltId]: filePath },
+        tabs: { ...tabs, [voltId]: nextTabs },
+        activeTabs: nextActiveTabs,
       });
+      useWorkspaceViewStore.getState().syncTabs(voltId, nextTabs, nextActiveTabs[voltId] ?? null);
     }
   },
 
-  openPluginTab: (voltId, pluginPageId, title) => {
+  openPluginTab: (voltId, pluginPageId, title, options) => {
     const tabId = `__plugin__:${pluginPageId}`;
     const { tabs, activeTabs } = get();
     const voltTabs = tabs[voltId] ?? [];
     const exists = voltTabs.find((t) => t.id === tabId);
+    const shouldActivate = options?.activate ?? true;
 
     if (exists) {
+      const nextTabs = voltTabs.map((tab) => (
+        tab.id === tabId ? { ...tab, fileName: title, pluginPageId } : tab
+      ));
+      const nextActiveTabs = shouldActivate ? { ...activeTabs, [voltId]: tabId } : activeTabs;
       set({
         tabs: {
           ...tabs,
-          [voltId]: voltTabs.map((tab) => (
-            tab.id === tabId ? { ...tab, fileName: title, pluginPageId } : tab
-          )),
+          [voltId]: nextTabs,
         },
-        activeTabs: { ...activeTabs, [voltId]: tabId },
+        activeTabs: nextActiveTabs,
       });
+      useWorkspaceViewStore.getState().syncTabs(voltId, nextTabs, nextActiveTabs[voltId] ?? null);
       return;
     }
 
@@ -114,10 +117,13 @@ export const useTabStore = create<TabState>((set, get) => ({
       pluginPageId,
     };
 
+    const nextTabs = [...voltTabs, newTab];
+    const nextActiveTabs = shouldActivate ? { ...activeTabs, [voltId]: tabId } : activeTabs;
     set({
-      tabs: { ...tabs, [voltId]: [...voltTabs, newTab] },
-      activeTabs: { ...activeTabs, [voltId]: tabId },
+      tabs: { ...tabs, [voltId]: nextTabs },
+      activeTabs: nextActiveTabs,
     });
+    useWorkspaceViewStore.getState().syncTabs(voltId, nextTabs, nextActiveTabs[voltId] ?? null);
   },
 
   closeTab: (voltId, tabId) => {
@@ -140,11 +146,13 @@ export const useTabStore = create<TabState>((set, get) => ({
       tabs: { ...tabs, [voltId]: filtered },
       activeTabs: { ...activeTabs, [voltId]: newActive },
     });
+    useWorkspaceViewStore.getState().syncTabs(voltId, filtered, newActive ?? null);
   },
 
   setActiveTab: (voltId, tabId) => {
     const { activeTabs } = get();
     set({ activeTabs: { ...activeTabs, [voltId]: tabId } });
+    useWorkspaceViewStore.getState().syncTabs(voltId, get().tabs[voltId] ?? [], tabId);
   },
 
   setDirty: (voltId, tabId, dirty) => {
@@ -165,6 +173,7 @@ export const useTabStore = create<TabState>((set, get) => ({
       voltTabs.splice(toIndex, 0, moved);
       return { tabs: { ...state.tabs, [voltId]: voltTabs } };
     });
+    useWorkspaceViewStore.getState().syncTabs(voltId, get().tabs[voltId] ?? [], get().activeTabs[voltId] ?? null);
   },
 
   renamePath: (voltId, oldPath, newPath) => {
@@ -196,6 +205,7 @@ export const useTabStore = create<TabState>((set, get) => ({
         },
       };
     });
+    useWorkspaceViewStore.getState().syncTabs(voltId, get().tabs[voltId] ?? [], get().activeTabs[voltId] ?? null);
   },
 
   replacePathPrefix: (voltId, oldPrefix, newPrefix) => {
@@ -237,6 +247,7 @@ export const useTabStore = create<TabState>((set, get) => ({
         },
       };
     });
+    useWorkspaceViewStore.getState().syncTabs(voltId, get().tabs[voltId] ?? [], get().activeTabs[voltId] ?? null);
   },
 
   removePath: (voltId, filePath) => {
@@ -260,6 +271,7 @@ export const useTabStore = create<TabState>((set, get) => ({
         activeTabs: { ...state.activeTabs, [voltId]: nextActiveTabId },
       };
     });
+    useWorkspaceViewStore.getState().syncTabs(voltId, get().tabs[voltId] ?? [], get().activeTabs[voltId] ?? null);
   },
 
   removePluginTabs: (pluginId) => {
@@ -285,6 +297,10 @@ export const useTabStore = create<TabState>((set, get) => ({
         activeTabs: nextActiveTabs,
       };
     });
+    const state = get();
+    for (const [voltId, tabs] of Object.entries(state.tabs)) {
+      useWorkspaceViewStore.getState().syncTabs(voltId, tabs, state.activeTabs[voltId] ?? null);
+    }
   },
 
   consumePendingRename: (voltId, newPath) => {

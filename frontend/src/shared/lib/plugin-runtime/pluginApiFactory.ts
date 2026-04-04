@@ -27,6 +27,7 @@ import { copyImage, pickImage, readImageBase64, saveImageBase64 } from '@shared/
 import { copyPluginAsset, getPluginData, pickPluginFiles, setPluginData } from '@shared/api/plugin';
 import { openPluginPrompt } from '@features/plugin-prompt';
 import { useWorkspaceStore } from '@entities/workspace';
+import { openFileInActivePane } from '@entities/workspace-view';
 import { useFileTreeStore } from '@entities/file-tree';
 import { useTabStore } from '@entities/tab';
 import { useToastStore } from '@shared/ui/toast';
@@ -57,7 +58,7 @@ import {
   setPluginSettingValue,
   subscribePluginSettings,
 } from '@entities/plugin';
-import { BrowserOpenURL } from '../../../../wailsjs/runtime/runtime';
+import { openExternalUrl } from '@shared/api/runtime/browser';
 
 function normalizePluginIcon(icon?: PluginIcon): IconSource {
   if (typeof icon === 'string' && isIconName(icon)) {
@@ -537,7 +538,7 @@ export function createPluginAPI(
           throw reportPluginError(pluginId, 'openFile', new Error('File path is required'));
         }
 
-        useTabStore.getState().openTab(voltId, normalizedPath, normalizedPath);
+        openFileInActivePane(voltId, normalizedPath, normalizedPath);
       },
       openExternalUrl(url: string) {
         requirePermission('external', 'ui.openExternalUrl');
@@ -546,7 +547,7 @@ export function createPluginAPI(
           throw reportPluginError(pluginId, 'ui.openExternalUrl', new Error('URL is required'));
         }
 
-        BrowserOpenURL(normalizedUrl);
+        openExternalUrl(normalizedUrl);
       },
       notify(message: string, durationMs?: number) {
         useToastStore.getState().addToast(message, 'info', durationMs ?? 4000);

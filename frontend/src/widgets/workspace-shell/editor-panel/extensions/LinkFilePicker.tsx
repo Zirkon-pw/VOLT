@@ -5,10 +5,11 @@ import { translate } from '@shared/i18n';
 import {
   collectMarkdownFiles,
   computeRelativePath,
+  getEntryDisplayName,
   getParentPath,
   getPathBasename,
-  getEntryDisplayName,
 } from '@shared/lib/fileTree';
+import { getFileIconSource } from '@shared/lib/fileIcons';
 import { Icon } from '@shared/ui/icon';
 import styles from './LinkFilePicker.module.scss';
 
@@ -16,10 +17,20 @@ interface LinkFilePickerProps {
   editor: Editor;
   voltId: string;
   filePath: string;
-  onClose: () => void;
+  selection: {
+    from: number;
+    to: number;
+  };
+  onClose: (restoreSelection?: boolean) => void;
 }
 
-export function LinkFilePicker({ editor, voltId, filePath, onClose }: LinkFilePickerProps) {
+export function LinkFilePicker({
+  editor,
+  voltId,
+  filePath,
+  selection,
+  onClose,
+}: LinkFilePickerProps) {
   const [search, setSearch] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -44,6 +55,10 @@ export function LinkFilePicker({ editor, voltId, filePath, onClose }: LinkFilePi
     inputRef.current?.focus();
   }, []);
 
+  const requestClose = useCallback(() => {
+    onClose(true);
+  }, [onClose]);
+
   const insertLink = useCallback(
     (targetPath: string) => {
       const currentDir = getParentPath(filePath);
@@ -53,6 +68,7 @@ export function LinkFilePicker({ editor, voltId, filePath, onClose }: LinkFilePi
       editor
         .chain()
         .focus()
+        .setTextSelection(selection)
         .insertContent({
           type: 'text',
           text: displayName,
@@ -60,16 +76,16 @@ export function LinkFilePicker({ editor, voltId, filePath, onClose }: LinkFilePi
         })
         .run();
 
-      onClose();
+      onClose(false);
     },
-    [editor, filePath, onClose],
+    [editor, filePath, onClose, selection],
   );
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        onClose();
+        requestClose();
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
         setSelectedIndex((i) => Math.min(i + 1, filtered.length - 1));
@@ -83,7 +99,7 @@ export function LinkFilePicker({ editor, voltId, filePath, onClose }: LinkFilePi
         }
       }
     },
-    [filtered, selectedIndex, insertLink, onClose],
+    [filtered, insertLink, requestClose, selectedIndex],
   );
 
   useEffect(() => {
@@ -92,7 +108,7 @@ export function LinkFilePicker({ editor, voltId, filePath, onClose }: LinkFilePi
   }, [selectedIndex]);
 
   return (
-    <div className={styles.overlay} data-testid="link-file-picker" onClick={onClose}>
+    <div className={styles.overlay} data-testid="link-file-picker" onClick={requestClose}>
       <div className={styles.picker} onClick={(e) => e.stopPropagation()}>
         <div className={styles.searchWrap}>
           <Icon name="search" size={14} />
@@ -117,7 +133,7 @@ export function LinkFilePicker({ editor, voltId, filePath, onClose }: LinkFilePi
               onClick={() => insertLink(file.path)}
               onMouseEnter={() => setSelectedIndex(i)}
             >
-              <Icon name="fileText" size={14} />
+              <Icon name={getFileIconSource(file.path, false)} size={16} />
               <div className={styles.itemText}>
                 <span className={styles.itemName}>
                   {getEntryDisplayName(getPathBasename(file.path), false)}

@@ -1,0 +1,80 @@
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.description {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.input {
+  width: 100%;
+  border: 1px solid var(--surface-border-secondary);
+  background: var(--surface-solid-secondary);
+  color: var(--color-text-primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  font: inherit;
+  box-shadow: none;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+  }
+}
+
+.error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.secondaryButton,
+.primaryButton {
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  cursor: pointer;
+}
+
+.secondaryButton {
+  background: var(--surface-solid-secondary);
+  border-color: var(--surface-border-secondary);
+  color: var(--color-text-primary);
+}
+
+.primaryButton {
+  background: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 64%, var(--color-border));
+  color: var(--color-accent-text);
+}
+
+.primaryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+  .actions {
+    flex-wrap: wrap;
+    justify-content: stretch;
+  }
+
+  .secondaryButton,
+  .primaryButton {
+    flex: 1;
+    min-height: 42px;
+  }
+}

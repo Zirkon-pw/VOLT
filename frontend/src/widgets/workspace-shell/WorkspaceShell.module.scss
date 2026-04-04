@@ -1,22 +1,166 @@
 .layout {
+  position: relative;
   display: flex;
+  gap: var(--space-3);
   height: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--space-1);
+  box-sizing: border-box;
   overflow: hidden;
+  border-radius: 0;
+  background: var(--surface-shell-root);
 }
 
 .main {
+  position: relative;
   display: flex;
   flex-direction: column;
   flex: 1;
+  gap: 0;
   min-width: 0;
+  min-height: 0;
   overflow: hidden;
+  border-radius: var(--surface-radius);
+  background: var(--surface-solid-primary);
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.chromeStack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: var(--space-2) var(--space-3) 0;
+  background: transparent;
+  overflow: visible;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: var(--space-3);
+    right: var(--space-3);
+    bottom: 0;
+    height: 1px;
+    pointer-events: none;
+    background: color-mix(in srgb, var(--color-divider) 92%, transparent);
+  }
 }
 
 .content {
+  position: relative;
   display: flex;
   flex: 1;
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
+  margin: var(--space-1) 0 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+}
+
+.breadcrumbsOverlay {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 2;
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
+}
+
+.paneLayout {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  gap: 0;
+}
+
+.workspacePane {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+}
+
+.workspacePaneActive {
+  border: none;
+}
+
+.splitSeam {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--pane-seam-width);
+  flex: 0 0 var(--pane-seam-width);
+  cursor: col-resize;
+  background: transparent;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: var(--space-3);
+    bottom: var(--space-3);
+    left: 50%;
+    width: 1px;
+    transform: translateX(-50%);
+    background: color-mix(in srgb, var(--color-divider) 96%, transparent);
+    transition: background-color var(--transition-fast);
+  }
+
+  &:hover::before {
+    background: color-mix(in srgb, var(--color-accent) 52%, transparent);
+  }
+}
+
+.secondaryClose {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: var(--surface-solid-tertiary);
+  backdrop-filter: none;
+  color: var(--color-icon);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+
+  &:hover {
+    background: color-mix(in srgb, var(--surface-solid-secondary) 90%, var(--color-bg-hover));
+    color: var(--color-text-primary);
+  }
+}
+
+.emptyPane {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  color: var(--color-text-tertiary);
+  background: transparent;
+}
+
+.emptyPaneText {
+  font-size: var(--font-size-sm);
 }
 
 .plugin-page {
@@ -24,4 +168,22 @@
   min-width: 0;
   min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
+  background: transparent;
+}
+
+@media (max-width: 960px) {
+  .chromeStack {
+    padding: var(--space-2) var(--space-3) 0;
+  }
+
+  .content {
+    margin: var(--space-2) 0 0;
+  }
+
+  .breadcrumbsOverlay {
+    top: var(--space-2);
+    left: var(--space-3);
+    right: var(--space-3);
+  }
 }

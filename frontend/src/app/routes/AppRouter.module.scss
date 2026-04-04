@@ -1,8 +1,22 @@
 .root {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100vh;
+  padding: 0 var(--space-2) var(--space-2);
+  box-sizing: border-box;
   overflow: hidden;
+  background: var(--surface-shell-root);
+  border-radius: var(--window-radius);
+  border: none;
+  isolation: isolate;
+}
+
+.headerDivider {
+  height: 1px;
+  margin: 0 var(--space-3);
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--color-divider) 90%, transparent);
 }
 
 .content {
@@ -11,4 +25,20 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  padding: var(--space-2);
+  box-sizing: border-box;
+}
+
+@media (max-width: 960px) {
+  .root {
+    padding: 0 var(--space-1) var(--space-1);
+  }
+
+  .content {
+    padding: var(--space-2);
+  }
+
+  .headerDivider {
+    margin: 0 var(--space-3);
+  }
 }

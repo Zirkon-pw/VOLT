@@ -9,6 +9,10 @@
 html,
 body {
   height: 100%;
+  width: 100%;
+  background: var(--surface-shell-root);
+  overflow: hidden;
+  overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -52,5 +56,7 @@ ol {
 
 #root {
   height: 100%;
+  background: var(--surface-shell-root);
+  overflow: hidden;
   isolation: isolate;
 }

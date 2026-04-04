@@ -17,11 +17,13 @@ const DRAGGABLE_TYPES = new Set([
   'image',
   'horizontalRule',
   'mathBlock',
+  'embedBlock',
 ]);
 
 interface DragHandleProps {
   editor: Editor;
   scrollContainer: HTMLElement | null;
+  overlayContainer: HTMLElement | null;
 }
 
 interface HandleState {
@@ -45,7 +47,7 @@ interface DragSession {
   domElement: HTMLElement | null;
 }
 
-export function DragHandle({ editor, scrollContainer }: DragHandleProps) {
+export function DragHandle({ editor, scrollContainer, overlayContainer }: DragHandleProps) {
   const [handle, setHandle] = useState<HandleState>({ top: 0, left: 0, nodePos: -1, visible: false });
   const [dropIndicator, setDropIndicator] = useState<DropIndicatorState | null>(null);
   const rafRef = useRef<number>(0);
@@ -115,16 +117,15 @@ export function DragHandle({ editor, scrollContainer }: DragHandleProps) {
         }
 
         const domRect = dom.getBoundingClientRect();
-        const container = getContainer();
-        const scrollRect = container?.getBoundingClientRect();
-        const scrollTop = container?.scrollTop ?? 0;
-        const scrollLeft = container?.scrollLeft ?? 0;
-        const containerTop = scrollRect?.top ?? 0;
-        const containerLeft = scrollRect?.left ?? 0;
-        const left = Math.max(domRect.left - containerLeft + scrollLeft - 24, 4);
+        const overlayRect = overlayContainer?.getBoundingClientRect();
+        if (!overlayRect) {
+          hideHandle();
+          return;
+        }
+        const left = Math.max(domRect.left - overlayRect.left - 24, 4);
 
         setHandle({
-          top: domRect.top - containerTop + scrollTop,
+          top: domRect.top - overlayRect.top,
           left,
           nodePos,
           visible: true,
@@ -133,7 +134,7 @@ export function DragHandle({ editor, scrollContainer }: DragHandleProps) {
         hideHandle();
       }
     },
-    [editor.view, getContainer, hideHandle],
+    [editor.view, hideHandle, overlayContainer],
   );
 
   const updateDropIndicator = useCallback(
@@ -163,22 +164,23 @@ export function DragHandle({ editor, scrollContainer }: DragHandleProps) {
       }
 
       const rect = target.dom.getBoundingClientRect();
-      const container = getContainer();
-      const scrollRect = container?.getBoundingClientRect();
-      const scrollTop = container?.scrollTop ?? 0;
-      const scrollLeft = container?.scrollLeft ?? 0;
-      const containerTop = scrollRect?.top ?? 0;
-      const containerLeft = scrollRect?.left ?? 0;
+      const overlayRect = overlayContainer?.getBoundingClientRect();
+      if (!overlayRect) {
+        setDropIndicator(null);
+        return;
+      }
+      const maxWidth = Math.max(0, overlayContainer?.clientWidth ?? rect.width);
+      const left = Math.max(4, rect.left - overlayRect.left);
       const insertAfter = rawInsertPos > target.nodePos;
 
       setDropIndicator({
-        top: (insertAfter ? rect.bottom : rect.top) - containerTop + scrollTop,
-        left: rect.left - containerLeft + scrollLeft,
-        width: rect.width,
+        top: (insertAfter ? rect.bottom : rect.top) - overlayRect.top,
+        left,
+        width: Math.max(0, Math.min(rect.width, maxWidth - left - 4)),
         visible: true,
       });
     },
-    [editor.view, getContainer],
+    [editor.view, overlayContainer],
   );
 
   const maybeAutoScroll = useCallback((clientY: number) => {

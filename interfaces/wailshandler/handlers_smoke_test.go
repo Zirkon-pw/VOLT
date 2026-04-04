@@ -7,6 +7,7 @@ import (
 	commandbase "volt/commands"
 	commandfile "volt/commands/file"
 	commandsettings "volt/commands/settings"
+	commandssystem "volt/commands/system"
 	commandvolt "volt/commands/volt"
 	coresettings "volt/core/settings"
 	corevolt "volt/core/volt"
@@ -43,6 +44,35 @@ func TestVoltHandlerListVoltsUsesCommandManager(t *testing.T) {
 
 	if len(volts) != 1 || volts[0].ID != "volt-1" {
 		t.Fatalf("volts = %#v, want one volt with ID %q", volts, "volt-1")
+	}
+}
+
+func TestVoltHandlerCreateVoltInParentUsesCommandManager(t *testing.T) {
+	manager := commandbase.MustNewManager(handlerStubCommand{
+		name: commandvolt.CreateInParentName,
+		run: func(ctx context.Context, req any) (any, error) {
+			request, ok := req.(commandvolt.CreateInParentRequest)
+			if !ok {
+				t.Fatalf("unexpected request type %T", req)
+			}
+			if request.ParentPath != "/tmp/workspaces" || request.DirectoryName != "main-vault" {
+				t.Fatalf("request = %#v", request)
+			}
+
+			return commandvolt.CreateInParentResponse{
+				Volt: &corevolt.Volt{ID: "volt-2", Name: request.Name, Path: "/tmp/workspaces/main-vault"},
+			}, nil
+		},
+	})
+
+	handler := NewVoltHandler(manager, nil)
+	volt, err := handler.CreateVoltInParent("Main", "/tmp/workspaces", "main-vault")
+	if err != nil {
+		t.Fatalf("CreateVoltInParent() error = %v", err)
+	}
+
+	if volt == nil || volt.ID != "volt-2" {
+		t.Fatalf("volt = %#v, want ID %q", volt, "volt-2")
 	}
 }
 
@@ -95,5 +125,36 @@ func TestSettingsHandlerGetLocalizationUsesCommandManager(t *testing.T) {
 
 	if payload.EffectiveLocale != "en" {
 		t.Fatalf("payload.EffectiveLocale = %q, want %q", payload.EffectiveLocale, "en")
+	}
+}
+
+func TestLinkPreviewHandlerResolveLinkPreviewUsesCommandManager(t *testing.T) {
+	manager := commandbase.MustNewManager(handlerStubCommand{
+		name: commandssystem.ResolveLinkPreviewName,
+		run: func(ctx context.Context, req any) (any, error) {
+			request, ok := req.(commandssystem.ResolveLinkPreviewRequest)
+			if !ok {
+				t.Fatalf("unexpected request type %T", req)
+			}
+			if request.URL != "https://example.com/article" {
+				t.Fatalf("request.URL = %q", request.URL)
+			}
+
+			return commandssystem.ResolveLinkPreviewResponse{
+				Kind:  "generic",
+				URL:   request.URL,
+				Title: "Example article",
+			}, nil
+		},
+	})
+
+	handler := NewLinkPreviewHandler(manager, nil)
+	payload, err := handler.ResolveLinkPreview("https://example.com/article")
+	if err != nil {
+		t.Fatalf("ResolveLinkPreview() error = %v", err)
+	}
+
+	if payload.Kind != "generic" || payload.Title != "Example article" {
+		t.Fatalf("payload = %#v", payload)
 	}
 }

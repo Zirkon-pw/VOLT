@@ -1,5 +1,7 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Outlet, Routes, Route } from 'react-router-dom';
 import { HomePage } from '@pages/home/HomePage';
+import { DetachedFileWindowPage } from '@pages/window/DetachedFileWindowPage';
+import { DetachedSidebarWindowPage } from '@pages/window/DetachedSidebarWindowPage';
 import { PluginRoutePage } from '@pages/workspace/PluginRoutePage';
 import { WorkspacePage } from '@pages/workspace/WorkspacePage';
 import { PluginSettingsPage } from '@pages/settings/PluginSettingsPage';
@@ -13,8 +15,19 @@ function AppLayout() {
   return (
     <div className={styles.root}>
       <WorkspaceTabs />
+      <div className={styles.headerDivider} aria-hidden="true" />
       <div className={styles.content}>
-        <Routes>
+        <Outlet />
+      </div>
+    </div>
+  );
+}
+
+export function AppRouter() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route element={<AppLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/workspace/:voltId/plugin/:pageId" element={<PluginRoutePage />} />
           <Route path="/workspace/:voltId" element={<WorkspacePage />} />
@@ -29,16 +42,10 @@ function AppLayout() {
               <Route path="/__playwright__/settings/shortcuts" element={<SettingsPage section="shortcuts" />} />
             </>
           )}
-        </Routes>
-      </div>
-    </div>
-  );
-}
-
-export function AppRouter() {
-  return (
-    <BrowserRouter>
-      <AppLayout />
+        </Route>
+        <Route path="/window/file" element={<DetachedFileWindowPage />} />
+        <Route path="/window/sidebar" element={<DetachedSidebarWindowPage />} />
+      </Routes>
     </BrowserRouter>
   );
 }

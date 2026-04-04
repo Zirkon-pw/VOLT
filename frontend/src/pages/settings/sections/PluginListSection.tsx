@@ -1,8 +1,8 @@
 import type { PluginInfo } from '@shared/api/plugin';
+import { openExternalUrl } from '@shared/api/runtime/browser';
 import { Toggle } from '@shared/ui/toggle';
 import { Button } from '@shared/ui/button';
 import { useI18n } from '@app/providers/I18nProvider';
-import { BrowserOpenURL } from '../../../../wailsjs/runtime/runtime';
 import styles from '../SettingsPage.module.scss';
 
 interface PluginListSectionProps {
@@ -32,7 +32,7 @@ export function PluginListSection({
       return;
     }
 
-    void BrowserOpenURL(encodeURI(`file://${pluginsDirectory}`));
+    openExternalUrl(encodeURI(`file://${pluginsDirectory}`));
   };
 
   return (
