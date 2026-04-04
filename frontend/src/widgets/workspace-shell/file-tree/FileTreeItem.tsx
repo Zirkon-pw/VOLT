@@ -3,6 +3,7 @@ import type { FileEntry } from '@shared/api/file/types';
 import { getEntryDisplayName } from '@shared/lib/fileTree';
 import { getFileIconSource } from '@shared/lib/fileIcons';
 import { useI18n } from '@app/providers/I18nProvider';
+import { openFileInActivePane, openFileInSecondaryPane } from '@entities/workspace-view';
 import { Icon } from '@shared/ui/icon';
 import { ContextMenu } from '@shared/ui/context-menu';
 import type { ContextMenuItem } from '@shared/ui/context-menu';
@@ -29,12 +30,17 @@ export const FileTreeItem = memo(function FileTreeItem({ voltId, voltPath, entry
   const displayName = getEntryDisplayName(entry.name, entry.isDir);
   const iconName = getFileIconSource(entry.name, entry.isDir, state.expanded);
 
-  const handleClick = () => {
+  const handleClick = (event: React.MouseEvent) => {
     actions.setSelectedPath(voltId, entry.path);
     if (entry.isDir) {
       actions.toggleExpanded(voltId, entry.path);
     } else {
-      state.openTab(voltId, entry.path, displayName);
+      const shouldOpenSecondary = event.metaKey || event.ctrlKey;
+      if (shouldOpenSecondary) {
+        openFileInSecondaryPane(voltId, entry.path, displayName);
+      } else {
+        openFileInActivePane(voltId, entry.path, displayName);
+      }
     }
   };
 

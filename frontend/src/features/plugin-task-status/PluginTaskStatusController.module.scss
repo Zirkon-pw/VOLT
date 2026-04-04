@@ -22,7 +22,7 @@
   border: 1px solid color-mix(in srgb, var(--color-border-strong) 66%, transparent);
   border-radius: var(--radius-lg);
   background: var(--color-surface-overlay);
-  box-shadow: var(--shadow-md);
+  box-shadow: none;
 
   &::before {
     content: '';

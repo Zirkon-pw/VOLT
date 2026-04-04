@@ -24,7 +24,7 @@
   transition: transform 0.1s;
   color: var(--color-text-tertiary);
   padding: 0;
-  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 24%, transparent);
+  box-shadow: none;
 
   &:hover {
     transform: scale(1.08);
@@ -64,7 +64,7 @@
   height: 12px;
   border: 2px solid #fff;
   border-radius: 50%;
-  box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
+  box-shadow: none;
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
@@ -118,7 +118,7 @@
   background: var(--color-surface-raised);
   border: 2px solid var(--color-border-strong);
   border-radius: 50%;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   transform: translate(-50%, -50%);
   pointer-events: none;
 }

@@ -1,6 +1,7 @@
 import { Fragment, useCallback } from 'react';
 import { useTabStore } from '@entities/tab';
 import { useNavigationStore } from '@entities/navigation';
+import { openFileInActivePane } from '@entities/workspace-view';
 import { Icon } from '@shared/ui/icon';
 import styles from './Breadcrumbs.module.scss';
 
@@ -11,9 +12,6 @@ interface BreadcrumbsProps {
 export function Breadcrumbs({ voltId }: BreadcrumbsProps) {
   const activeTabs = useTabStore((state) => state.activeTabs);
   const allTabs = useTabStore((state) => state.tabs);
-  const setActiveTab = useTabStore((state) => state.setActiveTab);
-  const openTab = useTabStore((state) => state.openTab);
-
   const canGoBack = useNavigationStore((state) => state.canGoBack(voltId));
   const canGoForward = useNavigationStore((state) => state.canGoForward(voltId));
   const goBack = useNavigationStore((state) => state.goBack);
@@ -29,26 +27,16 @@ export function Breadcrumbs({ voltId }: BreadcrumbsProps) {
   const navigateBack = useCallback(() => {
     const target = goBack(voltId);
     if (!target) return;
-    const exists = (useTabStore.getState().tabs[voltId] ?? []).some((t) => t.id === target);
-    if (exists) {
-      setActiveTab(voltId, target);
-    } else {
-      const fileName = target.split('/').pop() ?? target;
-      openTab(voltId, target, fileName);
-    }
-  }, [goBack, voltId, setActiveTab, openTab]);
+    const fileName = target.split('/').pop() ?? target;
+    openFileInActivePane(voltId, target, fileName);
+  }, [goBack, voltId]);
 
   const navigateForward = useCallback(() => {
     const target = goForward(voltId);
     if (!target) return;
-    const exists = (useTabStore.getState().tabs[voltId] ?? []).some((t) => t.id === target);
-    if (exists) {
-      setActiveTab(voltId, target);
-    } else {
-      const fileName = target.split('/').pop() ?? target;
-      openTab(voltId, target, fileName);
-    }
-  }, [goForward, voltId, setActiveTab, openTab]);
+    const fileName = target.split('/').pop() ?? target;
+    openFileInActivePane(voltId, target, fileName);
+  }, [goForward, voltId]);
 
   if (!filePath) return null;
 
@@ -72,7 +60,7 @@ export function Breadcrumbs({ voltId }: BreadcrumbsProps) {
           <Icon name="arrowRight" size={14} />
         </button>
       </div>
-      <div className={styles.crumbs}>
+      <div className={styles.crumbs} data-testid="breadcrumbs-capsule">
         {segments.map((segment, i) => (
           <Fragment key={i}>
             {i > 0 && <Icon name="chevronRight" size={10} className={styles.separator} />}

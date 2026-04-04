@@ -35,7 +35,7 @@ function getInitialWidth(): number {
   const saved = localStorage.getItem(SIDEBAR.STORAGE_KEY);
   if (saved) {
     const n = Number(saved);
-    if (n >= SIDEBAR.MIN_WIDTH && n <= SIDEBAR.MAX_WIDTH) return n;
+    if (Number.isFinite(n) && n > 0) return n;
   }
   return SIDEBAR.DEFAULT_WIDTH;
 }
@@ -97,118 +97,159 @@ export function Sidebar({ voltId, voltPath, onSearchClick, collapsed, onToggleCo
 
   const [orderedButtons, dragHandlers] = useSidebarButtonOrder([...builtInButtons, ...pluginButtons]);
 
-  const onMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragging.current = true;
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
+  const startResize = useCallback((clientX: number) => {
+    const sidebarEl = sidebarRef.current;
+    const railEl = railRef.current;
+    if (!sidebarEl || !railEl) {
+      return;
+    }
+
+    const sidebarRect = sidebarEl.getBoundingClientRect();
+    const railRect = railEl.getBoundingClientRect();
+    const computed = window.getComputedStyle(sidebarEl);
+    const gap = Number.parseFloat(computed.gap || '0') || 0;
+    const paddingLeft = Number.parseFloat(computed.paddingLeft || '0') || 0;
+    const paddingRight = Number.parseFloat(computed.paddingRight || '0') || 0;
+    const fixedWidth = railRect.width + gap + paddingLeft + paddingRight;
+    const next = clientX - sidebarRect.left - fixedWidth;
+    const parentRect = sidebarEl.parentElement?.getBoundingClientRect();
+    const availableWidth = Math.max(
+      fixedWidth,
+      (parentRect?.right ?? window.innerWidth) - sidebarRect.left - fixedWidth,
+    );
+    const minPaneWidth = Math.max(180, Math.round(availableWidth * 0.18));
+    const minMainWidth = Math.max(320, Math.round(availableWidth * 0.32));
+    const maxPaneWidth = Math.max(minPaneWidth, availableWidth - minMainWidth);
+    const clamped = Math.min(maxPaneWidth, Math.max(minPaneWidth, next));
+
+    setWidth(clamped);
   }, []);
 
+  const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (collapsed) {
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    if (typeof e.currentTarget.setPointerCapture === 'function') {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
+    dragging.current = true;
+    startResize(e.clientX);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [collapsed, startResize]);
+
   useEffect(() => {
-    const onMouseMove = (e: MouseEvent) => {
+    const onPointerMove = (e: PointerEvent) => {
       if (!dragging.current) return;
-      const sidebarEl = sidebarRef.current;
-      const railEl = railRef.current;
-      if (!sidebarEl || !railEl) {
-        return;
-      }
-
-      const sidebarRect = sidebarEl.getBoundingClientRect();
-      const railRect = railEl.getBoundingClientRect();
-      const computed = window.getComputedStyle(sidebarEl);
-      const gap = Number.parseFloat(computed.gap || '0') || 0;
-      const paddingLeft = Number.parseFloat(computed.paddingLeft || '0') || 0;
-      const paddingRight = Number.parseFloat(computed.paddingRight || '0') || 0;
-      const fixedWidth = railRect.width + gap + paddingLeft + paddingRight;
-      const next = e.clientX - sidebarRect.left - fixedWidth;
-      const clamped = Math.min(SIDEBAR.MAX_WIDTH, Math.max(SIDEBAR.MIN_WIDTH, next));
-
-      setWidth(clamped);
+      startResize(e.clientX);
     };
 
-    const onMouseUp = () => {
+    const onPointerUp = () => {
       if (!dragging.current) return;
       dragging.current = false;
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
     };
 
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
     return () => {
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
     };
-  }, []);
+  }, [startResize]);
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR.STORAGE_KEY, String(width));
   }, [width]);
 
   return (
-    <aside ref={sidebarRef} className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''}`}>
-      <div ref={railRef} className={styles.rail}>
-        <div className={styles.railActions}>
-          {orderedButtons.map((button) => {
-            const isDragging = dragHandlers.draggedId === button.id;
-            const isDragOver = dragHandlers.overId === button.id && dragHandlers.draggedId !== button.id;
+    <aside ref={sidebarRef} className={styles.sidebar}>
+      <div className={styles.surface}>
+        <div ref={railRef} className={styles.rail}>
+          <div className={styles.railActions}>
+            {orderedButtons.map((button) => {
+              const isDragging = dragHandlers.draggedId === button.id;
+              const isDragOver = dragHandlers.overId === button.id && dragHandlers.draggedId !== button.id;
 
-            return (
-              <button
-                key={button.id}
-                type="button"
-                data-button-id={button.id}
-                className={[
-                  styles.iconButton,
-                  isDragging ? styles.iconButtonDragging : '',
-                  isDragOver ? styles.iconButtonDragOver : '',
-                ].filter(Boolean).join(' ')}
-                onClick={() => { void button.onClick(); }}
-                title={button.title}
-                aria-label={button.title}
-                aria-grabbed={isDragging}
-                draggable={true}
-                onDragStart={(event) => dragHandlers.handleDragStart(event, button.id)}
-                onDragEnd={dragHandlers.handleDragEnd}
-                onDragOver={(event) => dragHandlers.handleDragOver(event, button.id)}
-                onDragLeave={(event) => dragHandlers.handleDragLeave(event, button.id)}
-                onDrop={(event) => dragHandlers.handleDrop(event, button.id)}
-              >
-                <Icon name={button.icon} size={18} />
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      {!collapsed && (
-        <div className={styles.pane} style={{ width, minWidth: width }}>
-          <div className={styles.treeContainer}>
-            <FileTree voltId={voltId} voltPath={voltPath} />
+              return (
+                <button
+                  key={button.id}
+                  type="button"
+                  data-button-id={button.id}
+                  className={[
+                    styles.iconButton,
+                    isDragging ? styles.iconButtonDragging : '',
+                    isDragOver ? styles.iconButtonDragOver : '',
+                  ].filter(Boolean).join(' ')}
+                  onClick={() => { void button.onClick(); }}
+                  title={button.title}
+                  aria-label={button.title}
+                  aria-grabbed={isDragging}
+                  draggable={true}
+                  onDragStart={(event) => dragHandlers.handleDragStart(event, button.id)}
+                  onDragEnd={dragHandlers.handleDragEnd}
+                  onDragOver={(event) => dragHandlers.handleDragOver(event, button.id)}
+                  onDragLeave={(event) => dragHandlers.handleDragLeave(event, button.id)}
+                  onDrop={(event) => dragHandlers.handleDrop(event, button.id)}
+                >
+                  <Icon name={button.icon} size={18} />
+                </button>
+              );
+            })}
           </div>
-          {sidebarPanels.length > 0 && (
-            <div className={styles.pluginPanels}>
-              {sidebarPanels.map((panel) => (
-                <PluginPanelSlot key={panel.id} panel={panel} />
-              ))}
-            </div>
-          )}
         </div>
-      )}
-      {!collapsed && <div className={styles.resizeHandle} onMouseDown={onMouseDown} />}
-      <button
-        type="button"
-        className={styles.toggleButton}
-        onClick={onToggleCollapse}
-        title={collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
-        aria-label={collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
+        {!collapsed && (
+          <div className={styles.pane} style={{ width, minWidth: width }} data-testid="sidebar-pane">
+            <div className={styles.treeContainer}>
+              <FileTree voltId={voltId} voltPath={voltPath} />
+            </div>
+            {sidebarPanels.length > 0 && (
+              <div className={styles.pluginPanels}>
+                {sidebarPanels.map((panel) => (
+                  <PluginPanelSlot key={panel.id} panel={panel} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      <div
+        className={`${styles.resizeHandle} ${collapsed ? styles.resizeHandleCollapsed : ''}`}
+        data-testid="sidebar-resize-seam"
       >
-        <Icon
-          name="chevronRight"
-          size={16}
-          className={collapsed ? styles.toggleIconCollapsed : styles.toggleIconExpanded}
-        />
-      </button>
+        {!collapsed ? (
+          <div
+            className={styles.resizeTrack}
+            onPointerDown={onPointerDown}
+            aria-hidden="true"
+          />
+        ) : null}
+        <button
+          type="button"
+          className={styles.toggleButton}
+          data-testid="sidebar-toggle"
+          onPointerDown={(event) => {
+            event.stopPropagation();
+          }}
+          onClick={(event) => {
+            event.stopPropagation();
+            onToggleCollapse();
+          }}
+          title={collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
+          aria-label={collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
+        >
+          <Icon
+            name="chevronRight"
+            size={16}
+            className={collapsed ? styles.toggleIconCollapsed : styles.toggleIconExpanded}
+          />
+        </button>
+      </div>
     </aside>
   );
 }

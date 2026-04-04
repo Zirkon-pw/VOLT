@@ -16,7 +16,7 @@
   border: 1px solid color-mix(in srgb, var(--color-border) 90%, transparent);
   border-radius: var(--radius-lg);
   background: color-mix(in srgb, var(--color-surface-raised) 88%, var(--color-bg-primary));
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 
 .main {

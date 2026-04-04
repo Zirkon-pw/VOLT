@@ -8,7 +8,7 @@
   background: var(--color-surface-overlay);
   border: 1px solid color-mix(in srgb, var(--color-border-strong) 72%, transparent);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+  box-shadow: none;
   animation: slideIn 200ms ease forwards;
 
   &::before {

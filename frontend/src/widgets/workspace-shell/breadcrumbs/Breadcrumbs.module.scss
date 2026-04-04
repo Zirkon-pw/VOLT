@@ -1,8 +1,9 @@
 .bar {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   min-height: 34px;
-  padding: 0 var(--space-2) var(--space-1);
+  width: fit-content;
+  padding: 0;
   background: none;
   gap: var(--space-2);
   flex-shrink: 0;
@@ -23,22 +24,16 @@
   justify-content: center;
   width: 26px;
   height: 26px;
-  border: 1px solid transparent;
+  border: none;
   border-radius: 12px;
   background: transparent;
   color: var(--color-text-secondary);
   cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 
   &:hover:not(:disabled) {
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--chrome-surface-soft) 92%, transparent),
-        color-mix(in srgb, var(--chrome-surface) 76%, transparent)
-      );
+    background: color-mix(in srgb, var(--surface-shell-pill) 88%, transparent);
     color: var(--color-text-primary);
-    border-color: color-mix(in srgb, var(--chrome-border) 82%, transparent);
   }
 
   &:disabled {
@@ -49,11 +44,18 @@
 }
 
 .crumbs {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--space-1);
   min-width: 0;
   overflow: hidden;
+  width: fit-content;
+  max-width: min(100%, 920px);
+  padding: var(--space-1);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-shell-pill) 88%, transparent);
+  backdrop-filter: blur(var(--chrome-blur)) saturate(110%);
+  border: none;
 }
 
 .separator {
@@ -67,7 +69,6 @@
   min-width: 0;
   height: 26px;
   padding: 0 var(--space-2);
-  border-bottom: 1px solid transparent;
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   white-space: nowrap;
@@ -81,9 +82,10 @@
   min-width: 0;
   height: 26px;
   padding: 0 var(--space-2);
-  border-bottom: 1px solid color-mix(in srgb, var(--color-border-strong) 82%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-solid-primary) 82%, transparent);
   font-size: var(--font-size-xs);
-  color: var(--color-text-primary);
+  color: var(--color-accent);
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;

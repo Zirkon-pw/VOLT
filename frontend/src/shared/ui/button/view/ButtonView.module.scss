@@ -30,57 +30,33 @@
 
 // Variants
 .primary {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-accent) 88%, var(--color-surface-raised)),
-      var(--color-accent)
-    );
+  background: var(--color-accent);
   color: var(--color-accent-text);
   border-color: color-mix(in srgb, var(--color-accent) 64%, var(--color-border));
-  box-shadow:
-    0 14px 26px -22px color-mix(in srgb, var(--color-accent) 55%, transparent),
-    inset 0 1px 0 color-mix(in srgb, #fff 28%, transparent);
+  box-shadow: none;
 
   &:hover:not(:disabled) {
     background-color: var(--color-accent-hover);
-    transform: translateY(-1px);
   }
 
   &:active:not(:disabled) {
-    transform: translateY(0);
-    box-shadow:
-      0 8px 18px -16px color-mix(in srgb, var(--color-accent) 48%, transparent),
-      inset 0 1px 0 color-mix(in srgb, #fff 18%, transparent);
+    background-color: color-mix(in srgb, var(--color-accent-hover) 88%, black);
   }
 }
 
 .secondary {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--chrome-surface-strong) 94%, transparent),
-      color-mix(in srgb, var(--chrome-surface) 82%, transparent)
-    );
+  background: var(--surface-solid-secondary);
   color: var(--color-text-primary);
-  border-color: color-mix(in srgb, var(--chrome-border) 86%, transparent);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--chrome-highlight) 84%, transparent);
+  border-color: var(--surface-border-secondary);
+  box-shadow: none;
 
   &:hover:not(:disabled) {
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--chrome-surface-soft) 96%, transparent),
-        color-mix(in srgb, var(--chrome-surface) 86%, transparent)
-      );
-    border-color: var(--chrome-border-strong);
-    box-shadow:
-      inset 0 1px 0 color-mix(in srgb, var(--chrome-highlight) 90%, transparent),
-      0 10px 20px -18px color-mix(in srgb, var(--color-shadow) 24%, transparent);
+    background: var(--surface-solid-primary);
+    border-color: color-mix(in srgb, var(--color-border-strong) 84%, transparent);
   }
 
   &:active:not(:disabled) {
-    background: color-mix(in srgb, var(--chrome-surface) 92%, transparent);
+    background: var(--color-bg-active);
   }
 }
 
@@ -90,15 +66,9 @@
   border-color: transparent;
 
   &:hover:not(:disabled) {
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--chrome-surface-soft) 94%, transparent),
-        color-mix(in srgb, var(--chrome-surface) 74%, transparent)
-      );
+    background: var(--color-bg-hover);
     color: var(--color-text-primary);
-    border-color: color-mix(in srgb, var(--chrome-border) 78%, transparent);
-    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--chrome-highlight) 84%, transparent);
+    border-color: color-mix(in srgb, var(--surface-border-secondary) 88%, transparent);
   }
 
   &:active:not(:disabled) {

@@ -5,30 +5,23 @@
   font-family: var(--font-family);
   font-size: var(--font-size-base);
   color: var(--color-text-primary);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--chrome-surface-soft) 96%, transparent),
-      color-mix(in srgb, var(--chrome-surface) 78%, transparent)
-    );
-  border: 1px solid color-mix(in srgb, var(--chrome-border) 88%, transparent);
+  background: var(--surface-solid-secondary);
+  border: 1px solid var(--surface-border-secondary);
   border-radius: var(--radius-md);
   outline: none;
   cursor: pointer;
   transition: border-color var(--transition-fast),
     box-shadow var(--transition-fast),
     background-color var(--transition-fast);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--chrome-highlight) 84%, transparent);
+  box-shadow: none;
 
   &:hover:not(:disabled) {
-    border-color: var(--chrome-border-strong);
+    border-color: color-mix(in srgb, var(--color-border-strong) 84%, transparent);
   }
 
   &:focus {
     border-color: var(--color-accent);
-    box-shadow:
-      0 0 0 3px var(--color-focus-ring),
-      inset 0 1px 0 color-mix(in srgb, var(--chrome-highlight) 88%, transparent);
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
   }
 
   &:disabled {

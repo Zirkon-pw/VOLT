@@ -28,12 +28,38 @@ export function ContextMenuView({ items, position, onClose }: ContextMenuViewPro
     }
   }, [position]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') {
+        return;
+      }
+
+      event.preventDefault();
+      onClose();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
   return (
     <>
-      <div className={styles.overlay} onClick={onClose} onContextMenu={(e) => { e.preventDefault(); onClose(); }} />
+      <div
+        className={styles.overlay}
+        data-testid="context-menu-overlay"
+        onClick={onClose}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          onClose();
+        }}
+      />
       <div
         ref={menuRef}
         className={styles.menu}
+        data-testid="context-menu"
+        role="menu"
         style={{ left: position.x, top: position.y }}
       >
         {items.map((item, index) => {
@@ -45,7 +71,9 @@ export function ContextMenuView({ items, position, onClose }: ContextMenuViewPro
               key={index}
               type="button"
               className={`${styles.item} ${item.danger ? styles.danger : ''}`}
+              data-testid="context-menu-item"
               disabled={item.disabled}
+              role="menuitem"
               onClick={() => {
                 item.onClick();
                 onClose();

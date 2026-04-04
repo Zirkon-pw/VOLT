@@ -3,8 +3,8 @@
   width: 18px;
   height: 18px;
   border-radius: 999px;
-  background: var(--color-surface-overlay);
-  border: 1px solid color-mix(in srgb, var(--chrome-border) 80%, transparent);
+  background: var(--surface-solid-primary);
+  border: 1px solid var(--surface-border-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -19,17 +19,13 @@
     box-shadow 0.15s,
     transform 0.15s;
   padding: 0;
-  box-shadow:
-    var(--chrome-shadow-sm),
-    inset 0 1px 0 color-mix(in srgb, var(--chrome-highlight) 84%, transparent);
+  box-shadow: none;
 
   &:hover {
-    background: color-mix(in srgb, var(--color-accent) 10%, var(--chrome-surface-strong));
+    background: color-mix(in srgb, var(--color-accent) 10%, var(--surface-solid-secondary));
     border-color: color-mix(in srgb, var(--color-accent) 26%, var(--color-border));
     color: var(--color-text-primary);
-    box-shadow:
-      0 14px 26px -20px color-mix(in srgb, var(--color-shadow, #020617) 42%, transparent),
-      inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 14%, transparent);
+    box-shadow: none;
   }
 }
 
@@ -47,13 +43,11 @@
   align-items: center;
   justify-content: center;
   padding: 0;
-  border: 1px solid color-mix(in srgb, var(--chrome-border) 82%, transparent);
+  border: 1px solid var(--surface-border-primary);
   border-radius: 999px;
-  background: var(--color-surface-overlay);
+  background: var(--surface-solid-primary);
   color: var(--color-text-secondary);
-  box-shadow:
-    var(--chrome-shadow-sm),
-    inset 0 1px 0 color-mix(in srgb, var(--chrome-highlight) 84%, transparent);
+  box-shadow: none;
   cursor: pointer;
   z-index: calc(var(--z-editor-chrome) + 3);
   transition:
@@ -64,10 +58,9 @@
     transform var(--transition-fast);
 
   &:hover {
-    background: color-mix(in srgb, var(--color-accent) 9%, var(--chrome-surface));
+    background: color-mix(in srgb, var(--color-accent) 9%, var(--surface-solid-secondary));
     border-color: color-mix(in srgb, var(--color-accent) 24%, var(--color-border));
     color: var(--color-text-primary);
-    transform: translateY(-1px);
   }
 }
 
@@ -80,12 +73,10 @@
 }
 
 .selectionTargetActive {
-  background: color-mix(in srgb, var(--color-accent) 12%, var(--chrome-surface));
+  background: color-mix(in srgb, var(--color-accent) 12%, var(--surface-solid-secondary));
   border-color: color-mix(in srgb, var(--color-accent) 30%, var(--color-border));
   color: var(--color-accent);
-  box-shadow:
-    0 12px 24px -20px color-mix(in srgb, var(--color-shadow, #020617) 44%, transparent),
-    inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 14%, transparent);
 }
 
 .toolbar {
@@ -95,12 +86,10 @@
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-1);
-  border: 1px solid color-mix(in srgb, var(--chrome-border-strong) 88%, transparent);
+  border: 1px solid var(--surface-border-primary);
   border-radius: calc(var(--radius-xl) - 2px);
-  background: var(--color-surface-overlay);
-  box-shadow:
-    var(--chrome-shadow),
-    inset 0 1px 0 color-mix(in srgb, var(--chrome-highlight) 86%, transparent);
+  background: var(--surface-solid-primary);
+  box-shadow: none;
   transform: translate(-100%, calc(-100% - var(--space-2)));
 }
 
@@ -113,7 +102,7 @@
 .toolbarDivider {
   width: 1px;
   align-self: stretch;
-  background: color-mix(in srgb, var(--chrome-border) 76%, transparent);
+  background: color-mix(in srgb, var(--surface-border-secondary) 88%, transparent);
 }
 
 .actionBtn,
@@ -135,14 +124,9 @@
   transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
 
   &:hover {
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--chrome-surface-soft) 96%, transparent),
-        color-mix(in srgb, var(--chrome-surface) 76%, transparent)
-      );
+    background: var(--color-bg-hover);
     color: var(--color-text-primary);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chrome-border) 78%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--surface-border-secondary) 84%, transparent);
   }
 }
 
@@ -152,7 +136,7 @@
 }
 
 .iconBtnActive {
-  background: color-mix(in srgb, var(--color-accent) 9%, var(--chrome-surface-soft));
+  background: color-mix(in srgb, var(--color-accent) 9%, var(--surface-solid-secondary));
   color: var(--color-accent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 18%, transparent);
 }
@@ -169,10 +153,8 @@
   top: calc(100% + var(--space-2));
   right: 0;
   border-radius: var(--radius-xl);
-  border: 1px solid color-mix(in srgb, var(--chrome-border-strong) 88%, transparent);
-  background: var(--color-surface-overlay);
-  box-shadow:
-    var(--chrome-shadow),
-    inset 0 1px 0 color-mix(in srgb, var(--chrome-highlight) 86%, transparent);
+  border: 1px solid var(--surface-border-primary);
+  background: var(--surface-solid-primary);
+  box-shadow: none;
   overflow: hidden;
 }

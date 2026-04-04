@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type MouseEvent } from 'react';
 import type { SearchResult } from '@shared/api/search';
 import { getFileIconSource } from '@shared/lib/fileIcons';
 import { Icon } from '@shared/ui/icon';
@@ -8,7 +8,7 @@ interface FileSearchResultsProps {
   results: SearchResult[];
   query: string;
   activeIndex: number;
-  onSelect: (result: SearchResult) => void;
+  onSelect: (result: SearchResult, event?: MouseEvent<HTMLDivElement>) => void;
   onHover: (index: number) => void;
   emptyLabel: string;
 }
@@ -31,7 +31,7 @@ export function FileSearchResults({
         <div
           key={`${result.filePath}-${result.line}`}
           className={`${styles.resultItem} ${i === activeIndex ? styles.active : ''}`}
-          onClick={() => onSelect(result)}
+          onClick={(event) => onSelect(result, event)}
           onMouseEnter={() => onHover(i)}
         >
           <span className={styles.resultIcon}>

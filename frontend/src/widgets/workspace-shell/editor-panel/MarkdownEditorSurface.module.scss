@@ -7,7 +7,7 @@
   min-width: 0;
   overflow: hidden;
   isolation: isolate;
-  background: color-mix(in srgb, var(--color-surface-raised) 98%, var(--color-bg-primary));
+  background: transparent;
 }
 
 .editor-content {
@@ -39,9 +39,9 @@
     min-height: 100%;
     margin: 0 auto;
     padding:
-      calc(var(--space-10) + var(--space-4))
+      calc(var(--space-8) + var(--space-6))
       min(max(var(--space-4), 6vw), var(--editor-side-padding))
-      calc(var(--space-10) + var(--space-4))
+      calc(var(--space-10) + var(--space-2))
       calc(min(max(var(--space-4), 6vw), var(--editor-side-padding)) + var(--space-6));
   }
 
@@ -235,10 +235,11 @@
         max-width: 100%;
         height: auto;
         border-radius: var(--radius-lg);
+        border: 1px solid color-mix(in srgb, var(--surface-border-secondary) 86%, transparent);
         cursor: default;
         display: block;
         margin: 0.5em 0;
-        box-shadow: var(--shadow-sm);
+        box-shadow: none;
 
         &.ProseMirror-selectednode {
           outline: 2px solid var(--color-accent);
@@ -250,12 +251,7 @@
         margin: 1em 0;
         padding: var(--space-4);
         border-radius: var(--radius-xl);
-        background:
-          linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--color-surface-raised) 88%, var(--color-tint-blue)),
-            color-mix(in srgb, var(--color-surface-raised) 82%, var(--color-bg-secondary))
-          );
+        background: color-mix(in srgb, var(--surface-solid-secondary) 92%, var(--color-bg-secondary));
         border: 1px solid color-mix(in srgb, var(--color-border) 78%, transparent);
         cursor: pointer;
         text-align: center;
@@ -296,15 +292,8 @@
         margin: 1em 0;
         border-radius: var(--radius-2xl);
         border: 1px solid color-mix(in srgb, var(--color-border) 74%, transparent);
-        background:
-          linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--color-surface-raised) 90%, var(--color-tint-blue)),
-            color-mix(in srgb, var(--color-bg-secondary) 74%, var(--color-surface-raised))
-          );
-        box-shadow:
-          inset 0 1px 0 color-mix(in srgb, var(--color-bg-primary) 54%, transparent),
-          0 18px 32px -28px color-mix(in srgb, var(--color-shadow, #020617) 32%, transparent);
+        background: color-mix(in srgb, var(--surface-solid-secondary) 92%, var(--color-bg-secondary));
+        box-shadow: none;
         overflow: hidden;
 
         &.ProseMirror-selectednode {
@@ -449,15 +438,8 @@
         padding: 10px;
         border-radius: var(--radius-2xl);
         border: 1px solid color-mix(in srgb, var(--color-border) 66%, transparent);
-        background:
-          linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--color-surface-raised) 80%, var(--color-tint-butter)),
-            color-mix(in srgb, var(--color-surface-raised) 76%, var(--color-bg-secondary))
-          );
-        box-shadow:
-          inset 0 1px 0 color-mix(in srgb, var(--color-bg-primary) 54%, transparent),
-          0 18px 32px -28px color-mix(in srgb, var(--color-shadow, #020617) 28%, transparent);
+        background: color-mix(in srgb, var(--surface-solid-secondary) 94%, var(--color-bg-secondary));
+        box-shadow: none;
 
         &::-webkit-scrollbar {
           height: 4px;
@@ -474,10 +456,7 @@
 
         &:has(.selectedCell) {
           border-color: color-mix(in srgb, var(--color-accent) 24%, var(--color-border));
-          box-shadow:
-            inset 0 1px 0 color-mix(in srgb, var(--color-bg-primary) 64%, transparent),
-            0 0 0 1px color-mix(in srgb, var(--color-accent) 10%, transparent),
-            0 18px 32px -28px color-mix(in srgb, var(--color-shadow, #020617) 28%, transparent);
+          box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 14%, transparent);
         }
       }
 
@@ -487,9 +466,7 @@
         border-radius: calc(var(--radius-lg) + 2px);
         overflow: hidden;
         background: transparent;
-        box-shadow:
-          inset 0 0 0 1px color-mix(in srgb, var(--color-border) 56%, transparent),
-          0 1px 0 color-mix(in srgb, var(--color-border) 34%, transparent);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-border) 56%, transparent);
 
         th,
         td {

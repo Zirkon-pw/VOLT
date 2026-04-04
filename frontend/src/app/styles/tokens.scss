@@ -39,6 +39,8 @@
   --radius-lg: 14px;
   --radius-xl: 18px;
   --radius-2xl: 24px;
+  --window-radius: 34px;
+  --surface-radius: 26px;
 
   // Transitions
   --transition-fast: 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -48,9 +50,10 @@
   // Layout
   --sidebar-width: 240px;
   --content-max-width: 820px;
-  --editor-side-padding: 88px;
+  --editor-side-padding: 96px;
   --tab-height: 38px;
   --toolbar-height: 46px;
+  --pane-seam-width: 18px;
 
   // Layers
   --z-editor-chrome: 12;

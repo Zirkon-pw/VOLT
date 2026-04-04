@@ -1,15 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { TextSelection } from '@tiptap/pm/state';
-import { SearchPopup } from '@features/workspace-search';
 import type { FileEntry } from '@shared/api/file/types';
+import { SIDEBAR } from '@shared/config/constants';
 import { getEditor } from '@shared/lib/plugin-runtime';
-import { FileTree } from '@widgets/workspace-shell/file-tree/FileTree';
-import { EditorPanel } from '@widgets/workspace-shell/editor-panel/EditorPanel';
-import { FileTabs } from '@widgets/workspace-shell/file-tabs/FileTabs';
-import { Breadcrumbs } from '@widgets/workspace-shell/breadcrumbs/Breadcrumbs';
 import { useFileTreeStore } from '@entities/file-tree';
+import { useNavigationStore } from '@entities/navigation';
 import { useTabStore } from '@entities/tab';
-import { useWorkspaceHotkeys } from '@widgets/workspace-shell/model/useWorkspaceHotkeys';
+import { useWorkspaceViewStore } from '@entities/workspace-view';
+import { WorkspaceShell } from '@widgets/workspace-shell';
 
 declare global {
   interface Window {
@@ -22,6 +20,12 @@ declare global {
       getSavedFile: (path: string) => string | null;
       getMarkdown: () => string | null;
       getSelectionRange: () => { from: number; to: number } | null;
+      getWorkspaceView: () => {
+        primaryTabId: string | null;
+        secondaryTabId: string | null;
+        activePane: 'primary' | 'secondary';
+        splitRatio: number;
+      } | null;
       appendEmptyParagraphAtEnd: () => void;
       insertEmbedBlock: (url: string) => void;
       insertMathBlock: () => void;
@@ -106,56 +110,17 @@ function cloneTree(entries: FileEntry[]): FileEntry[] {
   }));
 }
 
-function PlaywrightHotkeysLayer() {
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchInitialQuery, setSearchInitialQuery] = useState('');
-  const [searchOpenToken, setSearchOpenToken] = useState(0);
-
-  const openSearch = useCallback((initialQuery = '') => {
-    setSearchInitialQuery(initialQuery);
-    setSearchOpenToken((current) => current + 1);
-    setSearchOpen(true);
-  }, []);
-
-  const closeSearch = useCallback(() => {
-    setSearchOpen(false);
-  }, []);
-
-  const openFindInFile = useCallback(() => {
-    window.dispatchEvent(new CustomEvent('volt:find-in-file'));
-  }, []);
-
-  useWorkspaceHotkeys({
-    voltId: VOLT_ID,
-    onOpenSearch: openSearch,
-    onToggleSidebar: () => undefined,
-    onOpenFindInFile: openFindInFile,
-  });
-
-  return (
-    <SearchPopup
-      isOpen={searchOpen}
-      initialQuery={searchInitialQuery}
-      openToken={searchOpenToken}
-      onClose={closeSearch}
-      voltId={VOLT_ID}
-      voltPath={VOLT_PATH}
-      onToggleSidebar={() => undefined}
-    />
-  );
-}
-
 export function PlaywrightEditorHarness() {
-  const activeTabId = useTabStore((state) => state.activeTabs[VOLT_ID] ?? FILE_PATH);
-  const activeTab = useTabStore((state) => (state.tabs[VOLT_ID] ?? []).find((tab) => tab.id === activeTabId) ?? null);
-  const activeFilePath = activeTab?.type === 'file' ? activeTab.filePath : FILE_PATH;
-
   useEffect(() => {
     resetSavedFiles();
     lastOpenedUrl = null;
+    localStorage.setItem(SIDEBAR.COLLAPSED_STORAGE_KEY, 'false');
+    localStorage.setItem(SIDEBAR.STORAGE_KEY, '260');
 
     window.go = {
+      ...(window.go ?? {}),
       wailshandler: {
+        ...(window.go?.wailshandler ?? {}),
         FileHandler: {
           ReadFile: async (_voltPath: string, filePath: string) => savedFiles.get(filePath) ?? '',
           WriteFile: async (_voltPath: string, filePath: string, content: string) => {
@@ -267,6 +232,11 @@ export function PlaywrightEditorHarness() {
       expandedPaths: { ...state.expandedPaths, [VOLT_ID]: ['notes', 'docs', 'files'] },
     }));
 
+    useNavigationStore.setState({
+      history: { [VOLT_ID]: [FILE_PATH] },
+      currentIndex: { [VOLT_ID]: 0 },
+    });
+
     useTabStore.setState((state) => ({
       ...state,
       tabs: {
@@ -289,6 +259,17 @@ export function PlaywrightEditorHarness() {
       },
     }));
 
+    useWorkspaceViewStore.setState({
+      views: {
+        [VOLT_ID]: {
+          primaryTabId: FILE_PATH,
+          secondaryTabId: null,
+          activePane: 'primary',
+          splitRatio: 0.5,
+        },
+      },
+    });
+
     window.__VOLT_PLAYWRIGHT__ = {
       getActiveTab: () => useTabStore.getState().activeTabs[VOLT_ID] ?? null,
       getOpenedUrl: () => lastOpenedUrl,
@@ -307,6 +288,7 @@ export function PlaywrightEditorHarness() {
         const { from, to } = editor.state.selection;
         return { from, to };
       },
+      getWorkspaceView: () => useWorkspaceViewStore.getState().views[VOLT_ID] ?? null,
       appendEmptyParagraphAtEnd: () => {
         const editor = getEditor();
         const paragraph = editor?.state.schema.nodes.paragraph;
@@ -344,35 +326,11 @@ export function PlaywrightEditorHarness() {
     <div
       data-testid="playwright-editor-harness"
       style={{
-        height: '100vh',
-        display: 'grid',
-        gridTemplateColumns: '260px minmax(0, 1fr)',
+        height: '100%',
+        minHeight: 0,
       }}
     >
-      <div style={{ minWidth: 0, borderRight: '1px solid var(--color-border)' }}>
-        <FileTree voltId={VOLT_ID} voltPath={VOLT_PATH} />
-      </div>
-      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', background: 'var(--color-bg-secondary)' }}>
-        <FileTabs voltId={VOLT_ID} />
-        <div style={{ minWidth: 0, minHeight: 0, flex: 1, position: 'relative', display: 'flex' }}>
-          <div
-            style={{
-              position: 'absolute',
-              top: 10,
-              left: 12,
-              right: 12,
-              zIndex: 2,
-              pointerEvents: 'none',
-            }}
-          >
-            <div style={{ pointerEvents: 'auto' }}>
-              <Breadcrumbs voltId={VOLT_ID} />
-            </div>
-          </div>
-          <EditorPanel voltId={VOLT_ID} voltPath={VOLT_PATH} filePath={activeFilePath} />
-        </div>
-      </div>
-      <PlaywrightHotkeysLayer />
+      <WorkspaceShell voltId={VOLT_ID} voltPath={VOLT_PATH} />
     </div>
   );
 }

@@ -20,12 +20,7 @@
   padding: var(--space-3);
   border: 1px solid color-mix(in srgb, var(--color-border) 90%, transparent);
   border-radius: var(--radius-lg);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-surface-raised) 88%, var(--color-tint-blue)),
-      color-mix(in srgb, var(--color-surface-raised) 82%, var(--color-bg-secondary))
-    );
+  background: color-mix(in srgb, var(--surface-solid-secondary) 94%, var(--color-bg-secondary));
 }
 
 .permission-label {

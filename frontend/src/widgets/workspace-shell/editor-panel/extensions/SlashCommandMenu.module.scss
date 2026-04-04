@@ -6,10 +6,10 @@
   overflow-y: auto;
   position: relative;
   isolation: isolate;
-  background: var(--color-surface-overlay);
-  border: 1px solid color-mix(in srgb, var(--chrome-border-strong) 88%, transparent);
+  background: var(--surface-solid-primary);
+  border: 1px solid var(--surface-border-primary);
   border-radius: var(--radius-xl);
-  box-shadow: var(--chrome-shadow);
+  box-shadow: none;
   padding: var(--space-1) 0;
 
   &::before {
@@ -18,9 +18,7 @@
     inset: 0;
     border-radius: inherit;
     pointer-events: none;
-    box-shadow:
-      inset 0 1px 0 var(--chrome-highlight),
-      inset 0 0 0 1px color-mix(in srgb, var(--chrome-hairline) 48%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-border) 16%, transparent);
   }
 }
 
@@ -37,25 +35,13 @@
   transition: background-color var(--transition-fast), box-shadow var(--transition-fast);
 
   &:hover {
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--chrome-surface-soft) 96%, transparent),
-        color-mix(in srgb, var(--chrome-surface) 76%, transparent)
-      );
+    background: var(--color-bg-hover);
   }
 }
 
 .selected {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--chrome-surface-soft) 98%, transparent),
-      color-mix(in srgb, var(--chrome-surface) 82%, transparent)
-    );
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--chrome-highlight) 86%, transparent),
-    inset 0 0 0 1px color-mix(in srgb, var(--chrome-border) 76%, transparent);
+  background: var(--color-bg-hover);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--surface-border-secondary) 84%, transparent);
 }
 
 .iconWrap {
@@ -66,7 +52,7 @@
   height: 28px;
   flex-shrink: 0;
   border-radius: 12px;
-  background-color: color-mix(in srgb, var(--chrome-surface-soft) 88%, transparent);
+  background-color: var(--surface-solid-secondary);
   color: var(--color-text-secondary);
 }
 

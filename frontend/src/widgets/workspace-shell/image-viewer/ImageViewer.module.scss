@@ -53,9 +53,7 @@
   justify-content: center;
   cursor: grab;
   position: relative;
-  background:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--color-tint-blue) 24%, transparent), transparent 32%),
-    linear-gradient(180deg, color-mix(in srgb, var(--color-bg-secondary) 72%, var(--color-bg-primary)), var(--color-bg-primary));
+  background: color-mix(in srgb, var(--surface-solid-secondary) 94%, var(--color-bg-primary));
 
   &.dragging {
     cursor: grabbing;
@@ -75,7 +73,8 @@
   user-select: none;
   -webkit-user-drag: none;
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg);
+  border: 1px solid color-mix(in srgb, var(--surface-border-secondary) 88%, transparent);
+  box-shadow: none;
 }
 
 .filename {

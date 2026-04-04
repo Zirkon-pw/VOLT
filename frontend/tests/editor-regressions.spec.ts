@@ -142,6 +142,37 @@ test('opens external links and internal note links', async ({ page }) => {
   await expect.poll(async () => page.evaluate(() => window.__VOLT_PLAYWRIGHT__?.getActiveTab() ?? null)).toBe('docs/guide.md');
 });
 
+test('opens files in a secondary pane with modifier-click and preserves the primary tab', async ({ page }) => {
+  await expect(page.getByTestId('workspace-pane-primary')).toHaveAttribute('data-tab-id', 'notes/test.md');
+
+  await page.keyboard.down(modKey);
+  await page.locator('[data-testid="file-tree-item"][data-path="notes/target.md"]').click();
+  await page.keyboard.up(modKey);
+
+  await expect(page.getByTestId('workspace-pane-primary')).toHaveAttribute('data-tab-id', 'notes/test.md');
+  await expect(page.getByTestId('workspace-pane-secondary')).toHaveAttribute('data-tab-id', 'notes/target.md');
+  await expect.poll(async () => page.evaluate(() => window.__VOLT_PLAYWRIGHT__?.getWorkspaceView() ?? null)).toMatchObject({
+    primaryTabId: 'notes/test.md',
+    secondaryTabId: 'notes/target.md',
+    activePane: 'secondary',
+  });
+});
+
+test('opens internal note links in a secondary pane with modifier-click and restores single-pane mode on close', async ({ page }) => {
+  await page.keyboard.down(modKey);
+  await page.locator('.ProseMirror a[href="../docs/guide.md"]').click();
+  await page.keyboard.up(modKey);
+
+  await expect(page.getByTestId('workspace-pane-secondary')).toHaveAttribute('data-tab-id', 'docs/guide.md');
+  await page.getByTestId('workspace-secondary-close').click();
+  await expect(page.getByTestId('workspace-pane-secondary')).toHaveCount(0);
+  await expect.poll(async () => page.evaluate(() => window.__VOLT_PLAYWRIGHT__?.getWorkspaceView() ?? null)).toMatchObject({
+    primaryTabId: 'notes/test.md',
+    secondaryTabId: null,
+    activePane: 'primary',
+  });
+});
+
 test('keeps legacy inline markdown as plain text after inline math removal', async ({ page }) => {
   await expect(page.locator('.ProseMirror')).toContainText('Legacy inline $math$ text');
   await expect(page.locator('.math-inline-node')).toHaveCount(0);
@@ -342,6 +373,59 @@ test('keeps root overflow locked while editing and opening editor overlays', asy
   await expectNoAppOverflow(page);
 });
 
+test('resizes split panes from the seam and collapses the sidebar from the seam control', async ({ page }) => {
+  await page.keyboard.down(modKey);
+  await page.locator('[data-testid="file-tree-item"][data-path="notes/target.md"]').click();
+  await page.keyboard.up(modKey);
+
+  const primaryPane = page.getByTestId('workspace-pane-primary');
+  const splitSeam = page.getByTestId('workspace-split-seam');
+  const before = await primaryPane.boundingBox();
+  const seamBox = await splitSeam.boundingBox();
+
+  if (!before || !seamBox) {
+    throw new Error('Split pane bounds are not available');
+  }
+
+  await page.mouse.move(seamBox.x + seamBox.width / 2, seamBox.y + seamBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(seamBox.x + seamBox.width / 2 + 96, seamBox.y + seamBox.height / 2, { steps: 8 });
+  await page.mouse.up();
+
+  const after = await primaryPane.boundingBox();
+  if (!after) {
+    throw new Error('Primary pane bounds are not available after resize');
+  }
+
+  expect(after.width).toBeGreaterThan(before.width + 40);
+
+  await expect(page.getByTestId('sidebar-pane')).toBeVisible();
+  await page.getByTestId('sidebar-toggle').click();
+  await expect(page.getByTestId('sidebar-pane')).toHaveCount(0);
+  await page.getByTestId('sidebar-toggle').click();
+  await expect(page.getByTestId('sidebar-pane')).toBeVisible();
+});
+
+test('keeps breadcrumbs inside an auto-width capsule', async ({ page }) => {
+  const capsule = page.getByTestId('breadcrumbs-capsule');
+  const pane = page.getByTestId('workspace-pane-primary');
+  const capsuleBox = await capsule.boundingBox();
+  const paneBox = await pane.boundingBox();
+
+  if (!capsuleBox || !paneBox) {
+    throw new Error('Breadcrumb bounds are not available');
+  }
+
+  expect(capsuleBox.width).toBeLessThan(paneBox.width * 0.6);
+});
+
+test('stays stable after closing the last open tab', async ({ page }) => {
+  await page.locator('[data-testid="file-tab"][data-path="notes/test.md"] button').click();
+  await expect(page.getByTestId('file-tabs')).toHaveCount(0);
+  await expect(page.getByTestId('workspace-pane-primary')).toBeVisible();
+  await expect(page.getByText('Something went wrong')).toHaveCount(0);
+});
+
 test('opens empty math block for typing instead of deleting it', async ({ page }) => {
   await page.evaluate(() => {
     window.__VOLT_PLAYWRIGHT__?.insertMathBlock();
@@ -418,6 +502,27 @@ test('flushes pending autosave before switching files and updates shell chrome',
   await expect.poll(async () => page.evaluate(() => window.__VOLT_PLAYWRIGHT__?.getActiveTab() ?? null)).toBe('notes/target.md');
   await expect(page.locator('[data-testid="file-tab"][data-path="notes/target.md"]')).toBeVisible();
   await expect(page.getByTestId('breadcrumb-active')).toHaveText('target.md');
+});
+
+test('opens a custom context menu, closes it with escape and outside click, and does not hijack plain inputs', async ({ page }) => {
+  const fileTreeItem = page.locator('[data-testid="file-tree-item"][data-path="notes/target.md"]');
+
+  await fileTreeItem.click({ button: 'right' });
+  await expect(page.getByTestId('context-menu')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('context-menu')).toHaveCount(0);
+
+  await fileTreeItem.click({ button: 'right' });
+  await expect(page.getByTestId('context-menu')).toBeVisible();
+  await page.getByTestId('context-menu-overlay').click({ position: { x: 2, y: 2 } });
+  await expect(page.getByTestId('context-menu')).toHaveCount(0);
+
+  await page.locator('.ProseMirror').click();
+  await page.keyboard.press(`${modKey}+F`);
+  const input = page.getByTestId('find-in-file-input');
+  await expect(input).toBeVisible();
+  await input.click({ button: 'right' });
+  await expect(page.getByTestId('context-menu')).toHaveCount(0);
 });
 
 test('sets the code block language from the floating selector and closes it on escape', async ({ page }) => {

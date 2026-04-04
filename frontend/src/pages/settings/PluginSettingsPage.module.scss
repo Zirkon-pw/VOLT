@@ -26,7 +26,7 @@
   background: color-mix(in srgb, var(--color-divider) 90%, transparent);
   border-radius: var(--radius-xl);
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 
 .pluginItem {
@@ -93,7 +93,7 @@
     border-radius: 50%;
     background: var(--color-surface-raised);
     transition: transform 0.2s;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    box-shadow: none;
   }
 }
 

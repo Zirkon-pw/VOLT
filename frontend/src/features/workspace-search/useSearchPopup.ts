@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   BUILTIN_SHORTCUT_ACTIONS,
@@ -7,7 +7,7 @@ import {
 } from '@entities/app-settings';
 import { useFileTreeStore } from '@entities/file-tree';
 import { type RegisteredSearchProvider, usePluginRegistryStore } from '@entities/plugin';
-import { useTabStore } from '@entities/tab';
+import { openFileInActivePane, openFileInSecondaryPane } from '@entities/workspace-view';
 import { readFile, type FileEntry } from '@shared/api/file';
 import { searchFiles } from '@shared/api/search';
 import type { SearchResult } from '@shared/api/search';
@@ -202,7 +202,6 @@ export function useSearchPopup(
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const openTab = useTabStore((state) => state.openTab);
   const startCreate = useFileTreeStore((state) => state.startCreate);
   const tree = useFileTreeStore((state) => state.trees[voltId] ?? EMPTY_FILE_TREE);
   const pluginCommands = usePluginRegistryStore((state) => state.commands);
@@ -257,11 +256,16 @@ export function useSearchPopup(
   }, [isCommandMode, isOpen, pluginSearchProviders, query, tree, voltPath]);
 
   const handleSelect = useCallback(
-    (result: SearchResult) => {
-      openTab(voltId, result.filePath, result.fileName);
+    (result: SearchResult, event?: MouseEvent) => {
+      const shouldOpenSecondary = Boolean(event?.metaKey || event?.ctrlKey);
+      if (shouldOpenSecondary) {
+        openFileInSecondaryPane(voltId, result.filePath, result.fileName);
+      } else {
+        openFileInActivePane(voltId, result.filePath, result.fileName);
+      }
       onClose();
     },
-    [openTab, onClose, voltId],
+    [onClose, voltId],
   );
 
   const handleCommandSelect = useCallback(

@@ -3,10 +3,10 @@
   display: flex;
   flex-direction: column;
   isolation: isolate;
-  background: var(--color-surface-overlay);
-  border: 1px solid color-mix(in srgb, var(--chrome-border-strong) 88%, transparent);
+  background: var(--surface-solid-primary);
+  border: 1px solid var(--surface-border-primary);
   border-radius: var(--radius-xl);
-  box-shadow: var(--chrome-shadow);
+  box-shadow: none;
 
   &::before {
     content: '';
@@ -14,9 +14,7 @@
     inset: 0;
     border-radius: inherit;
     pointer-events: none;
-    box-shadow:
-      inset 0 1px 0 var(--chrome-highlight),
-      inset 0 0 0 1px color-mix(in srgb, var(--chrome-hairline) 48%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-border) 16%, transparent);
   }
 }
 
@@ -42,19 +40,14 @@
   transition: background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
 
   &:hover {
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--chrome-surface-soft) 96%, transparent),
-        color-mix(in srgb, var(--chrome-surface) 76%, transparent)
-      );
+    background: var(--color-bg-hover);
     color: var(--color-text-primary);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chrome-border) 84%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--surface-border-secondary) 84%, transparent);
   }
 }
 
 .btnActive {
-  background: color-mix(in srgb, var(--color-accent) 10%, var(--chrome-surface-soft));
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--surface-solid-secondary));
   color: var(--color-accent);
 }
 
@@ -86,7 +79,7 @@
 .divider {
   width: 1px;
   height: 18px;
-  background: color-mix(in srgb, var(--chrome-border) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-border-secondary) 88%, transparent);
   margin: 0 var(--space-1);
 }
 
@@ -95,16 +88,16 @@
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
-  border-top: 1px solid color-mix(in srgb, var(--chrome-border) 84%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--surface-border-secondary) 88%, transparent);
 }
 
 .linkField {
   flex: 1;
   min-width: 200px;
   padding: var(--space-2) var(--space-3);
-  border: 1px solid color-mix(in srgb, var(--chrome-border) 86%, transparent);
+  border: 1px solid var(--surface-border-secondary);
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--color-surface-raised) 92%, var(--color-bg-primary));
+  background: var(--surface-solid-secondary);
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
   outline: none;
@@ -152,7 +145,7 @@
   display: flex;
   gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
-  border-top: 1px solid color-mix(in srgb, var(--chrome-border) 84%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--surface-border-secondary) 88%, transparent);
   flex-wrap: wrap;
 }
 
@@ -162,9 +155,9 @@
   justify-content: center;
   width: 24px;
   height: 24px;
-  border: 1px solid color-mix(in srgb, var(--chrome-border) 86%, transparent);
+  border: 1px solid var(--surface-border-secondary);
   border-radius: var(--radius-sm);
-  background: var(--color-surface-raised);
+  background: var(--surface-solid-secondary);
   font-weight: 700;
   font-size: 13px;
   cursor: pointer;
@@ -187,9 +180,9 @@
   justify-content: center;
   width: 24px;
   height: 24px;
-  border: 1px solid color-mix(in srgb, var(--chrome-border) 86%, transparent);
+  border: 1px solid var(--surface-border-secondary);
   border-radius: var(--radius-sm);
-  background: var(--color-surface-raised);
+  background: var(--surface-solid-secondary);
   cursor: pointer;
   transition: transform var(--transition-fast);
 

@@ -3,7 +3,7 @@ body {
   font-size: var(--font-size-base);
   line-height: var(--line-height);
   color: var(--color-text-primary);
-  background-color: var(--color-bg-primary);
+  background-color: color-mix(in srgb, var(--surface-shell-root) 72%, var(--color-bg-primary));
   letter-spacing: -0.012em;
   text-rendering: optimizeLegibility;
 }

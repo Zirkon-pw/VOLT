@@ -1,7 +1,7 @@
 import { useCallback, useState, type ClipboardEventHandler, type DragEventHandler } from 'react';
 import { EditorContent, type Editor } from '@tiptap/react';
 import { useFileTreeStore } from '@entities/file-tree';
-import { useTabStore } from '@entities/tab';
+import { openFileInActivePane, openFileInSecondaryPane } from '@entities/workspace-view';
 import { PluginTaskStatusBanner } from '@features/plugin-task-status';
 import { getFileExtension } from '@shared/lib/fileTypes';
 import {
@@ -11,7 +11,7 @@ import {
   getPathBasename,
   getEntryDisplayName,
 } from '@shared/lib/fileTree';
-import { BrowserOpenURL } from '../../../../wailsjs/runtime/runtime';
+import { openExternalUrl } from '@shared/api/runtime/browser';
 import { DragHandle } from './extensions/DragHandle';
 import { TableControls } from './extensions/TableControls';
 import { TextBubbleMenu } from './extensions/TextBubbleMenu';
@@ -62,7 +62,7 @@ export function MarkdownEditorSurface({
       e.stopPropagation();
 
       if (isExternalLink) {
-        BrowserOpenURL(href);
+        openExternalUrl(href);
         return;
       }
 
@@ -83,11 +83,12 @@ export function MarkdownEditorSurface({
           : resolvedPath;
       const displayName = getEntryDisplayName(getPathBasename(targetPath), false);
 
-      useTabStore.getState().openTab(
-        voltId,
-        targetPath,
-        displayName,
-      );
+      const shouldOpenSecondary = e.metaKey || e.ctrlKey;
+      if (shouldOpenSecondary) {
+        openFileInSecondaryPane(voltId, targetPath, displayName);
+      } else {
+        openFileInActivePane(voltId, targetPath, displayName);
+      }
     },
     [voltId, filePath],
   );
