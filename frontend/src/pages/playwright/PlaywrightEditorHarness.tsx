@@ -19,6 +19,7 @@ declare global {
       getOpenedUrl: () => string | null;
       getSavedFile: (path: string) => string | null;
       getMarkdown: () => string | null;
+      setMarkdown: (markdown: string) => void;
       getSelectionRange: () => { from: number; to: number } | null;
       getWorkspaceView: () => {
         primaryTabId: string | null;
@@ -278,6 +279,16 @@ export function PlaywrightEditorHarness() {
         const editor = getEditor();
         const markdownStorage = (editor?.storage as { markdown?: { getMarkdown?: () => string } } | undefined)?.markdown;
         return markdownStorage?.getMarkdown?.() ?? null;
+      },
+      setMarkdown: (markdown: string) => {
+        const editor = getEditor();
+        if (!editor) {
+          return;
+        }
+
+        editor.commands.setContent(markdown);
+        editor.commands.setTextSelection(1);
+        editor.view.focus();
       },
       getSelectionRange: () => {
         const editor = getEditor();

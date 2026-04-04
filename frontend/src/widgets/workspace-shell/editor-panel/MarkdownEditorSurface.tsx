@@ -66,6 +66,7 @@ export function MarkdownEditorSurface({
   const longPressTimerRef = useRef<number | null>(null);
   const longPressPointRef = useRef<{ x: number; y: number } | null>(null);
   const longPressTriggeredRef = useRef(false);
+  const lastSurfaceTargetRef = useRef<EventTarget | null>(null);
   const responsiveMode = useEditorResponsiveMode({ element: editorContentElement });
 
   const isWithinEditorSurfaceTarget = useCallback((target: EventTarget | null) => {
@@ -88,6 +89,7 @@ export function MarkdownEditorSurface({
       return;
     }
 
+    lastSurfaceTargetRef.current = target;
     ensureEditorSelectionForTarget(editor, {
       target,
       clientX: position.x,
@@ -120,6 +122,14 @@ export function MarkdownEditorSurface({
     }
 
     const handleSelectionChange = () => {
+      if (contextMenuState.context.tableState.active) {
+        const nextContext = getEditorMenuContext(editor, {
+          target: lastSurfaceTargetRef.current,
+        });
+        if (nextContext.tableState.active) {
+          return;
+        }
+      }
       closeContextMenu();
     };
 
@@ -127,17 +137,14 @@ export function MarkdownEditorSurface({
       closeContextMenu();
     };
 
-    const container = editorContentElement;
     editor.on('selectionUpdate', handleSelectionChange);
-    container?.addEventListener('scroll', handleResize, { passive: true });
     window.addEventListener('resize', handleResize);
 
     return () => {
       editor.off('selectionUpdate', handleSelectionChange);
-      container?.removeEventListener('scroll', handleResize);
       window.removeEventListener('resize', handleResize);
     };
-  }, [closeContextMenu, contextMenuState, editor, editorContentElement]);
+  }, [closeContextMenu, contextMenuState, editor]);
 
   const handleLinkClick = useCallback(
     (e: React.MouseEvent) => {
@@ -222,14 +229,39 @@ export function MarkdownEditorSurface({
 
         event.preventDefault();
         event.stopPropagation();
-        openContextMenu(getEditorKeyboardMenuPosition(editor), event.target);
+        editor.view.focus();
+        const domSelectionTarget = document.getSelection()?.anchorNode ?? null;
+        const lastSurfaceTarget = isWithinEditorSurfaceTarget(lastSurfaceTargetRef.current)
+          ? lastSurfaceTargetRef.current
+          : null;
+        const selectionTarget = lastSurfaceTarget
+          ?? (isWithinEditorSurfaceTarget(domSelectionTarget) ? domSelectionTarget : event.target);
+        ensureEditorSelectionForTarget(editor, {
+          target: selectionTarget,
+        });
+        const keyboardPosition = getEditorKeyboardMenuPosition(editor);
+        const keyboardTarget = document.elementFromPoint(keyboardPosition.x, keyboardPosition.y);
+        const resolvedKeyboardTarget = isWithinEditorSurfaceTarget(keyboardTarget) ? keyboardTarget : selectionTarget;
+        setContextMenuState({
+          context: getEditorMenuContext(editor, {
+            target: resolvedKeyboardTarget,
+            clientX: keyboardPosition.x,
+            clientY: keyboardPosition.y,
+          }),
+          position: keyboardPosition,
+        });
       }}
       onPointerDownCapture={(event) => {
-        if (responsiveMode !== 'touch' || event.pointerType === 'mouse') {
+        if (!isWithinEditorSurfaceTarget(event.target) || isNativeContextMenuTarget(event.target)) {
+          if (responsiveMode === 'touch') {
+            clearLongPress();
+          }
           return;
         }
 
-        if (!isWithinEditorSurfaceTarget(event.target) || isNativeContextMenuTarget(event.target)) {
+        lastSurfaceTargetRef.current = event.target;
+        if (responsiveMode !== 'touch' || event.pointerType === 'mouse') {
+          clearLongPress();
           return;
         }
 

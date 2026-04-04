@@ -150,12 +150,13 @@ function getTargetElement(target: EventTarget | null) {
 
 function getTableState(editor: Editor): EditorTableState {
   const { selection } = editor.state;
+  const anchorCellPos = resolveAnchorCellPos(editor);
   return {
-    active: editor.isActive('table') || isInTable(editor.state),
+    active: editor.isActive('table') || isInTable(editor.state) || anchorCellPos != null,
     rowSelection: selection instanceof CellSelection && selection.isRowSelection(),
     colSelection: selection instanceof CellSelection && selection.isColSelection(),
     cellSelection: selection instanceof CellSelection,
-    anchorCellPos: resolveAnchorCellPos(editor),
+    anchorCellPos,
     cellBackgroundColor: editor.getAttributes('tableCell').backgroundColor
       ?? editor.getAttributes('tableHeader').backgroundColor
       ?? null,

@@ -87,6 +87,15 @@ async function scrollEditorViewport(
   }, { left, top });
 }
 
+async function setHarnessMarkdown(
+  page: import('@playwright/test').Page,
+  markdown: string,
+) {
+  await page.evaluate((value) => {
+    window.__VOLT_PLAYWRIGHT__?.setMarkdown(value);
+  }, markdown);
+}
+
 test.beforeEach(async ({ page }) => {
   await gotoHarness(page);
 });
@@ -399,8 +408,11 @@ test('saves and reloads embed blocks without losing markdown structure', async (
 test('shows only append handles for tables, keeps them stable, and appends at the edges', async ({ page }) => {
   const firstCell = page.locator('.ProseMirror td').first();
   const surface = page.getByTestId('markdown-editor-surface');
+  const tableWrapper = page.locator('.ProseMirror .tableWrapper');
 
   await firstCell.click();
+  await expect.poll(async () => tableWrapper.evaluate((node) => getComputedStyle(node).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
+  await expect.poll(async () => tableWrapper.evaluate((node) => getComputedStyle(node).borderTopWidth)).toBe('0px');
   await expect(page.getByTestId('table-add-col')).toBeVisible();
   await expect(page.getByTestId('table-add-row')).toBeVisible();
   await expect(page.getByTestId('table-select-col')).toHaveCount(0);
@@ -431,6 +443,47 @@ test('shows only append handles for tables, keeps them stable, and appends at th
   expect(colHandleBox.x + colHandleBox.width / 2).toBeLessThanOrEqual(surfaceBox.x + surfaceBox.width + 1);
   expect(rowHandleBox.y + rowHandleBox.height / 2).toBeGreaterThanOrEqual(surfaceBox.y - 1);
   expect(rowHandleBox.y + rowHandleBox.height / 2).toBeLessThanOrEqual(surfaceBox.y + surfaceBox.height + 1);
+});
+
+test('keeps table add handles inside the visible wrapper when the table is horizontally scrolled', async ({ page }) => {
+  await setHarnessMarkdown(page, `# Wide table
+
+| H1 | H2 | H3 | H4 | H5 | H6 | H7 | H8 | H9 | H10 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| A1 | A2 | A3 | A4 | A5 | A6 | A7 | A8 | A9 | A10 |
+| B1 | B2 | B3 | B4 | B5 | B6 | B7 | B8 | B9 | B10 |`);
+
+  const tableWrapper = page.locator('.ProseMirror .tableWrapper');
+  const firstCell = page.locator('.ProseMirror td').first();
+
+  await expect(tableWrapper).toBeVisible();
+  await firstCell.click();
+  await expect(page.getByTestId('table-add-col')).toBeVisible();
+  await expect(page.getByTestId('table-add-row')).toBeVisible();
+
+  await page.evaluate(() => {
+    const wrapper = document.querySelector('.ProseMirror .tableWrapper');
+    if (!(wrapper instanceof HTMLElement)) {
+      throw new Error('Table wrapper not found');
+    }
+
+    wrapper.scrollTo({ left: wrapper.scrollWidth, top: 0 });
+  });
+
+  await expect(page.getByTestId('table-add-col')).toBeVisible();
+  await expect(page.getByTestId('table-add-row')).toBeVisible();
+
+  const wrapperBox = await tableWrapper.boundingBox();
+  const colHandleBox = await page.getByTestId('table-add-col').boundingBox();
+  const rowHandleBox = await page.getByTestId('table-add-row').boundingBox();
+  if (!wrapperBox || !colHandleBox || !rowHandleBox) {
+    throw new Error('Wide table handle bounds are not available');
+  }
+
+  expect(colHandleBox.x + colHandleBox.width / 2).toBeGreaterThanOrEqual(wrapperBox.x - 1);
+  expect(colHandleBox.x + colHandleBox.width / 2).toBeLessThanOrEqual(wrapperBox.x + wrapperBox.width + 1);
+  expect(rowHandleBox.x + rowHandleBox.width / 2).toBeGreaterThanOrEqual(wrapperBox.x - 1);
+  expect(rowHandleBox.x + rowHandleBox.width / 2).toBeLessThanOrEqual(wrapperBox.x + wrapperBox.width + 1);
 });
 
 test('keeps root overflow locked while editing and opening editor overlays', async ({ page }) => {
@@ -670,7 +723,7 @@ test('opens table actions from the context menu and applies cell colors from the
   await expect(colorPicker).toHaveCount(0);
   await expect.poll(async () => firstCell.evaluate((node) => (node as HTMLTableCellElement).style.backgroundColor)).not.toBe('');
 
-  await page.getByTestId('context-menu-overlay').click({ position: { x: 2, y: 2 } });
+  await page.keyboard.press('Escape');
   await expect(page.getByTestId('context-menu')).toHaveCount(0);
 
   await firstCell.click({ button: 'right' });
@@ -680,9 +733,9 @@ test('opens table actions from the context menu and applies cell colors from the
 });
 
 test('opens the same table menu from the keyboard', async ({ page }) => {
-  const firstCell = page.locator('.ProseMirror td').first();
+  const firstCellText = page.locator('.ProseMirror td').first().getByText('One');
 
-  await firstCell.click();
+  await firstCellText.click();
   await page.keyboard.press('Shift+F10');
 
   await expect(page.getByTestId('context-menu')).toBeVisible();

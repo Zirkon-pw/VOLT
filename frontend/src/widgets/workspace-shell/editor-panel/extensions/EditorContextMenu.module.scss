@@ -1,0 +1,19 @@
+.colorPopover {
+  position: fixed;
+  z-index: calc(var(--z-dialog-surface) + 1);
+  border: 1px solid var(--surface-border-primary);
+  border-radius: 18px;
+  background: var(--surface-solid-primary);
+  max-width: calc(100vw - 16px);
+  overflow: hidden;
+  isolation: isolate;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-border) 16%, transparent);
+  }
+}

@@ -46,7 +46,6 @@ export function EditorContextMenu({
   position,
   onClose,
 }: EditorContextMenuProps) {
-  const [menuPosition, setMenuPosition] = useState(position);
   const [showCellColorPicker, setShowCellColorPicker] = useState(false);
   const [colorPickerPosition, setColorPickerPosition] = useState<{ left: number; top: number } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -63,7 +62,6 @@ export function EditorContextMenu({
   );
 
   useEffect(() => {
-    setMenuPosition(position);
     setShowCellColorPicker(false);
     setColorPickerPosition(null);
   }, [position]);
@@ -82,14 +80,8 @@ export function EditorContextMenu({
     const rect = menu.getBoundingClientRect();
     const maxLeft = Math.max(4, window.innerWidth - rect.width - 4);
     const maxTop = Math.max(4, window.innerHeight - rect.height - 4);
-    const nextLeft = clamp(position.x, 4, maxLeft);
-    const nextTop = clamp(position.y, 4, maxTop);
-
-    setMenuPosition((current) => (
-      current.x === nextLeft && current.y === nextTop
-        ? current
-        : { x: nextLeft, y: nextTop }
-    ));
+    menu.style.left = `${clamp(position.x, 4, maxLeft)}px`;
+    menu.style.top = `${clamp(position.y, 4, maxTop)}px`;
   }, [items.length, position.x, position.y]);
 
   useLayoutEffect(() => {
@@ -121,7 +113,7 @@ export function EditorContextMenu({
         ? current
         : { left, top }
     ));
-  }, [items.length, menuPosition, showCellColorPicker]);
+  }, [items.length, position.x, position.y, showCellColorPicker]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -182,7 +174,7 @@ export function EditorContextMenu({
         className={sharedStyles.menu}
         data-testid="context-menu"
         role="menu"
-        style={{ left: menuPosition.x, top: menuPosition.y }}
+        style={{ left: position.x, top: position.y }}
       >
         {items.map((item) => {
           if (item.separator) {
@@ -205,6 +197,10 @@ export function EditorContextMenu({
               disabled={item.disabled}
               role="menuitem"
               aria-label={item.ariaLabel ?? item.label}
+              onMouseDown={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+              }}
               onClick={() => {
                 item.onClick();
                 if (item.closeOnClick !== false) {
@@ -231,12 +227,15 @@ export function EditorContextMenu({
           className={styles.colorPopover}
           data-testid="table-context-color-picker"
           style={{
-            left: colorPickerPosition?.left ?? menuPosition.x,
-            top: colorPickerPosition?.top ?? menuPosition.y,
+            left: colorPickerPosition?.left ?? position.x,
+            top: colorPickerPosition?.top ?? position.y,
             visibility: colorPickerPosition ? 'visible' : 'hidden',
           }}
           onClick={(event) => event.stopPropagation()}
-          onMouseDown={(event) => event.stopPropagation()}
+          onMouseDown={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+          }}
         >
           <ColorPicker
             value={context.tableState.cellBackgroundColor}
@@ -263,7 +262,7 @@ function buildEditorContextMenuItems(
     clearCellColor: () => void;
   },
 ) {
-  if (context.tableState.active) {
+  if (context.tableState.active || context.nodeKind === 'table') {
     return trimSeparators(buildTableItems(editor, context, {
       showCellColorPicker,
       openCellColorPicker,
@@ -547,7 +546,7 @@ function buildTableItems(
     },
   ]);
 
-  pushGroup(items, [
+  const colorItems: EditorContextMenuItem[] = [
     {
       id: 'table-cell-color',
       label: `${translate('editor.table.cellColor')}...`,
@@ -568,9 +567,11 @@ function buildTableItems(
           onClick: () => {
             clearCellColor();
           },
-        }]
+        } satisfies EditorContextMenuItem]
       : []),
-  ]);
+  ];
+
+  pushGroup(items, colorItems);
 
   return items;
 }

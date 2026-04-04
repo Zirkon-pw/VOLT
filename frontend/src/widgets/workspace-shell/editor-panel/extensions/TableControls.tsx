@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
 import type { Editor } from '@tiptap/react';
 import { useI18n } from '@app/providers/I18nProvider';
 import { Icon } from '@shared/ui/icon';
@@ -27,6 +27,7 @@ export function TableControls({ editor, scrollContainer, overlayContainer, mode 
   const rafRef = useRef<number>(0);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const observedOverlayRef = useRef<HTMLElement | null>(null);
+  const observedWrapperRef = useRef<HTMLElement | null>(null);
   const observedTableRef = useRef<HTMLTableElement | null>(null);
 
   const stopInteraction = useCallback((event: React.MouseEvent<HTMLElement>) => {
@@ -43,7 +44,9 @@ export function TableControls({ editor, scrollContainer, overlayContainer, mode 
     cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(() => {
       const overlay = overlayContainer;
+      const container = getContainer();
       const table = editor.isActive('table') ? findTableElement(editor) : null;
+      const wrapper = table ? findTableWrapper(table) : null;
 
       syncObservedElements({
         editor,
@@ -51,7 +54,9 @@ export function TableControls({ editor, scrollContainer, overlayContainer, mode 
         scheduleUpdate,
         resizeObserverRef,
         observedOverlayRef,
+        observedWrapperRef,
         observedTableRef,
+        wrapper,
         table,
       });
 
@@ -62,7 +67,11 @@ export function TableControls({ editor, scrollContainer, overlayContainer, mode 
 
       const overlayRect = overlay.getBoundingClientRect();
       const tableRect = table.getBoundingClientRect();
-      const visibleRect = getVisibleTableRect(tableRect, overlayRect);
+      const visibleRect = getVisibleTableRect(tableRect, [
+        overlayRect,
+        container?.getBoundingClientRect() ?? null,
+        wrapper?.getBoundingClientRect() ?? null,
+      ]);
 
       if (visibleRect == null) {
         setAddHandles([]);
@@ -99,9 +108,20 @@ export function TableControls({ editor, scrollContainer, overlayContainer, mode 
     const handleScroll = () => {
       scheduleUpdate();
     };
+    const handleDocumentScroll = (event: Event) => {
+      const target = event.target;
+      if (target === container) {
+        return;
+      }
+
+      if (target instanceof Node && editor.view.dom.contains(target)) {
+        scheduleUpdate();
+      }
+    };
 
     const container = getContainer();
     container?.addEventListener('scroll', handleScroll, { passive: true });
+    editor.view.dom.ownerDocument.addEventListener('scroll', handleDocumentScroll, { passive: true, capture: true });
     window.addEventListener('resize', handleScroll);
 
     scheduleUpdate();
@@ -110,6 +130,7 @@ export function TableControls({ editor, scrollContainer, overlayContainer, mode 
       editor.off('selectionUpdate', syncControls);
       editor.off('update', syncControls);
       container?.removeEventListener('scroll', handleScroll);
+      editor.view.dom.ownerDocument.removeEventListener('scroll', handleDocumentScroll, true);
       window.removeEventListener('resize', handleScroll);
       cancelAnimationFrame(rafRef.current);
     };
@@ -124,6 +145,7 @@ export function TableControls({ editor, scrollContainer, overlayContainer, mode 
     resizeObserverRef.current?.disconnect();
     resizeObserverRef.current = null;
     observedOverlayRef.current = null;
+    observedWrapperRef.current = null;
     observedTableRef.current = null;
   }, []);
 
@@ -181,15 +203,19 @@ function syncObservedElements({
   scheduleUpdate,
   resizeObserverRef,
   observedOverlayRef,
+  observedWrapperRef,
   observedTableRef,
+  wrapper,
   table,
 }: {
   editor: Editor;
   overlay: HTMLElement | null;
   scheduleUpdate: () => void;
-  resizeObserverRef: React.MutableRefObject<ResizeObserver | null>;
-  observedOverlayRef: React.MutableRefObject<HTMLElement | null>;
-  observedTableRef: React.MutableRefObject<HTMLTableElement | null>;
+  resizeObserverRef: MutableRefObject<ResizeObserver | null>;
+  observedOverlayRef: MutableRefObject<HTMLElement | null>;
+  observedWrapperRef: MutableRefObject<HTMLElement | null>;
+  observedTableRef: MutableRefObject<HTMLTableElement | null>;
+  wrapper: HTMLElement | null;
   table: HTMLTableElement | null;
 }) {
   if (typeof ResizeObserver === 'undefined') {
@@ -215,6 +241,16 @@ function syncObservedElements({
     observedOverlayRef.current = nextOverlay;
   }
 
+  if (observedWrapperRef.current !== wrapper) {
+    if (observedWrapperRef.current) {
+      observer.unobserve(observedWrapperRef.current);
+    }
+    if (wrapper && editor.view.dom.contains(wrapper)) {
+      observer.observe(wrapper);
+    }
+    observedWrapperRef.current = wrapper;
+  }
+
   if (observedTableRef.current !== table) {
     if (observedTableRef.current) {
       observer.unobserve(observedTableRef.current);
@@ -231,6 +267,10 @@ function findTableElement(editor: Editor): HTMLTableElement | null {
   const domAtPos = editor.view.domAtPos($anchor.pos);
   const element = domAtPos.node instanceof HTMLElement ? domAtPos.node : domAtPos.node.parentElement;
   return element?.closest('table') ?? null;
+}
+
+function findTableWrapper(table: HTMLTableElement): HTMLElement | null {
+  return table.closest('.tableWrapper');
 }
 
 function findAppendTargetCell(table: HTMLTableElement, type: 'row' | 'col') {
@@ -256,11 +296,22 @@ function getSelectionPosForCell(editor: Editor, cell: HTMLTableCellElement) {
   }
 }
 
-function getVisibleTableRect(tableRect: DOMRect, overlayRect: DOMRect) {
-  const left = Math.max(tableRect.left, overlayRect.left);
-  const right = Math.min(tableRect.right, overlayRect.right);
-  const top = Math.max(tableRect.top, overlayRect.top);
-  const bottom = Math.min(tableRect.bottom, overlayRect.bottom);
+function getVisibleTableRect(tableRect: DOMRect, clipRects: Array<DOMRect | null>) {
+  let left = tableRect.left;
+  let right = tableRect.right;
+  let top = tableRect.top;
+  let bottom = tableRect.bottom;
+
+  for (const rect of clipRects) {
+    if (!rect) {
+      continue;
+    }
+
+    left = Math.max(left, rect.left);
+    right = Math.min(right, rect.right);
+    top = Math.max(top, rect.top);
+    bottom = Math.min(bottom, rect.bottom);
+  }
 
   if (right <= left || bottom <= top) {
     return null;
