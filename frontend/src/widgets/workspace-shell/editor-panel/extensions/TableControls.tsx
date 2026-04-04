@@ -1,22 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
-import { CellSelection, findCellPos, isInTable, selectedRect } from '@tiptap/pm/tables';
 import { useI18n } from '@app/providers/I18nProvider';
-import { ColorPicker } from '@shared/ui/color-picker';
 import { Icon } from '@shared/ui/icon';
 import type { EditorResponsiveMode } from '../hooks/useEditorResponsiveMode';
 import styles from './TableControls.module.scss';
-
-const CELL_COLORS = [
-  { label: 'None', value: null },
-  { label: 'Gray', value: '#f3f4f6' },
-  { label: 'Blue', value: '#dbeafe' },
-  { label: 'Green', value: '#dcfce7' },
-  { label: 'Yellow', value: '#fef9c3' },
-  { label: 'Red', value: '#fee2e2' },
-  { label: 'Purple', value: '#f3e8ff' },
-  { label: 'Rose', value: '#ffe4e6' },
-];
 
 interface TableControlsProps {
   editor: Editor;
@@ -31,168 +18,93 @@ interface HandlePos {
   top: number;
 }
 
-interface ToolbarPos {
-  left: number;
-  top: number;
-}
-
-interface CellInfo {
-  table: HTMLTableElement;
-  cell: HTMLTableCellElement;
-  cellPos: number;
-  rowIndex: number;
-  colIndex: number;
-}
-
-interface SelectionTarget {
-  type: 'row' | 'col';
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-  cellPos: number;
-  active: boolean;
-}
-
-interface AxisSelectionState {
-  rowSelection: boolean;
-  colSelection: boolean;
-  rect: ReturnType<typeof selectedRect>;
-}
+const TOUCH_HANDLE_INSET = 18;
+const POINTER_HANDLE_INSET = 12;
 
 export function TableControls({ editor, scrollContainer, overlayContainer, mode }: TableControlsProps) {
   const { t } = useI18n();
   const [addHandles, setAddHandles] = useState<HandlePos[]>([]);
-  const [handlesVisible, setHandlesVisible] = useState(false);
-  const [toolbarPos, setToolbarPos] = useState<ToolbarPos | null>(null);
-  const [selectionTargets, setSelectionTargets] = useState<SelectionTarget[]>([]);
-  const [showColors, setShowColors] = useState(false);
   const rafRef = useRef<number>(0);
-  const toolbarRef = useRef<HTMLDivElement>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  const observedOverlayRef = useRef<HTMLElement | null>(null);
+  const observedTableRef = useRef<HTMLTableElement | null>(null);
 
   const stopInteraction = useCallback((event: React.MouseEvent<HTMLElement>) => {
     event.preventDefault();
     event.stopPropagation();
   }, []);
 
-  const closeColorPicker = useCallback((restoreEditorFocus = false) => {
-    setShowColors(false);
-    if (restoreEditorFocus) {
-      editor.chain().focus().run();
-    }
-  }, [editor]);
-
   const getContainer = useCallback(
     () => scrollContainer ?? editor.view.dom.parentElement,
     [editor.view.dom.parentElement, scrollContainer],
   );
 
-  const updatePositions = useCallback(() => {
-    const selectedTable = editor.isActive('table') ? findTableElement(editor) : null;
-    const selectedCell = editor.isActive('table') ? findSelectedCell(editor) : null;
-    const tableNode = selectedCell?.table ?? selectedTable;
-    const overlay = overlayContainer;
+  const scheduleUpdate = useCallback(() => {
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      const overlay = overlayContainer;
+      const table = editor.isActive('table') ? findTableElement(editor) : null;
 
-    if (!tableNode || !overlay) {
-      setAddHandles([]);
-      setHandlesVisible(false);
-      setToolbarPos(null);
-      setSelectionTargets([]);
-      setShowColors(false);
-      return;
-    }
+      syncObservedElements({
+        editor,
+        overlay,
+        scheduleUpdate,
+        resizeObserverRef,
+        observedOverlayRef,
+        observedTableRef,
+        table,
+      });
 
-    const overlayRect = overlay.getBoundingClientRect();
-    const tableRect = tableNode.getBoundingClientRect();
-    const isVisible = !(
-      tableRect.bottom < overlayRect.top
-      || tableRect.top > overlayRect.bottom
-      || tableRect.right < overlayRect.left
-      || tableRect.left > overlayRect.right
-    );
+      if (!overlay || !table) {
+        setAddHandles([]);
+        return;
+      }
 
-    if (!isVisible) {
-      setAddHandles([]);
-      setHandlesVisible(false);
-      setToolbarPos(null);
-      setSelectionTargets([]);
-      setShowColors(false);
-      return;
-    }
+      const overlayRect = overlay.getBoundingClientRect();
+      const tableRect = table.getBoundingClientRect();
+      const visibleRect = getVisibleTableRect(tableRect, overlayRect);
 
-    const overlayWidth = overlay.clientWidth;
-    const overlayHeight = overlay.clientHeight;
+      if (visibleRect == null) {
+        setAddHandles([]);
+        return;
+      }
 
-    setAddHandles([
-      {
-        type: 'col',
-        left: clamp(tableRect.right - overlayRect.left, 10, Math.max(10, overlayWidth - 10)),
-        top: clamp(
-          tableRect.top + tableRect.height / 2 - overlayRect.top,
-          10,
-          Math.max(10, overlayHeight - 10),
-        ),
-      },
-      {
-        type: 'row',
-        left: clamp(
-          tableRect.left + tableRect.width / 2 - overlayRect.left,
-          10,
-          Math.max(10, overlayWidth - 10),
-        ),
-        top: clamp(tableRect.bottom - overlayRect.top, 10, Math.max(10, overlayHeight - 10)),
-      },
-    ]);
-    setHandlesVisible(Boolean(selectedCell) || Boolean(selectedTable));
+      const inset = mode === 'touch' ? TOUCH_HANDLE_INSET : POINTER_HANDLE_INSET;
+      const maxLeft = Math.max(inset, overlay.clientWidth - inset);
+      const maxTop = Math.max(inset, overlay.clientHeight - inset);
 
-    const axisSelection = getAxisSelectionState(editor);
-    if (selectedCell) {
-      setSelectionTargets(buildSelectionTargets(selectedCell, overlayRect, axisSelection, mode));
-    } else {
-      setSelectionTargets([]);
-    }
-
-    if (!selectedTable) {
-      setToolbarPos(null);
-      setShowColors(false);
-      return;
-    }
-
-    const toolbarWidth = toolbarRef.current?.offsetWidth ?? 308;
-    const toolbarHeight = toolbarRef.current?.offsetHeight ?? 48;
-    const containerWidth = overlay.clientWidth;
-    const containerHeight = overlay.clientHeight;
-    const minLeftEdge = 12;
-    const maxLeftEdge = Math.max(minLeftEdge, containerWidth - toolbarWidth - 12);
-    const leftEdge = clamp(tableRect.right - overlayRect.left - toolbarWidth, minLeftEdge, maxLeftEdge);
-
-    setToolbarPos({
-      left: leftEdge + toolbarWidth,
-      top: clamp(
-        tableRect.top - overlayRect.top,
-        toolbarHeight + 12,
-        Math.max(toolbarHeight + 12, containerHeight - 12),
-      ),
+      setAddHandles([
+        {
+          type: 'col',
+          left: clamp(visibleRect.right - overlayRect.left, inset, maxLeft),
+          top: clamp((visibleRect.top + visibleRect.bottom) / 2 - overlayRect.top, inset, maxTop),
+        },
+        {
+          type: 'row',
+          left: clamp((visibleRect.left + visibleRect.right) / 2 - overlayRect.left, inset, maxLeft),
+          top: clamp(visibleRect.bottom - overlayRect.top, inset, maxTop),
+        },
+      ]);
     });
   }, [editor, mode, overlayContainer]);
 
   useEffect(() => {
     const syncControls = () => {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => updatePositions());
+      scheduleUpdate();
     };
 
     editor.on('selectionUpdate', syncControls);
     editor.on('update', syncControls);
 
     const handleScroll = () => {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => updatePositions());
+      scheduleUpdate();
     };
 
     const container = getContainer();
     container?.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', handleScroll);
+
+    scheduleUpdate();
 
     return () => {
       editor.off('selectionUpdate', syncControls);
@@ -201,116 +113,44 @@ export function TableControls({ editor, scrollContainer, overlayContainer, mode 
       window.removeEventListener('resize', handleScroll);
       cancelAnimationFrame(rafRef.current);
     };
-  }, [editor, getContainer, updatePositions]);
+  }, [editor, getContainer, scheduleUpdate]);
 
   useEffect(() => {
+    scheduleUpdate();
+  }, [scheduleUpdate]);
+
+  useEffect(() => () => {
     cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(() => updatePositions());
+    resizeObserverRef.current?.disconnect();
+    resizeObserverRef.current = null;
+    observedOverlayRef.current = null;
+    observedTableRef.current = null;
+  }, []);
 
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-    };
-  }, [showColors, updatePositions]);
+  const appendTableAxis = useCallback((type: 'row' | 'col') => {
+    const table = findTableElement(editor);
+    const targetCell = table ? findAppendTargetCell(table, type) : null;
+    const selectionPos = targetCell ? getSelectionPosForCell(editor, targetCell) : null;
 
-  useEffect(() => {
-    if (!toolbarPos) {
-      return undefined;
-    }
-
-    const frame = requestAnimationFrame(() => updatePositions());
-    return () => {
-      cancelAnimationFrame(frame);
-    };
-  }, [toolbarPos?.left, toolbarPos?.top, updatePositions]);
-
-  useEffect(() => {
-    if (!showColors) {
-      return undefined;
-    }
-
-    const handlePointerDown = (event: MouseEvent) => {
-      if (toolbarRef.current?.contains(event.target as Node)) {
-        return;
-      }
-      closeColorPicker(true);
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        closeColorPicker(true);
-      }
-    };
-
-    document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [closeColorPicker, showColors]);
-
-  const runTableCommand = useCallback((command: (chain: ReturnType<Editor['chain']>) => ReturnType<Editor['chain']>) => {
-    command(editor.chain().focus()).run();
-  }, [editor]);
-
-  const applyColor = useCallback((color: string | null) => {
-    editor.chain().focus().setCellAttribute('backgroundColor', color).run();
-  }, [editor]);
-
-  const selectAxis = useCallback((type: 'row' | 'col', cellPos: number) => {
-    try {
-      const $cell = findCellPos(editor.state.doc, cellPos);
-      if (!$cell) {
-        editor.chain().focus().run();
-        return;
-      }
-      const selection = type === 'row'
-        ? CellSelection.rowSelection($cell)
-        : CellSelection.colSelection($cell);
-      editor.view.dispatch(editor.state.tr.setSelection(selection));
-      editor.view.focus();
-    } catch {
+    if (selectionPos == null) {
       editor.chain().focus().run();
+      return;
+    }
+
+    const chain = editor.chain().focus().setTextSelection(selectionPos);
+    if (type === 'col') {
+      chain.addColumnAfter().run();
+    } else {
+      chain.addRowAfter().run();
     }
   }, [editor]);
 
-  const currentCellColor = editor.getAttributes('tableCell').backgroundColor
-    ?? editor.getAttributes('tableHeader').backgroundColor
-    ?? null;
-
-  if (addHandles.length === 0 && !toolbarPos && selectionTargets.length === 0) {
+  if (addHandles.length === 0) {
     return null;
   }
 
   return (
     <>
-      {selectionTargets.map((target) => (
-        <button
-          key={target.type}
-          type="button"
-          data-testid={`table-select-${target.type}`}
-          className={[
-            styles.selectionTarget,
-            target.type === 'row' ? styles.selectionTargetRow : styles.selectionTargetCol,
-            target.active ? styles.selectionTargetActive : '',
-            mode === 'touch' ? styles.selectionTargetTouch : '',
-          ].filter(Boolean).join(' ')}
-          style={{
-            left: target.left,
-            top: target.top,
-            width: target.width,
-            height: target.height,
-          }}
-          onMouseDown={stopInteraction}
-          onClick={() => selectAxis(target.type, target.cellPos)}
-          title={target.type === 'row' ? t('editor.table.selectRow') : t('editor.table.selectColumn')}
-        >
-          <Icon name={target.type === 'row' ? 'rows' : 'columns'} size={12} />
-        </button>
-      ))}
-
       {addHandles.map((handle) => (
         <button
           key={handle.type}
@@ -318,136 +158,72 @@ export function TableControls({ editor, scrollContainer, overlayContainer, mode 
           data-testid={`table-add-${handle.type}`}
           className={[
             styles.addHandle,
-            handle.type === 'row' ? styles.addHandleRow : styles.addHandleCol,
             mode === 'touch' ? styles.addHandleTouch : '',
           ].filter(Boolean).join(' ')}
           style={{
             left: handle.left,
             top: handle.top,
-            opacity: handlesVisible ? 1 : 0,
-            pointerEvents: handlesVisible ? 'auto' : 'none',
           }}
           onMouseDown={stopInteraction}
-          onClick={() => {
-            if (handle.type === 'col') {
-              runTableCommand((chain) => chain.addColumnAfter());
-            } else {
-              runTableCommand((chain) => chain.addRowAfter());
-            }
-          }}
+          onClick={() => appendTableAxis(handle.type)}
           title={handle.type === 'col' ? t('editor.table.addColumnAfter') : t('editor.table.addRowBelow')}
         >
           <Icon name="plus" size={12} />
         </button>
       ))}
-
-      {toolbarPos && (
-        <div
-          ref={toolbarRef}
-          className={styles.toolbar}
-          data-testid="table-toolbar"
-          style={{ left: toolbarPos.left, top: toolbarPos.top }}
-        >
-          <div className={styles.toolbarGroup}>
-            <button
-              type="button"
-              className={styles.actionBtn}
-              onMouseDown={stopInteraction}
-              onClick={() => runTableCommand((chain) => chain.addColumnBefore())}
-              title={t('editor.table.addColumnBefore')}
-            >
-              {t('editor.table.short.addColumnBefore')}
-            </button>
-            <button
-              type="button"
-              className={styles.actionBtn}
-              onMouseDown={stopInteraction}
-              onClick={() => runTableCommand((chain) => chain.addColumnAfter())}
-              title={t('editor.table.addColumnAfter')}
-            >
-              {t('editor.table.short.addColumnAfter')}
-            </button>
-            <button
-              type="button"
-              className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
-              onMouseDown={stopInteraction}
-              onClick={() => runTableCommand((chain) => chain.deleteColumn())}
-              title={t('editor.table.deleteColumn')}
-            >
-              {t('editor.table.short.deleteColumn')}
-            </button>
-          </div>
-
-          <div className={styles.toolbarDivider} />
-
-          <div className={styles.toolbarGroup}>
-            <button
-              type="button"
-              className={styles.actionBtn}
-              onMouseDown={stopInteraction}
-              onClick={() => runTableCommand((chain) => chain.addRowBefore())}
-              title={t('editor.table.addRowAbove')}
-            >
-              {t('editor.table.short.addRowAbove')}
-            </button>
-            <button
-              type="button"
-              className={styles.actionBtn}
-              onMouseDown={stopInteraction}
-              onClick={() => runTableCommand((chain) => chain.addRowAfter())}
-              title={t('editor.table.addRowBelow')}
-            >
-              {t('editor.table.short.addRowBelow')}
-            </button>
-            <button
-              type="button"
-              className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
-              onMouseDown={stopInteraction}
-              onClick={() => runTableCommand((chain) => chain.deleteRow())}
-              title={t('editor.table.deleteRow')}
-            >
-              {t('editor.table.short.deleteRow')}
-            </button>
-          </div>
-
-          <div className={styles.toolbarDivider} />
-
-          <div className={styles.toolbarGroup}>
-            <button
-              type="button"
-              data-testid="table-toolbar-cell-color"
-              className={`${styles.iconBtn} ${showColors ? styles.iconBtnActive : ''}`}
-              onMouseDown={stopInteraction}
-              onClick={() => setShowColors((current) => !current)}
-              title={t('editor.table.cellColor')}
-            >
-              <Icon name="paintBucket" size={12} />
-            </button>
-            <button
-              type="button"
-              className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
-              onMouseDown={stopInteraction}
-              onClick={() => runTableCommand((chain) => chain.deleteTable())}
-              title={t('editor.table.deleteTable')}
-            >
-              {t('editor.table.short.deleteTable')}
-            </button>
-          </div>
-
-          {showColors && (
-            <div className={styles.colorPanel} data-testid="table-toolbar-color-picker">
-              <ColorPicker
-                value={currentCellColor}
-                onChange={applyColor}
-                onPresetClick={() => closeColorPicker()}
-                presets={CELL_COLORS}
-              />
-            </div>
-          )}
-        </div>
-      )}
     </>
   );
+}
+
+function syncObservedElements({
+  editor,
+  overlay,
+  scheduleUpdate,
+  resizeObserverRef,
+  observedOverlayRef,
+  observedTableRef,
+  table,
+}: {
+  editor: Editor;
+  overlay: HTMLElement | null;
+  scheduleUpdate: () => void;
+  resizeObserverRef: React.MutableRefObject<ResizeObserver | null>;
+  observedOverlayRef: React.MutableRefObject<HTMLElement | null>;
+  observedTableRef: React.MutableRefObject<HTMLTableElement | null>;
+  table: HTMLTableElement | null;
+}) {
+  if (typeof ResizeObserver === 'undefined') {
+    return;
+  }
+
+  if (!resizeObserverRef.current) {
+    resizeObserverRef.current = new ResizeObserver(() => {
+      scheduleUpdate();
+    });
+  }
+
+  const observer = resizeObserverRef.current;
+  const nextOverlay = overlay ?? null;
+
+  if (observedOverlayRef.current !== nextOverlay) {
+    if (observedOverlayRef.current) {
+      observer.unobserve(observedOverlayRef.current);
+    }
+    if (nextOverlay) {
+      observer.observe(nextOverlay);
+    }
+    observedOverlayRef.current = nextOverlay;
+  }
+
+  if (observedTableRef.current !== table) {
+    if (observedTableRef.current) {
+      observer.unobserve(observedTableRef.current);
+    }
+    if (table && editor.view.dom.contains(table)) {
+      observer.observe(table);
+    }
+    observedTableRef.current = table;
+  }
 }
 
 function findTableElement(editor: Editor): HTMLTableElement | null {
@@ -457,114 +233,40 @@ function findTableElement(editor: Editor): HTMLTableElement | null {
   return element?.closest('table') ?? null;
 }
 
-function findSelectedCell(editor: Editor): CellInfo | null {
-  const selection = editor.state.selection;
-  if (selection instanceof CellSelection) {
-    const cellDom = editor.view.nodeDOM(selection.$anchorCell.pos);
-    if (cellDom instanceof HTMLTableCellElement) {
-      return buildCellInfo(editor, cellDom);
-    }
-  }
-
-  const pos = selection instanceof CellSelection ? selection.$anchorCell.pos : selection.$anchor.pos;
-  const cell = findCellElementAtPos(editor, pos);
-  return cell ? buildCellInfo(editor, cell) : null;
-}
-
-function findCellElementAtPos(editor: Editor, pos: number): HTMLTableCellElement | null {
-  const domAtPos = editor.view.domAtPos(pos);
-  const element = domAtPos.node instanceof HTMLElement ? domAtPos.node : domAtPos.node.parentElement;
-  const cell = element?.closest('td,th');
-  return cell instanceof HTMLTableCellElement ? cell : null;
-}
-
-function buildCellInfo(editor: Editor, cell: HTMLTableCellElement): CellInfo | null {
-  const table = cell.closest('table');
-  const row = cell.parentElement;
-  if (!(table instanceof HTMLTableElement) || !(row instanceof HTMLTableRowElement)) {
+function findAppendTargetCell(table: HTMLTableElement, type: 'row' | 'col') {
+  const rows = Array.from(table.rows).filter((row) => row.cells.length > 0);
+  if (rows.length === 0) {
     return null;
   }
 
-  if (!editor.view.dom.contains(table)) {
-    return null;
+  if (type === 'col') {
+    const firstPopulatedRow = rows.find((row) => row.cells.length > 0);
+    return firstPopulatedRow ? firstPopulatedRow.cells[firstPopulatedRow.cells.length - 1] : null;
   }
 
-  const cellPos = getCellPos(editor, cell);
-  if (cellPos == null) {
-    return null;
-  }
-
-  return {
-    table,
-    cell,
-    cellPos,
-    rowIndex: Array.from(table.rows).indexOf(row),
-    colIndex: Array.from(row.cells).indexOf(cell),
-  };
+  const lastRow = rows[rows.length - 1];
+  return lastRow?.cells[0] ?? null;
 }
 
-function getCellPos(editor: Editor, cell: HTMLTableCellElement): number | null {
+function getSelectionPosForCell(editor: Editor, cell: HTMLTableCellElement) {
   try {
-    return editor.view.posAtDOM(cell, 0);
+    return Math.min(editor.state.doc.content.size, editor.view.posAtDOM(cell, 0) + 1);
   } catch {
     return null;
   }
 }
 
-function getAxisSelectionState(editor: Editor): AxisSelectionState | null {
-  const { selection } = editor.state;
-  if (!(selection instanceof CellSelection) || !isInTable(editor.state)) {
+function getVisibleTableRect(tableRect: DOMRect, overlayRect: DOMRect) {
+  const left = Math.max(tableRect.left, overlayRect.left);
+  const right = Math.min(tableRect.right, overlayRect.right);
+  const top = Math.max(tableRect.top, overlayRect.top);
+  const bottom = Math.min(tableRect.bottom, overlayRect.bottom);
+
+  if (right <= left || bottom <= top) {
     return null;
   }
 
-  return {
-    rowSelection: selection.isRowSelection(),
-    colSelection: selection.isColSelection(),
-    rect: selectedRect(editor.state),
-  };
-}
-
-function buildSelectionTargets(
-  cellInfo: CellInfo,
-  overlayRect: DOMRect,
-  axisSelection: AxisSelectionState | null,
-  mode: EditorResponsiveMode,
-): SelectionTarget[] {
-  const tableRect = cellInfo.table.getBoundingClientRect();
-  const cellRect = cellInfo.cell.getBoundingClientRect();
-  const targetThickness = mode === 'touch' ? 20 : 14;
-  const targetOffset = mode === 'touch' ? 24 : 18;
-  const rowActive = Boolean(
-    axisSelection?.rowSelection
-    && cellInfo.rowIndex >= axisSelection.rect.top
-    && cellInfo.rowIndex < axisSelection.rect.bottom,
-  );
-  const colActive = Boolean(
-    axisSelection?.colSelection
-    && cellInfo.colIndex >= axisSelection.rect.left
-    && cellInfo.colIndex < axisSelection.rect.right,
-  );
-
-  return [
-    {
-      type: 'col',
-      left: Math.max(6, cellRect.left - overlayRect.left),
-      top: Math.max(6, tableRect.top - overlayRect.top - targetOffset),
-      width: Math.max(mode === 'touch' ? 30 : 22, cellRect.width),
-      height: targetThickness,
-      cellPos: cellInfo.cellPos,
-      active: colActive,
-    },
-    {
-      type: 'row',
-      left: Math.max(6, tableRect.left - overlayRect.left - targetOffset),
-      top: Math.max(6, cellRect.top - overlayRect.top),
-      width: targetThickness,
-      height: Math.max(mode === 'touch' ? 30 : 22, cellRect.height),
-      cellPos: cellInfo.cellPos,
-      active: rowActive,
-    },
-  ];
+  return { left, right, top, bottom };
 }
 
 function clamp(value: number, min: number, max: number) {

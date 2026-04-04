@@ -61,6 +61,32 @@ async function selectParagraphText(
   }, { paragraphText, from, to });
 }
 
+async function scrollEditorViewport(
+  page: import('@playwright/test').Page,
+  left: number,
+  top: number,
+) {
+  await page.evaluate(({ left: scrollLeft, top: scrollTop }) => {
+    const editor = document.querySelector('.ProseMirror');
+    if (!(editor instanceof HTMLElement)) {
+      throw new Error('Editor root not found');
+    }
+
+    let current: HTMLElement | null = editor.parentElement;
+    while (current) {
+      const canScrollX = current.scrollWidth > current.clientWidth + 1;
+      const canScrollY = current.scrollHeight > current.clientHeight + 1;
+      if (canScrollX || canScrollY) {
+        current.scrollBy({ left: scrollLeft, top: scrollTop });
+        return;
+      }
+      current = current.parentElement;
+    }
+
+    throw new Error('Scrollable editor viewport not found');
+  }, { left, top });
+}
+
 test.beforeEach(async ({ page }) => {
   await gotoHarness(page);
 });
@@ -370,27 +396,41 @@ test('saves and reloads embed blocks without losing markdown structure', async (
     .toContain('<volt-embed url="https://example.com/article"></volt-embed>');
 });
 
-test('shows selection-driven table controls, lets you target rows and columns, and keeps the toolbar stable', async ({ page }) => {
+test('shows only append handles for tables, keeps them stable, and appends at the edges', async ({ page }) => {
   const firstCell = page.locator('.ProseMirror td').first();
+  const surface = page.getByTestId('markdown-editor-surface');
 
   await firstCell.click();
   await expect(page.getByTestId('table-add-col')).toBeVisible();
   await expect(page.getByTestId('table-add-row')).toBeVisible();
-  await expect(page.getByTestId('table-select-col')).toBeVisible();
-  await expect(page.getByTestId('table-select-row')).toBeVisible();
-  await expect(page.getByTestId('table-toolbar')).toBeVisible();
+  await expect(page.getByTestId('table-select-col')).toHaveCount(0);
+  await expect(page.getByTestId('table-select-row')).toHaveCount(0);
+  await expect(page.getByTestId('table-toolbar')).toHaveCount(0);
 
-  await page.getByTestId('table-select-row').click();
-  await expect(page.locator('.ProseMirror .selectedCell')).toHaveCount(2);
-  await expect(page.getByTestId('table-toolbar')).toBeVisible();
-  await expect(page.getByTestId('table-toolbar-color-picker')).toBeHidden();
+  const rowCountBefore = await page.locator('.ProseMirror tr').count();
+  const colCountBefore = await page.locator('.ProseMirror tr').first().locator('th, td').count();
 
-  await page.getByTestId('table-select-col').click();
-  await expect(page.locator('.ProseMirror .selectedCell')).toHaveCount(3);
+  await page.getByTestId('table-add-col').click();
+  await expect(page.locator('.ProseMirror tr').first().locator('th, td')).toHaveCount(colCountBefore + 1);
 
-  await firstCell.click();
-  await page.getByTestId('table-toolbar-cell-color').click();
-  await expect(page.getByTestId('table-toolbar-color-picker')).toBeVisible();
+  await page.getByTestId('table-add-row').click();
+  await expect(page.locator('.ProseMirror tr')).toHaveCount(rowCountBefore + 1);
+
+  await scrollEditorViewport(page, 0, 120);
+  await expect(page.getByTestId('table-add-col')).toBeVisible();
+  await expect(page.getByTestId('table-add-row')).toBeVisible();
+
+  const surfaceBox = await surface.boundingBox();
+  const colHandleBox = await page.getByTestId('table-add-col').boundingBox();
+  const rowHandleBox = await page.getByTestId('table-add-row').boundingBox();
+  if (!surfaceBox || !colHandleBox || !rowHandleBox) {
+    throw new Error('Table handle bounds are not available');
+  }
+
+  expect(colHandleBox.x + colHandleBox.width / 2).toBeGreaterThanOrEqual(surfaceBox.x - 1);
+  expect(colHandleBox.x + colHandleBox.width / 2).toBeLessThanOrEqual(surfaceBox.x + surfaceBox.width + 1);
+  expect(rowHandleBox.y + rowHandleBox.height / 2).toBeGreaterThanOrEqual(surfaceBox.y - 1);
+  expect(rowHandleBox.y + rowHandleBox.height / 2).toBeLessThanOrEqual(surfaceBox.y + surfaceBox.height + 1);
 });
 
 test('keeps root overflow locked while editing and opening editor overlays', async ({ page }) => {
@@ -408,11 +448,10 @@ test('keeps root overflow locked while editing and opening editor overlays', asy
   await alpha.hover();
   await expect(page.getByTestId('editor-drag-handle')).toBeVisible();
 
-  await firstCell.hover();
-  await firstCell.click();
-  await expect(page.getByTestId('table-toolbar')).toBeVisible();
-  await page.getByTestId('table-toolbar-cell-color').click();
-  await expect(page.getByTestId('table-toolbar-color-picker')).toBeVisible();
+  await firstCell.click({ button: 'right' });
+  await expect(page.getByTestId('context-menu')).toBeVisible();
+  await page.getByRole('menuitem', { name: 'Cell color...' }).click();
+  await expect(page.getByTestId('table-context-color-picker')).toBeVisible();
 
   await page.evaluate(() => {
     window.scrollTo(120, 120);
@@ -605,17 +644,52 @@ test('shows only link navigation actions in the editor context menu for links', 
   await expect(page.getByRole('menuitem', { name: 'Bold' })).toHaveCount(0);
 });
 
-test('opens editor table actions from the context menu', async ({ page }) => {
+test('opens table actions from the context menu and applies cell colors from the popup', async ({ page }) => {
   const firstCell = page.locator('.ProseMirror td').first();
 
   await firstCell.click({ button: 'right' });
   await expect(page.getByTestId('context-menu')).toBeVisible();
-  await expect(page.getByTestId('context-menu-item')).toHaveCount(9);
   await expect(page.getByRole('menuitem', { name: 'Select row' })).toBeVisible();
   await expect(page.getByRole('menuitem', { name: 'Select column' })).toBeVisible();
   await expect(page.getByRole('menuitem', { name: 'Select table' })).toBeVisible();
-  await expect(page.getByRole('menuitem', { name: 'Heading 1' })).toHaveCount(0);
+  await expect(page.getByRole('menuitem', { name: 'Add row above' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Add row below' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Add column left' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Add column right' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Delete row' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Delete column' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Delete table' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Cell color...' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Undo' })).toHaveCount(0);
   await expect(page.getByRole('menuitem', { name: 'Bold' })).toHaveCount(0);
+
+  await page.getByRole('menuitem', { name: 'Cell color...' }).click();
+  const colorPicker = page.getByTestId('table-context-color-picker');
+  await expect(colorPicker).toBeVisible();
+  await colorPicker.locator('[data-testid="color-picker-preset"]').nth(1).click();
+  await expect(colorPicker).toHaveCount(0);
+  await expect.poll(async () => firstCell.evaluate((node) => (node as HTMLTableCellElement).style.backgroundColor)).not.toBe('');
+
+  await page.getByTestId('context-menu-overlay').click({ position: { x: 2, y: 2 } });
+  await expect(page.getByTestId('context-menu')).toHaveCount(0);
+
+  await firstCell.click({ button: 'right' });
+  await expect(page.getByRole('menuitem', { name: 'Clear cell color' })).toBeVisible();
+  await page.getByRole('menuitem', { name: 'Clear cell color' }).click();
+  await expect.poll(async () => firstCell.evaluate((node) => (node as HTMLTableCellElement).style.backgroundColor)).toBe('');
+});
+
+test('opens the same table menu from the keyboard', async ({ page }) => {
+  const firstCell = page.locator('.ProseMirror td').first();
+
+  await firstCell.click();
+  await page.keyboard.press('Shift+F10');
+
+  await expect(page.getByTestId('context-menu')).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Select row' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Add row above' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Delete table' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Undo' })).toHaveCount(0);
 });
 
 test('keeps editor menus floating on small screens and still opens the touch context menu', async ({ page }) => {

@@ -129,13 +129,11 @@ export function MarkdownEditorSurface({
 
     const container = editorContentElement;
     editor.on('selectionUpdate', handleSelectionChange);
-    editor.on('update', handleSelectionChange);
     container?.addEventListener('scroll', handleResize, { passive: true });
     window.addEventListener('resize', handleResize);
 
     return () => {
       editor.off('selectionUpdate', handleSelectionChange);
-      editor.off('update', handleSelectionChange);
       container?.removeEventListener('scroll', handleResize);
       window.removeEventListener('resize', handleResize);
     };

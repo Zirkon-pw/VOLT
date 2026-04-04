@@ -1,5 +1,5 @@
 import type { Editor } from '@tiptap/react';
-import { CellSelection, isInTable } from '@tiptap/pm/tables';
+import { CellSelection, findCellPos, isInTable } from '@tiptap/pm/tables';
 import { NodeSelection, TextSelection } from '@tiptap/pm/state';
 
 export type EditorNodeKind =
@@ -30,6 +30,8 @@ export interface EditorTableState {
   rowSelection: boolean;
   colSelection: boolean;
   cellSelection: boolean;
+  anchorCellPos: number | null;
+  cellBackgroundColor: string | null;
 }
 
 export interface EditorMenuContext {
@@ -153,7 +155,25 @@ function getTableState(editor: Editor): EditorTableState {
     rowSelection: selection instanceof CellSelection && selection.isRowSelection(),
     colSelection: selection instanceof CellSelection && selection.isColSelection(),
     cellSelection: selection instanceof CellSelection,
+    anchorCellPos: resolveAnchorCellPos(editor),
+    cellBackgroundColor: editor.getAttributes('tableCell').backgroundColor
+      ?? editor.getAttributes('tableHeader').backgroundColor
+      ?? null,
   };
+}
+
+function resolveAnchorCellPos(editor: Editor) {
+  const { selection, doc } = editor.state;
+
+  if (selection instanceof CellSelection) {
+    return selection.$anchorCell.pos;
+  }
+
+  try {
+    return findCellPos(doc, selection.from)?.pos ?? null;
+  } catch {
+    return null;
+  }
 }
 
 function resolveSelectionKind(selection: Editor['state']['selection'], tableState: EditorTableState): EditorSelectionKind {
