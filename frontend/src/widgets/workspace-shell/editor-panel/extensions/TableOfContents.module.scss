@@ -14,16 +14,23 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  max-height: 100%;
+  height: 100%;
   pointer-events: auto;
 
   &:hover .tocPanel,
   &:focus-within .tocPanel {
     opacity: 1;
     visibility: visible;
-    transform: translate3d(0, 0, 0);
+    transform: translate3d(0, -50%, 0);
     pointer-events: auto;
+  }
+
+  &:hover .tocRail,
+  &:focus-within .tocRail {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translate3d(8px, 0, 0);
   }
 }
 
@@ -31,16 +38,22 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: var(--space-3);
-  width: 34px;
-  max-height: 100%;
+  gap: var(--space-2);
+  width: 38px;
+  max-height: 60%;
   overflow-y: auto;
   padding: var(--space-4) var(--space-2);
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
-  background: color-mix(in srgb, var(--surface-solid-secondary) 92%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-divider) 28%, transparent);
+  background: color-mix(in srgb, var(--surface-solid-secondary) 94%, transparent);
+  box-shadow:
+    0 10px 26px color-mix(in srgb, var(--color-shadow) 8%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--color-divider) 28%, transparent);
   scrollbar-width: none;
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast),
+    visibility var(--transition-fast);
 
   &::-webkit-scrollbar {
     display: none;
@@ -55,35 +68,24 @@
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-text-tertiary) 72%, transparent);
   cursor: pointer;
-  opacity: 0.72;
-  transition:
-    width var(--transition-fast),
-    opacity var(--transition-fast),
-    background-color var(--transition-fast);
-
-  &:hover {
-    width: 22px;
-    opacity: 1;
-    background: color-mix(in srgb, var(--color-text-secondary) 88%, transparent);
-  }
+  transition: width var(--transition-fast);
 }
 
 .tocMarkerActive {
-  width: 26px;
-  opacity: 1;
-  background: var(--color-accent);
+  width: 28px;
 }
 
 .tocPanel {
   position: absolute;
   top: 50%;
-  right: calc(100% + var(--space-3));
+  right: 0;
   display: flex;
   flex-direction: column;
-  width: clamp(240px, 24vw, 320px);
-  max-height: 100%;
+  width: clamp(248px, 24vw, 320px);
+  height: 60%;
   overflow: hidden;
-  border-radius: calc(var(--surface-radius) + var(--space-2));
+  padding: var(--space-2);
+  border-radius: calc(var(--surface-radius) + var(--space-1));
   border: 1px solid color-mix(in srgb, var(--color-border-strong) 54%, transparent);
   background: color-mix(in srgb, var(--surface-solid-primary) 96%, var(--color-surface-elevated));
   box-shadow:
@@ -99,22 +101,15 @@
     visibility var(--transition-base);
 }
 
-.tocTitle {
-  padding: var(--space-4) var(--space-4) var(--space-2);
-  color: var(--color-text-tertiary);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
 .tocList {
   list-style: none;
   margin: 0;
-  padding: 0 var(--space-2) var(--space-3);
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  flex: 1;
+  min-height: 0;
+  gap: 2px;
   overflow-y: auto;
   scrollbar-width: thin;
 
@@ -140,7 +135,7 @@
   background: transparent;
   padding: calc(var(--space-2) + 1px) var(--space-3);
   color: var(--color-text-secondary);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-sm);
   font-weight: 600;
   line-height: 1.28;
   text-align: left;
@@ -156,13 +151,12 @@
 
   &:hover {
     color: var(--color-text-primary);
-    background: color-mix(in srgb, var(--surface-solid-secondary) 88%, var(--color-bg-hover));
   }
 }
 
 .tocItemActive {
-  color: var(--color-accent);
-  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  color: var(--color-text-primary);
+  font-weight: 700;
 }
 
 .tocLevel2 {
@@ -171,10 +165,4 @@
 
 .tocLevel3 {
   padding-left: calc(var(--space-3) + var(--space-6));
-}
-
-@media (max-width: 960px) {
-  .tocOverlay {
-    display: none;
-  }
 }

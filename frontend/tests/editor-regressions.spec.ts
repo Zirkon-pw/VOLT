@@ -125,10 +125,52 @@ ${appendix}
 `;
 }
 
+function createDenseTocMarkdown(sectionCount = 18) {
+  const sections = Array.from({ length: sectionCount }, (_, index) => {
+    const sectionNumber = index + 1;
+    const level = sectionNumber === 1
+      ? '#'
+      : sectionNumber % 3 === 0
+        ? '###'
+        : '##';
+    const body = Array.from(
+      { length: sectionNumber % 4 === 0 ? 9 : 7 },
+      (_, paragraphIndex) => `Section ${sectionNumber} paragraph ${paragraphIndex + 1}.`,
+    ).join('\n\n');
+
+    return `${level} Section ${sectionNumber}\n\n${body}`;
+  });
+
+  return sections.join('\n\n');
+}
+
 async function getActiveTocItemText(page: import('@playwright/test').Page) {
   const activeItem = page.locator('[data-testid="editor-toc-item"][aria-current="location"]').first();
   const text = await activeItem.textContent();
   return text?.trim() ?? null;
+}
+
+async function getTocMarkerMetrics(page: import('@playwright/test').Page) {
+  return page.evaluate(() => Array.from(document.querySelectorAll('[data-testid="editor-toc-marker"]'))
+    .map((element) => {
+      if (!(element instanceof HTMLElement)) {
+        return null;
+      }
+
+      const styles = getComputedStyle(element);
+      return {
+        width: element.getBoundingClientRect().width,
+        backgroundColor: styles.backgroundColor,
+        opacity: styles.opacity,
+        current: element.getAttribute('aria-current') === 'location',
+      };
+    })
+    .filter((value): value is {
+      width: number;
+      backgroundColor: string;
+      opacity: string;
+      current: boolean;
+    } => value !== null));
 }
 
 test.beforeEach(async ({ page }) => {
@@ -180,10 +222,13 @@ test('finds matches in the current file with the file-search shortcut', async ({
   expect(thirdRange).toEqual(firstRange);
 });
 
-test('renders a notion-like table of contents rail without shrinking editor content', async ({ page }) => {
+test('renders a simplified toc rail and swaps it with the panel without shrinking editor content', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1200 });
   await setHarnessMarkdown(page, createTocMarkdown());
 
+  const surface = page.getByTestId('markdown-editor-surface');
   const rail = page.getByTestId('editor-toc-rail');
+  const dock = page.getByTestId('editor-toc-dock');
   const panel = page.getByTestId('editor-toc-panel');
   const content = page.locator('.tiptap');
 
@@ -191,14 +236,38 @@ test('renders a notion-like table of contents rail without shrinking editor cont
   await expect(page.getByTestId('editor-toc-marker')).toHaveCount(5);
   await expect(panel).toBeHidden();
 
+  const markerMetrics = await getTocMarkerMetrics(page);
+  expect(markerMetrics).toHaveLength(5);
+  const activeMarkers = markerMetrics.filter((marker) => marker.current);
+  const inactiveMarkers = markerMetrics.filter((marker) => !marker.current);
+  expect(activeMarkers).toHaveLength(1);
+  const inactiveWidths = inactiveMarkers.map((marker) => marker.width);
+  expect(activeMarkers[0]?.width ?? 0).toBeGreaterThan(Math.max(...inactiveWidths) + 1);
+  expect(Math.max(...inactiveWidths) - Math.min(...inactiveWidths)).toBeLessThanOrEqual(1);
+  expect(new Set(markerMetrics.map((marker) => marker.backgroundColor)).size).toBe(1);
+  expect(new Set(markerMetrics.map((marker) => marker.opacity)).size).toBe(1);
+
   const widthBefore = await content.boundingBox();
   if (!widthBefore) {
     throw new Error('Editor content bounds are not available');
   }
 
-  await rail.hover();
+  await dock.hover();
   await expect(panel).toBeVisible();
+  await expect(rail).toBeHidden();
   await expect(page.getByTestId('editor-toc-item')).toHaveCount(5);
+
+  const panelBox = await panel.boundingBox();
+  const surfaceBox = await surface.boundingBox();
+  if (!panelBox || !surfaceBox) {
+    throw new Error('TOC bounds are not available');
+  }
+
+  const panelHeightRatio = panelBox.height / surfaceBox.height;
+  expect(Math.abs(panelHeightRatio - 0.6)).toBeLessThanOrEqual(0.03);
+  const surfaceCenterY = surfaceBox.y + surfaceBox.height / 2;
+  const panelCenterY = panelBox.y + panelBox.height / 2;
+  expect(Math.abs(panelCenterY - surfaceCenterY)).toBeLessThanOrEqual(6);
 
   const widthAfter = await content.boundingBox();
   if (!widthAfter) {
@@ -206,20 +275,25 @@ test('renders a notion-like table of contents rail without shrinking editor cont
   }
 
   expect(Math.abs(widthAfter.width - widthBefore.width)).toBeLessThanOrEqual(1);
+
+  await page.getByTestId('playwright-editor-harness').hover({ position: { x: 12, y: 12 } });
+  await expect(panel).toBeHidden();
+  await expect(rail).toBeVisible();
 });
 
-test('scrolls to headings and tracks the active section from editor scroll', async ({ page }) => {
-  await setHarnessMarkdown(page, createTocMarkdown());
+test('scrolls to headings, keeps toc sync stable, and tracks active section in both directions', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1200 });
+  await setHarnessMarkdown(page, createDenseTocMarkdown());
 
-  const rail = page.getByTestId('editor-toc-rail');
-  await rail.hover();
+  const dock = page.getByTestId('editor-toc-dock');
+  await dock.hover();
 
-  await expect.poll(async () => getActiveTocItemText(page)).toBe('Overview');
-  await page.getByTestId('editor-toc-item').filter({ hasText: 'Deep dive' }).click();
+  await expect.poll(async () => getActiveTocItemText(page)).toBe('Section 1');
+  await page.getByTestId('editor-toc-item').filter({ hasText: 'Section 12' }).click();
 
   await expect.poll(async () => page.evaluate(() => {
-    const heading = Array.from(document.querySelectorAll('.ProseMirror h3'))
-      .find((node) => node.textContent?.includes('Deep dive'));
+    const heading = Array.from(document.querySelectorAll('.ProseMirror h1, .ProseMirror h2, .ProseMirror h3'))
+      .find((node) => node.textContent?.includes('Section 12'));
     const container = document.querySelector('[data-testid="editor-content-scroll"]');
 
     if (!(heading instanceof HTMLElement) || !(container instanceof HTMLElement)) {
@@ -229,7 +303,55 @@ test('scrolls to headings and tracks the active section from editor scroll', asy
     return heading.getBoundingClientRect().top - container.getBoundingClientRect().top;
   })).toBeLessThan(160);
 
-  await expect.poll(async () => getActiveTocItemText(page)).toBe('Deep dive');
+  await expect.poll(async () => getActiveTocItemText(page)).toBe('Section 12');
+  await expect.poll(async () => page.evaluate(() => {
+    const activeItem = document.querySelector('[data-testid="editor-toc-item"][aria-current="location"]');
+    const list = document.querySelector('[data-testid="editor-toc-panel"] ul');
+    const activeMarker = document.querySelector('[data-testid="editor-toc-marker"][aria-current="location"]');
+    const railElement = document.querySelector('[data-testid="editor-toc-rail"]');
+
+    if (!(activeItem instanceof HTMLElement) || !(list instanceof HTMLElement) || !(activeMarker instanceof HTMLElement) || !(railElement instanceof HTMLElement)) {
+      return false;
+    }
+
+    const itemRect = activeItem.getBoundingClientRect();
+    const listRect = list.getBoundingClientRect();
+    const markerRect = activeMarker.getBoundingClientRect();
+    const railRect = railElement.getBoundingClientRect();
+
+    return (
+      itemRect.top >= listRect.top
+      && itemRect.bottom <= listRect.bottom
+      && markerRect.top >= railRect.top
+      && markerRect.bottom <= railRect.bottom
+    );
+  })).toBe(true);
+  await expect.poll(async () => page.evaluate(() => {
+    const activeItem = document.querySelector('[data-testid="editor-toc-item"][aria-current="location"]');
+    const inactiveItem = document.querySelector('[data-testid="editor-toc-item"]:not([aria-current="location"])');
+
+    if (!(activeItem instanceof HTMLElement) || !(inactiveItem instanceof HTMLElement)) {
+      return null;
+    }
+
+    const activeStyles = getComputedStyle(activeItem);
+    const inactiveStyles = getComputedStyle(inactiveItem);
+    return {
+      activeBackground: activeStyles.backgroundColor,
+      inactiveBackground: inactiveStyles.backgroundColor,
+      activeBoxShadow: activeStyles.boxShadow,
+      inactiveBoxShadow: inactiveStyles.boxShadow,
+      activeWeight: Number.parseInt(activeStyles.fontWeight, 10),
+      inactiveWeight: Number.parseInt(inactiveStyles.fontWeight, 10),
+    };
+  })).toEqual({
+    activeBackground: 'rgba(0, 0, 0, 0)',
+    inactiveBackground: 'rgba(0, 0, 0, 0)',
+    activeBoxShadow: 'none',
+    inactiveBoxShadow: 'none',
+    activeWeight: 700,
+    inactiveWeight: 600,
+  });
 
   await page.evaluate(() => {
     const container = document.querySelector('[data-testid="editor-content-scroll"]');
@@ -240,18 +362,48 @@ test('scrolls to headings and tracks the active section from editor scroll', asy
     container.scrollTo({ top: container.scrollHeight, behavior: 'auto' });
   });
 
-  await expect.poll(async () => getActiveTocItemText(page)).toBe('Appendix and follow-up references');
+  await expect.poll(async () => getActiveTocItemText(page)).toBe('Section 18');
+
+  await page.evaluate(() => {
+    const container = document.querySelector('[data-testid="editor-content-scroll"]');
+    if (!(container instanceof HTMLElement)) {
+      throw new Error('Editor scroll container not found');
+    }
+
+    container.scrollTo({ top: 0, behavior: 'auto' });
+  });
+
+  await expect.poll(async () => getActiveTocItemText(page)).toBe('Section 1');
 });
 
-test('hides the table of contents when headings are missing or on small screens', async ({ page }) => {
+test('hides the table of contents when headings are missing or the editor pane is too narrow', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1200 });
   await setHarnessMarkdown(page, 'Plain paragraph.\n\nAnother paragraph.\n\nOne more paragraph.');
   await expect(page.getByTestId('editor-toc')).toHaveCount(0);
 
   await setHarnessMarkdown(page, createTocMarkdown());
   await expect(page.getByTestId('editor-toc-rail')).toBeVisible();
 
-  await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.getByTestId('editor-toc')).toBeHidden();
+  await page.keyboard.down(modKey);
+  await page.locator('[data-testid="file-tree-item"][data-path="notes/target.md"]').click();
+  await page.keyboard.up(modKey);
+
+  const splitSeam = page.getByTestId('workspace-split-seam');
+  const seamBox = await splitSeam.boundingBox();
+  if (!seamBox) {
+    throw new Error('Split seam bounds are not available');
+  }
+
+  await page.mouse.move(seamBox.x + seamBox.width / 2, seamBox.y + seamBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(seamBox.x + 420, seamBox.y + seamBox.height / 2, { steps: 10 });
+  await page.mouse.up();
+
+  await expect.poll(async () => page.evaluate(() => {
+    const pane = document.querySelector('[data-testid="workspace-pane-primary"]');
+    return pane instanceof HTMLElement ? pane.getBoundingClientRect().width : Number.POSITIVE_INFINITY;
+  })).toBeLessThan(960);
+  await expect(page.getByTestId('editor-toc')).toHaveCount(0);
 });
 
 test('keeps typed content instead of reloading the file', async ({ page }) => {
