@@ -1,90 +1,180 @@
-.tocSidebar {
-  width: 200px;
-  flex-shrink: 0;
-  overflow-y: auto;
-  padding: var(--space-6) var(--space-3) var(--space-4);
-  border-left: 1px solid color-mix(in srgb, var(--color-divider) 60%, transparent);
-  opacity: 0.85;
-  transition: opacity var(--transition-fast);
+.tocOverlay {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-3);
+  bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: none;
+  z-index: var(--z-editor-chrome);
+}
 
-  &:hover {
+.tocDock {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-height: 100%;
+  pointer-events: auto;
+
+  &:hover .tocPanel,
+  &:focus-within .tocPanel {
     opacity: 1;
-  }
-
-  &::-webkit-scrollbar {
-    width: 3px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: var(--color-border);
-    border-radius: 2px;
+    visibility: visible;
+    transform: translate3d(0, 0, 0);
+    pointer-events: auto;
   }
 }
 
+.tocRail {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-3);
+  width: 34px;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: var(--space-4) var(--space-2);
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
+  background: color-mix(in srgb, var(--surface-solid-secondary) 92%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-divider) 28%, transparent);
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.tocMarker {
+  width: 18px;
+  height: 4px;
+  flex: 0 0 4px;
+  border: none;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-text-tertiary) 72%, transparent);
+  cursor: pointer;
+  opacity: 0.72;
+  transition:
+    width var(--transition-fast),
+    opacity var(--transition-fast),
+    background-color var(--transition-fast);
+
+  &:hover {
+    width: 22px;
+    opacity: 1;
+    background: color-mix(in srgb, var(--color-text-secondary) 88%, transparent);
+  }
+}
+
+.tocMarkerActive {
+  width: 26px;
+  opacity: 1;
+  background: var(--color-accent);
+}
+
+.tocPanel {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + var(--space-3));
+  display: flex;
+  flex-direction: column;
+  width: clamp(240px, 24vw, 320px);
+  max-height: 100%;
+  overflow: hidden;
+  border-radius: calc(var(--surface-radius) + var(--space-2));
+  border: 1px solid color-mix(in srgb, var(--color-border-strong) 54%, transparent);
+  background: color-mix(in srgb, var(--surface-solid-primary) 96%, var(--color-surface-elevated));
+  box-shadow:
+    0 12px 32px color-mix(in srgb, var(--color-shadow) 12%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--chrome-highlight) 42%, transparent);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate3d(12px, -50%, 0);
+  transition:
+    opacity var(--transition-base),
+    transform var(--transition-base),
+    visibility var(--transition-base);
+}
+
 .tocTitle {
-  font-size: var(--font-size-xs);
-  font-weight: 600;
+  padding: var(--space-4) var(--space-4) var(--space-2);
   color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: var(--space-3);
-  padding: 0 var(--space-2);
 }
 
 .tocList {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 var(--space-2) var(--space-3);
   display: flex;
   flex-direction: column;
   gap: 1px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--color-border-strong) 62%, transparent);
+    border-radius: 999px;
+  }
+}
+
+.tocListItem {
+  min-width: 0;
 }
 
 .tocItem {
   display: block;
   width: 100%;
-  padding: var(--space-1) var(--space-2);
   border: none;
+  border-radius: var(--radius-lg);
   background: transparent;
+  padding: calc(var(--space-2) + 1px) var(--space-3);
   color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-  line-height: 1.5;
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  line-height: 1.28;
   text-align: left;
   cursor: pointer;
-  border-radius: var(--radius-sm);
-  transition: color var(--transition-fast), background-color var(--transition-fast);
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast);
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 
   &:hover {
     color: var(--color-text-primary);
-    background: var(--color-bg-hover);
+    background: color-mix(in srgb, var(--surface-solid-secondary) 88%, var(--color-bg-hover));
   }
 }
 
 .tocItemActive {
   color: var(--color-accent);
-  font-weight: 500;
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
 }
 
 .tocLevel2 {
-  padding-left: calc(var(--space-2) + var(--space-3));
+  padding-left: calc(var(--space-3) + var(--space-3));
 }
 
 .tocLevel3 {
-  padding-left: calc(var(--space-2) + var(--space-6));
-}
-
-.tocEmpty {
-  padding: var(--space-2);
-  color: var(--color-text-tertiary);
-  font-size: var(--font-size-xs);
-  font-style: italic;
+  padding-left: calc(var(--space-3) + var(--space-6));
 }
 
 @media (max-width: 960px) {
-  .tocSidebar {
+  .tocOverlay {
     display: none;
   }
 }

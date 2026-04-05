@@ -41,6 +41,7 @@ interface MarkdownEditorSurfaceProps {
   filePath: string;
   readOnly?: boolean;
   showTaskStatusBanner?: boolean;
+  onScrollContainerChange?: (element: HTMLDivElement | null) => void;
   onDrop?: DragEventHandler<HTMLDivElement>;
   onDragOver?: DragEventHandler<HTMLDivElement>;
   onPaste?: ClipboardEventHandler<HTMLDivElement>;
@@ -53,6 +54,7 @@ export function MarkdownEditorSurface({
   filePath,
   readOnly = false,
   showTaskStatusBanner = false,
+  onScrollContainerChange,
   onDrop,
   onDragOver,
   onPaste,
@@ -248,6 +250,11 @@ export function MarkdownEditorSurface({
     'data-editor-mode': responsiveMode,
   }), [responsiveMode]);
 
+  const handleEditorContentRef = useCallback((node: HTMLDivElement | null) => {
+    setEditorContentElement(node);
+    onScrollContainerChange?.(node);
+  }, [onScrollContainerChange]);
+
   return (
     <div
       className={styles.panel}
@@ -343,7 +350,12 @@ export function MarkdownEditorSurface({
         <TextBubbleMenu editor={editor} mode={responsiveMode} />
       )}
       {showTaskStatusBanner && <PluginTaskStatusBanner voltPath={voltPath} filePath={filePath} />}
-      <div ref={setEditorContentElement} className={styles.editorContent} onClick={handleEditorAreaClick}>
+      <div
+        ref={handleEditorContentRef}
+        className={styles.editorContent}
+        data-testid="editor-content-scroll"
+        onClick={handleEditorAreaClick}
+      >
         <EditorContent editor={editor} />
       </div>
       {editor && contextMenuState && (

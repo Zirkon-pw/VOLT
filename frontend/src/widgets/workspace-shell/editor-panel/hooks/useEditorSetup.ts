@@ -1,4 +1,5 @@
 import { useEditor, type Editor } from '@tiptap/react';
+import { EditorState } from '@tiptap/pm/state';
 import StarterKit from '@tiptap/starter-kit';
 import Code from '@tiptap/extension-code';
 import Link from '@tiptap/extension-link';
@@ -131,4 +132,14 @@ export function useEditorSetup({
   });
 
   return editor;
+}
+
+export function resetEditorHistory(editor: Editor) {
+  editor.view.updateState(EditorState.create({
+    doc: editor.state.doc,
+    selection: editor.state.selection,
+    storedMarks: editor.state.storedMarks ?? undefined,
+    schema: editor.state.schema,
+    plugins: editor.state.plugins,
+  }));
 }

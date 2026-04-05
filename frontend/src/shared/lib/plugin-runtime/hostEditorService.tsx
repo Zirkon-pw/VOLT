@@ -12,7 +12,7 @@ import { dataUrlToBlobUrl, readImageBase64 } from '@shared/api/image/imageApi';
 import { isMarkdownPath } from '@shared/lib/fileTypes';
 import { MarkdownEditorSurface } from '@widgets/workspace-shell/editor-panel/MarkdownEditorSurface';
 import { useAutoSave } from '@widgets/workspace-shell/editor-panel/hooks/useAutoSave';
-import { useEditorSetup } from '@widgets/workspace-shell/editor-panel/hooks/useEditorSetup';
+import { resetEditorHistory, useEditorSetup } from '@widgets/workspace-shell/editor-panel/hooks/useEditorSetup';
 import { useImageHandlers } from '@widgets/workspace-shell/editor-panel/hooks/useImageHandlers';
 import { useImageResolver } from '@widgets/workspace-shell/editor-panel/hooks/useImageResolver';
 import { useImageDrag } from '@widgets/workspace-shell/image-viewer/useImageDrag';
@@ -571,6 +571,7 @@ function MarkdownEditorDriver({
         withTrackingSuppressed(() => {
           editor.commands.setContent(content);
           editor.commands.setTextSelection(1);
+          resetEditorHistory(editor);
         });
         markPersisted(raw);
         loadedPathRef.current = filePath;
@@ -758,6 +759,7 @@ function RawTextEditorDriver({
     <div style={{ display: 'flex', flex: 1, minHeight: 0, minWidth: 0, flexDirection: 'column' }}>
       {mode === 'file-tab' && <PluginTaskStatusBanner voltPath={voltPath} filePath={filePath} />}
       <textarea
+        key={filePath}
         ref={textareaRef}
         style={{
           flex: 1,

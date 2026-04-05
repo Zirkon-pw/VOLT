@@ -10,7 +10,7 @@ import { readFile } from '@shared/api/file';
 import { useI18n } from '@app/providers/I18nProvider';
 import { emit, setEditor } from '@shared/lib/plugin-runtime';
 import { Icon } from '@shared/ui/icon';
-import { useEditorSetup } from './hooks/useEditorSetup';
+import { resetEditorHistory, useEditorSetup } from './hooks/useEditorSetup';
 import { useAutoSave } from './hooks/useAutoSave';
 import { useImageResolver } from './hooks/useImageResolver';
 import { useImageHandlers } from './hooks/useImageHandlers';
@@ -86,6 +86,7 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
   const { t } = useI18n();
   const imageDir = useAppSettingsStore((state) => state.settings.imageDir);
   const editor = useEditorSetup({ placeholder: t('editor.placeholder') });
+  const [editorScrollContainer, setEditorScrollContainer] = useState<HTMLDivElement | null>(null);
   const loadedPathRef = useRef<string | null>(null);
   const { resolve, register, unresolveAll, resolveAll, clear } = useImageResolver(voltPath);
   const notifyFsMutation = useFileTreeStore((state) => state.notifyFsMutation);
@@ -389,6 +390,7 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
         withTrackingSuppressed(() => {
           editor.commands.setContent(content);
           editor.commands.setTextSelection(1);
+          resetEditorHistory(editor);
         });
         requestAnimationFrame(() => {
           editor.commands.focus();
@@ -451,11 +453,12 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
           voltPath={voltPath}
           filePath={filePath}
           showTaskStatusBanner
+          onScrollContainerChange={setEditorScrollContainer}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onPaste={handlePaste}
         />
-        {editor && <TableOfContents editor={editor} />}
+        {editor && <TableOfContents editor={editor} scrollContainer={editorScrollContainer} />}
         {showFindInFile && (
           <div className={styles.findPanel} data-testid="find-in-file-panel">
             <div className={styles.findInputWrap}>

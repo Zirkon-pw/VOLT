@@ -96,6 +96,41 @@ async function setHarnessMarkdown(
   }, markdown);
 }
 
+function createTocMarkdown() {
+  const intro = Array.from({ length: 8 }, (_, index) => `Intro paragraph ${index + 1}.`).join('\n\n');
+  const gettingStarted = Array.from({ length: 14 }, (_, index) => `Getting started note ${index + 1}.`).join('\n\n');
+  const deepDive = Array.from({ length: 14 }, (_, index) => `Deep dive explanation ${index + 1}.`).join('\n\n');
+  const advanced = Array.from({ length: 14 }, (_, index) => `Advanced usage detail ${index + 1}.`).join('\n\n');
+  const appendix = Array.from({ length: 12 }, (_, index) => `Appendix reference ${index + 1}.`).join('\n\n');
+
+  return `# Overview
+
+${intro}
+
+## Getting started
+
+${gettingStarted}
+
+### Deep dive
+
+${deepDive}
+
+## Advanced usage
+
+${advanced}
+
+### Appendix and follow-up references
+
+${appendix}
+`;
+}
+
+async function getActiveTocItemText(page: import('@playwright/test').Page) {
+  const activeItem = page.locator('[data-testid="editor-toc-item"][aria-current="location"]').first();
+  const text = await activeItem.textContent();
+  return text?.trim() ?? null;
+}
+
 test.beforeEach(async ({ page }) => {
   await gotoHarness(page);
 });
@@ -143,6 +178,80 @@ test('finds matches in the current file with the file-search shortcut', async ({
   await page.keyboard.press('Shift+Enter');
   const thirdRange = await page.evaluate(() => window.__VOLT_PLAYWRIGHT__?.getSelectionRange() ?? null);
   expect(thirdRange).toEqual(firstRange);
+});
+
+test('renders a notion-like table of contents rail without shrinking editor content', async ({ page }) => {
+  await setHarnessMarkdown(page, createTocMarkdown());
+
+  const rail = page.getByTestId('editor-toc-rail');
+  const panel = page.getByTestId('editor-toc-panel');
+  const content = page.locator('.tiptap');
+
+  await expect(rail).toBeVisible();
+  await expect(page.getByTestId('editor-toc-marker')).toHaveCount(5);
+  await expect(panel).toBeHidden();
+
+  const widthBefore = await content.boundingBox();
+  if (!widthBefore) {
+    throw new Error('Editor content bounds are not available');
+  }
+
+  await rail.hover();
+  await expect(panel).toBeVisible();
+  await expect(page.getByTestId('editor-toc-item')).toHaveCount(5);
+
+  const widthAfter = await content.boundingBox();
+  if (!widthAfter) {
+    throw new Error('Editor content bounds are not available after TOC hover');
+  }
+
+  expect(Math.abs(widthAfter.width - widthBefore.width)).toBeLessThanOrEqual(1);
+});
+
+test('scrolls to headings and tracks the active section from editor scroll', async ({ page }) => {
+  await setHarnessMarkdown(page, createTocMarkdown());
+
+  const rail = page.getByTestId('editor-toc-rail');
+  await rail.hover();
+
+  await expect.poll(async () => getActiveTocItemText(page)).toBe('Overview');
+  await page.getByTestId('editor-toc-item').filter({ hasText: 'Deep dive' }).click();
+
+  await expect.poll(async () => page.evaluate(() => {
+    const heading = Array.from(document.querySelectorAll('.ProseMirror h3'))
+      .find((node) => node.textContent?.includes('Deep dive'));
+    const container = document.querySelector('[data-testid="editor-content-scroll"]');
+
+    if (!(heading instanceof HTMLElement) || !(container instanceof HTMLElement)) {
+      return Number.POSITIVE_INFINITY;
+    }
+
+    return heading.getBoundingClientRect().top - container.getBoundingClientRect().top;
+  })).toBeLessThan(160);
+
+  await expect.poll(async () => getActiveTocItemText(page)).toBe('Deep dive');
+
+  await page.evaluate(() => {
+    const container = document.querySelector('[data-testid="editor-content-scroll"]');
+    if (!(container instanceof HTMLElement)) {
+      throw new Error('Editor scroll container not found');
+    }
+
+    container.scrollTo({ top: container.scrollHeight, behavior: 'auto' });
+  });
+
+  await expect.poll(async () => getActiveTocItemText(page)).toBe('Appendix and follow-up references');
+});
+
+test('hides the table of contents when headings are missing or on small screens', async ({ page }) => {
+  await setHarnessMarkdown(page, 'Plain paragraph.\n\nAnother paragraph.\n\nOne more paragraph.');
+  await expect(page.getByTestId('editor-toc')).toHaveCount(0);
+
+  await setHarnessMarkdown(page, createTocMarkdown());
+  await expect(page.getByTestId('editor-toc-rail')).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByTestId('editor-toc')).toBeHidden();
 });
 
 test('keeps typed content instead of reloading the file', async ({ page }) => {
@@ -642,6 +751,30 @@ test('flushes pending autosave before switching files and updates shell chrome',
   await expect.poll(async () => page.evaluate(() => window.__VOLT_PLAYWRIGHT__?.getActiveTab() ?? null)).toBe('notes/target.md');
   await expect(page.locator('[data-testid="file-tab"][data-path="notes/target.md"]')).toBeVisible();
   await expect(page.getByTestId('breadcrumb-active')).toHaveText('target.md');
+});
+
+test('keeps undo history scoped to the current file after switching files', async ({ page }) => {
+  const editor = page.locator('.ProseMirror');
+
+  await editor.click();
+  await page.keyboard.press(`${modKey}+End`);
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('Undo stays local');
+  await page.waitForTimeout(800);
+
+  await page.locator('[data-testid="file-tree-item"][data-path="notes/target.md"]').click();
+  await expect(editor).toContainText('Secondary target content.');
+
+  await editor.click();
+  await page.keyboard.press(`${modKey}+Z`);
+
+  await expect.poll(async () => page.evaluate(() => window.__VOLT_PLAYWRIGHT__?.getActiveTab() ?? null)).toBe('notes/target.md');
+  await expect(editor).toContainText('Secondary target content.');
+  await expect(editor).not.toContainText('Undo stays local');
+  await expect.poll(async () => page.evaluate(() => window.__VOLT_PLAYWRIGHT__?.getSavedFile('notes/test.md') ?? null))
+    .toContain('Undo stays local');
+  await expect.poll(async () => page.evaluate(() => window.__VOLT_PLAYWRIGHT__?.getSavedFile('notes/target.md') ?? null))
+    .toBe('# Target note\n\nSecondary target content.\n');
 });
 
 test('opens a custom context menu, closes it with escape and outside click, and does not hijack plain inputs', async ({ page }) => {

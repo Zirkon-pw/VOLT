@@ -42,6 +42,7 @@ export function RawTextEditor({ voltId, voltPath, filePath }: RawTextEditorProps
     <div className={styles.panel}>
       <PluginTaskStatusBanner voltPath={voltPath} filePath={filePath} />
       <textarea
+        key={filePath}
         className={styles.editor}
         value={value}
         onChange={(event) => handleChange(event.target.value)}
