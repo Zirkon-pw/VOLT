@@ -59,7 +59,7 @@
   padding: 0 var(--space-3);
   -webkit-app-region: no-drag;
   font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+  color: var(--color-text-secondary, #776a61);
   cursor: pointer;
   border: none;
   border-radius: 10px 10px 0 0;
@@ -77,9 +77,9 @@
 }
 
 .active {
-  color: var(--color-accent);
+  color: var(--color-accent, #df6f89);
   background: transparent;
-  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--color-accent) 74%, transparent);
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--color-accent, #df6f89) 74%, transparent);
 }
 
 .label {

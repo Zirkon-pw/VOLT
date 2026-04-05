@@ -18,6 +18,8 @@ import { MarkdownEditorSurface } from './MarkdownEditorSurface';
 import { findInFileHighlightsPluginKey, type FindInFileMatch } from './extensions/FindInFileHighlights';
 import { LinkFilePicker } from './extensions/LinkFilePicker';
 import { EmbedUrlPicker } from './extensions/EmbedUrlPicker';
+import { TableOfContents } from './extensions/TableOfContents';
+import { preprocessMarkdown } from './lib/markdownPreprocessor';
 import styles from './EditorPanel.module.scss';
 
 interface EditorPanelProps {
@@ -381,11 +383,15 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
         clear();
         const raw = await readFile(voltPath, filePath);
         if (cancelled) return;
-        const content = await resolveAll(raw);
+        const preprocessed = preprocessMarkdown(raw);
+        const content = await resolveAll(preprocessed);
         if (cancelled) return;
         withTrackingSuppressed(() => {
           editor.commands.setContent(content);
           editor.commands.setTextSelection(1);
+        });
+        requestAnimationFrame(() => {
+          editor.commands.focus();
         });
         markPersisted(raw);
         loadedPathRef.current = filePath;
@@ -449,6 +455,7 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
           onDragOver={handleDragOver}
           onPaste={handlePaste}
         />
+        {editor && <TableOfContents editor={editor} />}
         {showFindInFile && (
           <div className={styles.findPanel} data-testid="find-in-file-panel">
             <div className={styles.findInputWrap}>

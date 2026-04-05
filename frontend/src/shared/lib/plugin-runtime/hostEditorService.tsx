@@ -17,6 +17,7 @@ import { useImageHandlers } from '@widgets/workspace-shell/editor-panel/hooks/us
 import { useImageResolver } from '@widgets/workspace-shell/editor-panel/hooks/useImageResolver';
 import { useImageDrag } from '@widgets/workspace-shell/image-viewer/useImageDrag';
 import { useImageZoom } from '@widgets/workspace-shell/image-viewer/useImageZoom';
+import { preprocessMarkdown } from '@widgets/workspace-shell/editor-panel/lib/markdownPreprocessor';
 import { emit } from './pluginEventBus';
 import {
   getHostEditorCapabilities,
@@ -562,7 +563,8 @@ function MarkdownEditorDriver({
         if (cancelled) {
           return;
         }
-        const content = await resolveAll(raw);
+        const preprocessed = preprocessMarkdown(raw);
+        const content = await resolveAll(preprocessed);
         if (cancelled) {
           return;
         }

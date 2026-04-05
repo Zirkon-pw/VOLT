@@ -399,11 +399,10 @@ export const CodeBlockWithLanguage = CodeBlockLowlight.extend({
 
       const pre = document.createElement('pre');
       const code = document.createElement('code');
+      code.classList.add('hljs');
 
-      // Apply highlighting only if language is specified and valid
       const lang = node.attrs.language;
       if (lang && lang !== '' && lang !== 'null') {
-        code.classList.add('hljs');
         code.classList.add(`language-${lang}`);
       }
 
@@ -423,12 +422,9 @@ export const CodeBlockWithLanguage = CodeBlockLowlight.extend({
           const newLang = updatedNode.attrs.language;
           updateLanguage(newLang || '');
 
-          // Clear all highlighting classes
-          code.className = '';
+          code.className = 'hljs';
 
-          // Re-apply highlighting only if language is specified and valid
           if (newLang && newLang !== '' && newLang !== 'null') {
-            code.classList.add('hljs');
             code.classList.add(`language-${newLang}`);
           }
 

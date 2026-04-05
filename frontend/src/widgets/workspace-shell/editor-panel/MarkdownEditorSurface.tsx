@@ -169,7 +169,35 @@ export function MarkdownEditorSurface({
         return;
       }
 
-      if (!voltId || href.startsWith('#')) return;
+      if (href.startsWith('#') && editor) {
+        const headingId = decodeURIComponent(href.slice(1)).toLowerCase()
+          .replace(/[^\w\s-]/g, '')
+          .replace(/\s+/g, '-');
+        let targetPos: number | null = null;
+        editor.state.doc.descendants((node, pos) => {
+          if (targetPos !== null) return false;
+          if (node.type.name === 'heading') {
+            const slug = node.textContent.toLowerCase()
+              .replace(/[^\w\s-]/g, '')
+              .replace(/\s+/g, '-');
+            if (slug === headingId) {
+              targetPos = pos;
+              return false;
+            }
+          }
+        });
+        if (targetPos !== null) {
+          editor.chain().focus().setTextSelection(targetPos + 1).run();
+          const domAtPos = editor.view.domAtPos(targetPos + 1);
+          const element = domAtPos.node instanceof HTMLElement
+            ? domAtPos.node
+            : domAtPos.node.parentElement;
+          element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        return;
+      }
+
+      if (!voltId) return;
 
       const normalizedHref = decodeURIComponent(href.split(/[?#]/, 1)[0] ?? href);
       if (!normalizedHref) {
@@ -195,6 +223,26 @@ export function MarkdownEditorSurface({
     },
     [voltId, filePath],
   );
+
+  const handleEditorAreaClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    if (!editor || readOnly) return;
+    const target = event.target as HTMLElement;
+    if (target.closest('.ProseMirror')) return;
+
+    const pmElement = editorContentElement?.querySelector('.ProseMirror') as HTMLElement | null;
+    if (!pmElement) return;
+
+    const pmRect = pmElement.getBoundingClientRect();
+    const clampedX = Math.min(Math.max(event.clientX, pmRect.left + 1), pmRect.right - 1);
+    const clampedY = Math.min(Math.max(event.clientY, pmRect.top + 1), pmRect.bottom - 1);
+
+    const pos = editor.view.posAtCoords({ left: clampedX, top: clampedY });
+    if (pos) {
+      editor.chain().focus().setTextSelection(pos.pos).run();
+    } else {
+      editor.chain().focus().setTextSelection(editor.state.doc.content.size).run();
+    }
+  }, [editor, editorContentElement, readOnly]);
 
   const panelProps = useMemo(() => ({
     'data-editor-mode': responsiveMode,
@@ -295,7 +343,7 @@ export function MarkdownEditorSurface({
         <TextBubbleMenu editor={editor} mode={responsiveMode} />
       )}
       {showTaskStatusBanner && <PluginTaskStatusBanner voltPath={voltPath} filePath={filePath} />}
-      <div ref={setEditorContentElement} className={styles.editorContent}>
+      <div ref={setEditorContentElement} className={styles.editorContent} onClick={handleEditorAreaClick}>
         <EditorContent editor={editor} />
       </div>
       {editor && contextMenuState && (

@@ -192,26 +192,27 @@ export function HomePage() {
               <VoltLogo className={styles.logo} title={t('home.logoAlt')} />
             </div>
             <div className={styles.brandTitle}>Volt</div>
+            <div className={styles.brandSubtitle}>{t('home.subtitle')}</div>
             <div className={styles.actionCluster}>
               <button
                 type="button"
                 className={`${styles.actionButton} ${styles.actionCreate}`}
                 data-testid="home-create-workspace"
                 aria-label={t('home.actions.create.aria')}
-                title={t('home.actions.create.title')}
                 onClick={() => openModal('create')}
               >
-                <Icon name="plus" size={18} />
+                <Icon name="plus" size={16} />
+                {t('home.actions.create.title')}
               </button>
               <button
                 type="button"
                 className={`${styles.actionButton} ${styles.actionAttach}`}
                 data-testid="home-attach-workspace"
                 aria-label={t('home.actions.attach.aria')}
-                title={t('home.actions.attach.title')}
                 onClick={() => openModal('attach')}
               >
-                <Icon name="folderOpen" size={18} />
+                <Icon name="folderOpen" size={16} />
+                {t('home.actions.attach.title')}
               </button>
             </div>
           </div>
@@ -221,20 +222,28 @@ export function HomePage() {
 
         {!loading && volts.length === 0 ? (
           <div className={styles.empty}>
+            <div className={styles.emptyIcon}>
+              <Icon name="folderOpen" size={28} />
+            </div>
             <span className={styles.emptyText}>{t('home.emptyTitle')}</span>
             <span className={styles.emptyHint}>{t('home.emptyHint')}</span>
           </div>
         ) : (
-          <div className={styles.grid}>
-            {volts.map((volt) => (
-              <VoltCard
-                key={volt.id}
-                volt={volt}
-                onDelete={handleDelete}
-                onOpen={handleOpenVolt}
-              />
-            ))}
-          </div>
+          <>
+            {volts.length > 0 && (
+              <div className={styles.sectionTitle}>{t('home.section.workspaces')}</div>
+            )}
+            <div className={styles.grid}>
+              {volts.map((volt) => (
+                <VoltCard
+                  key={volt.id}
+                  volt={volt}
+                  onDelete={handleDelete}
+                  onOpen={handleOpenVolt}
+                />
+              ))}
+            </div>
+          </>
         )}
       </div>
 

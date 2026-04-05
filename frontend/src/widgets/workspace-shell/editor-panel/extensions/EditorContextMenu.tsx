@@ -281,6 +281,18 @@ function buildEditorContextMenuItems(
 
   pushGroup(items, buildNodeSpecificItems(editor, context));
 
+  if (context.hasSelection && context.canFormat) {
+    pushGroup(items, [{
+      id: 'format-clear',
+      label: translate('editor.context.clearFormatting'),
+      icon: 'close',
+      disabled: !editor.isEditable,
+      onClick: () => {
+        editor.chain().focus().unsetAllMarks().clearNodes().run();
+      },
+    }]);
+  }
+
   return trimSeparators(items);
 }
 
@@ -607,7 +619,12 @@ function getSelectionText(editor: Editor) {
 }
 
 function applyCellColor(editor: Editor, targetPos: number | null, color: string | null) {
-  runTableCommandAt(editor, targetPos, (chain) => chain.setCellAttribute('backgroundColor', color));
+  const { selection } = editor.state;
+  if (selection instanceof CellSelection) {
+    editor.chain().focus().setCellAttribute('backgroundColor', color).run();
+  } else {
+    runTableCommandAt(editor, targetPos, (chain) => chain.setCellAttribute('backgroundColor', color));
+  }
 }
 
 function selectTableAxis(editor: Editor, pos: number, axis: 'row' | 'col') {

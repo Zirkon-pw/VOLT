@@ -51,6 +51,8 @@ export function useEditorSetup({
       }),
       Placeholder.configure({
         placeholder,
+        emptyEditorClass: 'is-editor-empty',
+        showOnlyCurrent: true,
       }),
       TaskList,
       TaskItem.configure({

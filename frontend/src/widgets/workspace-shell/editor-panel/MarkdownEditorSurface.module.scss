@@ -218,6 +218,17 @@
         pointer-events: none;
       }
 
+      :global(.is-editor-empty)::after {
+        content: '/ — commands   # — headings   > — quotes   - — list';
+        display: block;
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-xs);
+        opacity: 0.5;
+        margin-top: var(--space-6);
+        pointer-events: none;
+        letter-spacing: 0.02em;
+      }
+
       a {
         color: var(--color-accent);
         text-decoration: underline;
@@ -465,12 +476,21 @@
         box-shadow: none;
 
         &::-webkit-scrollbar {
-          height: 4px;
+          height: 10px;
         }
 
         &::-webkit-scrollbar-thumb {
+          background: color-mix(in srgb, var(--color-border-strong) 60%, transparent);
+          border-radius: 5px;
+          border: 2px solid transparent;
+          background-clip: padding-box;
+        }
+
+        &:hover::-webkit-scrollbar-thumb {
           background: var(--color-border-strong);
-          border-radius: 2px;
+          border-radius: 5px;
+          border: 2px solid transparent;
+          background-clip: padding-box;
         }
 
         &:hover,
