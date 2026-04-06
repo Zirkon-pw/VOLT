@@ -1,4 +1,4 @@
-import type { LocalizationPayload } from '@shared/api/settings/types';
+import type { LocalizationPayload } from './types';
 
 export type TranslationParams = Record<string, string | number>;
 
@@ -89,6 +89,7 @@ const fallbackMessages: Record<string, string> = {
   'editor.context.copyLink': 'Copy link',
   'editor.context.openLink': 'Open link',
   'editor.context.plainText': 'Plain text',
+  'editor.context.clearFormatting': 'Clear formatting',
   'editor.table.addColumnAfter': 'Add column right',
   'editor.table.addColumnBefore': 'Add column left',
   'editor.table.addRowAbove': 'Add row above',
