@@ -1,1 +1,1 @@
-export { useImageResolver } from '@kernel/editor/internal/hooks/useImageResolver';
+export { useImageResolver } from '@kernel/editor/hooks/useImageResolver';

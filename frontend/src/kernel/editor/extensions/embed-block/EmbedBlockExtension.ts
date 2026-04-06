@@ -1,1 +1,1 @@
-export { EmbedBlock } from '@kernel/editor/internal/extensions/EmbedBlock';
+export { EmbedBlock } from '@kernel/editor/ui/extensions/EmbedBlock';

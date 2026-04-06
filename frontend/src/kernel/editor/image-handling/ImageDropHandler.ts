@@ -1,1 +1,1 @@
-export { useImageHandlers as useImageDropHandler } from '@kernel/editor/internal/hooks/useImageHandlers';
+export { useImageHandlers as useImageDropHandler } from '@kernel/editor/hooks/useImageHandlers';

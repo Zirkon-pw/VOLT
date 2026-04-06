@@ -1,1 +1,1 @@
-export { CodeBlockWithLanguage } from '@kernel/editor/internal/extensions/CodeBlockWithLanguage';
+export { CodeBlockWithLanguage } from '@kernel/editor/ui/extensions/CodeBlockWithLanguage';

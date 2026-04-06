@@ -1,1 +1,1 @@
-export { SlashCommand } from '@kernel/editor/internal/extensions/slashCommand';
+export { SlashCommand } from '@kernel/editor/ui/extensions/slashCommand';

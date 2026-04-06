@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 
 import type { Editor } from '@tiptap/react';
 import { useI18n } from '@app/providers/I18nProvider';
 import { Icon } from '@shared/ui/icon';
-import type { EditorResponsiveMode } from '../hooks/useEditorResponsiveMode';
+import type { EditorResponsiveMode } from '../../hooks/useEditorResponsiveMode';
 import styles from './TableControls.module.scss';
 
 interface TableControlsProps {

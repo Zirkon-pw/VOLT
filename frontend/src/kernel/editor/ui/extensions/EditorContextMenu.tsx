@@ -15,7 +15,7 @@ import { ColorPicker } from '@shared/ui/color-picker';
 import { Icon } from '@shared/ui/icon';
 import type { ContextMenuItem } from '@shared/ui/context-menu';
 import sharedStyles from '@shared/ui/context-menu/view/ContextMenuView.module.scss';
-import type { EditorMenuContext } from '../lib/editorContext';
+import type { EditorMenuContext } from '../../lib/editorContext';
 import styles from './EditorContextMenu.module.scss';
 
 const CELL_COLOR_PRESETS = [

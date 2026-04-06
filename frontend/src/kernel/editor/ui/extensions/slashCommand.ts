@@ -7,7 +7,7 @@ import { usePluginRegistryStore } from '@kernel/plugin-system/model';
 import { EDITOR } from '@shared/config/constants';
 import { translate } from '@shared/i18n';
 import type { IconSource } from '@shared/ui/icon';
-import { getFloatingMenuPresentation } from '../hooks/useEditorResponsiveMode';
+import { getFloatingMenuPresentation } from '../../hooks/useEditorResponsiveMode';
 import {
   SlashCommandMenu,
   type SlashCommandMenuHandle,

@@ -20,18 +20,18 @@ import {
   getEntryDisplayName,
 } from '@shared/lib/fileTree';
 import { openExternalUrl } from '@shared/api/runtime/browser';
-import { DragHandle } from '../internal/extensions/DragHandle';
-import { EditorContextMenu } from '../internal/extensions/EditorContextMenu';
-import { TableControls } from '../internal/extensions/TableControls';
-import { TextBubbleMenu } from '../internal/extensions/TextBubbleMenu';
-import { useEditorResponsiveMode } from '../internal/hooks/useEditorResponsiveMode';
+import { DragHandle } from './extensions/DragHandle';
+import { EditorContextMenu } from './extensions/EditorContextMenu';
+import { TableControls } from './extensions/TableControls';
+import { TextBubbleMenu } from './extensions/TextBubbleMenu';
+import { useEditorResponsiveMode } from '../hooks/useEditorResponsiveMode';
 import {
   ensureEditorSelectionForTarget,
   getEditorKeyboardMenuPosition,
   getEditorMenuContext,
   isNativeContextMenuTarget,
   type EditorMenuContext,
-} from '../internal/lib/editorContext';
+} from '../lib/editorContext';
 import styles from './MarkdownEditorSurface.module.scss';
 
 interface MarkdownEditorSurfaceProps {

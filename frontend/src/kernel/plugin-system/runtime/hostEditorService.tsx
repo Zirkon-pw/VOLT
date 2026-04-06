@@ -11,13 +11,13 @@ import { readFile, writeFile } from '@shared/api/file';
 import { dataUrlToBlobUrl, readImageBase64 } from '@plugins/image-service';
 import { isMarkdownPath } from '@shared/lib/fileTypes';
 import { MarkdownEditorSurface } from '@kernel/editor/ui/MarkdownEditorSurface';
-import { useAutoSave } from '@kernel/editor/internal/hooks/useAutoSave';
-import { resetEditorHistory, useEditorSetup } from '@kernel/editor/internal/hooks/useEditorSetup';
-import { useImageHandlers } from '@kernel/editor/internal/hooks/useImageHandlers';
-import { useImageResolver } from '@kernel/editor/internal/hooks/useImageResolver';
-import { useImageDrag } from '@plugins/file-viewer/internal/image-viewer/useImageDrag';
-import { useImageZoom } from '@plugins/file-viewer/internal/image-viewer/useImageZoom';
-import { preprocessMarkdown } from '@kernel/editor/internal/lib/markdownPreprocessor';
+import { useAutoSave } from '@kernel/editor/hooks/useAutoSave';
+import { resetEditorHistory, useEditorSetup } from '@kernel/editor/hooks/useEditorSetup';
+import { useImageHandlers } from '@kernel/editor/hooks/useImageHandlers';
+import { useImageResolver } from '@kernel/editor/hooks/useImageResolver';
+import { useImageDrag } from '@plugins/file-viewer/hooks/useImageDrag';
+import { useImageZoom } from '@plugins/file-viewer/hooks/useImageZoom';
+import { preprocessMarkdown } from '@kernel/editor/lib/markdownPreprocessor';
 import { emit } from './pluginEventBus';
 import {
   getHostEditorCapabilities,

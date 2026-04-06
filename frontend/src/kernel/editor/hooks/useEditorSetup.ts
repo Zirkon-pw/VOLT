@@ -19,11 +19,11 @@ import { Markdown } from 'tiptap-markdown';
 import 'katex/dist/katex.min.css';
 import { translate } from '@shared/i18n';
 import { isSingleHttpUrl } from '@shared/lib/remoteUrl';
-import { SlashCommand } from '../extensions/slashCommand';
-import { CodeBlockWithLanguage } from '../extensions/CodeBlockWithLanguage';
-import { EmbedBlock } from '../extensions/EmbedBlock';
-import { MathBlock } from '../extensions/MathBlock';
-import { FindInFileHighlights } from '../extensions/FindInFileHighlights';
+import { SlashCommand } from '../ui/extensions/slashCommand';
+import { CodeBlockWithLanguage } from '../ui/extensions/CodeBlockWithLanguage';
+import { EmbedBlock } from '../ui/extensions/EmbedBlock';
+import { MathBlock } from '../ui/extensions/MathBlock';
+import { FindInFileHighlights } from '../ui/extensions/FindInFileHighlights';
 
 interface UseEditorSetupOptions {
   onUpdate?: (editor: Editor) => void;

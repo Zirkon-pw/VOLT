@@ -2,4 +2,4 @@ export {
   FindInFileHighlights,
   findInFileHighlightsPluginKey,
   type FindInFileMatch,
-} from '@kernel/editor/internal/extensions/FindInFileHighlights';
+} from '@kernel/editor/ui/extensions/FindInFileHighlights';

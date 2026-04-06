@@ -10,16 +10,16 @@ import { readFile } from '@shared/api/file';
 import { useI18n } from '@app/providers/I18nProvider';
 import { emit, setEditor } from '@kernel/plugin-system/runtime';
 import { Icon } from '@shared/ui/icon';
-import { resetEditorHistory, useEditorSetup } from '../internal/hooks/useEditorSetup';
-import { useAutoSave } from '../internal/hooks/useAutoSave';
-import { useImageResolver } from '../internal/hooks/useImageResolver';
-import { useImageHandlers } from '../internal/hooks/useImageHandlers';
+import { resetEditorHistory, useEditorSetup } from '../hooks/useEditorSetup';
+import { useAutoSave } from '../hooks/useAutoSave';
+import { useImageResolver } from '../hooks/useImageResolver';
+import { useImageHandlers } from '../hooks/useImageHandlers';
 import { MarkdownEditorSurface } from './MarkdownEditorSurface';
-import { findInFileHighlightsPluginKey, type FindInFileMatch } from '../internal/extensions/FindInFileHighlights';
-import { LinkFilePicker } from '../internal/extensions/LinkFilePicker';
-import { EmbedUrlPicker } from '../internal/extensions/EmbedUrlPicker';
-import { TableOfContents } from '../internal/extensions/TableOfContents';
-import { preprocessMarkdown } from '../internal/lib/markdownPreprocessor';
+import { findInFileHighlightsPluginKey, type FindInFileMatch } from './extensions/FindInFileHighlights';
+import { LinkFilePicker } from './extensions/LinkFilePicker';
+import { EmbedUrlPicker } from './extensions/EmbedUrlPicker';
+import { TableOfContents } from './extensions/TableOfContents';
+import { preprocessMarkdown } from '../lib/markdownPreprocessor';
 import styles from './EditorPanel.module.scss';
 
 interface EditorPanelProps {

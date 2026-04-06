@@ -1,1 +1,1 @@
-export { MathBlock } from '@kernel/editor/internal/extensions/MathBlock';
+export { MathBlock } from '@kernel/editor/ui/extensions/MathBlock';

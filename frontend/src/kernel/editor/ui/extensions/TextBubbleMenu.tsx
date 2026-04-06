@@ -5,7 +5,7 @@ import { useI18n } from '@app/providers/I18nProvider';
 import { ensureExplicitRelativePath } from '@shared/lib/fileTree';
 import { ColorPicker } from '@shared/ui/color-picker';
 import { Icon } from '@shared/ui/icon';
-import type { EditorResponsiveMode } from '../hooks/useEditorResponsiveMode';
+import type { EditorResponsiveMode } from '../../hooks/useEditorResponsiveMode';
 import styles from './TextBubbleMenu.module.scss';
 
 const TEXT_COLORS = [

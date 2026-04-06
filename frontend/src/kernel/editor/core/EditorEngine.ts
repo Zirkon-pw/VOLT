@@ -1,1 +1,1 @@
-export { resetEditorHistory, useEditorSetup as useEditorEngine } from '@kernel/editor/internal/hooks/useEditorSetup';
+export { resetEditorHistory, useEditorSetup as useEditorEngine } from '@kernel/editor/hooks/useEditorSetup';

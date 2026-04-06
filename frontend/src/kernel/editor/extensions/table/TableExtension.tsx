@@ -1,1 +1,1 @@
-export { TableControls } from '@kernel/editor/internal/extensions/TableControls';
+export { TableControls } from '@kernel/editor/ui/extensions/TableControls';

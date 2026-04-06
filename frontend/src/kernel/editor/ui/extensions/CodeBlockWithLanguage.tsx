@@ -3,7 +3,7 @@ import { all, createLowlight } from 'lowlight';
 import type { Node as PmNode } from '@tiptap/pm/model';
 import type { EditorView, ViewMutationRecord } from '@tiptap/pm/view';
 import { translate } from '@shared/i18n';
-import { getFloatingMenuPresentation } from '../hooks/useEditorResponsiveMode';
+import { getFloatingMenuPresentation } from '../../hooks/useEditorResponsiveMode';
 
 import './CodeBlock.css';
 
