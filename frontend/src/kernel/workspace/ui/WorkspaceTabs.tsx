@@ -1,1 +1,1 @@
-export { WorkspaceTabs } from '@widgets/workspace-tabs/WorkspaceTabs';
+export { WorkspaceTabs } from './internal/workspace-tabs/WorkspaceTabs';

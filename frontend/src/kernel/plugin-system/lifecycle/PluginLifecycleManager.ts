@@ -3,14 +3,14 @@ export {
   loadSinglePlugin,
   unloadAllPlugins,
   unloadSinglePlugin,
-} from '@shared/lib/plugin-runtime/pluginLoader';
+} from '@kernel/plugin-system/runtime/pluginLoader';
 
 import {
   loadAllPlugins,
   loadSinglePlugin,
   unloadAllPlugins,
   unloadSinglePlugin,
-} from '@shared/lib/plugin-runtime/pluginLoader';
+} from '@kernel/plugin-system/runtime/pluginLoader';
 
 export const PluginLifecycleManager = {
   loadAllPlugins,

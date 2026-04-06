@@ -1,4 +1,4 @@
-import { useWorkspaceStore } from '@entities/workspace';
+import { useWorkspaceStore } from './model';
 
 export const WorkspaceManager = {
   openWorkspace: useWorkspaceStore.getState().openWorkspace,

@@ -1,4 +1,4 @@
-import { cancelPluginProcess, startPluginProcess as startPluginProcessApi } from '@kernel/plugin-system/api/PluginRuntime';
+import { cancelPluginProcess, startPluginProcess as startPluginProcessApi } from '@kernel/plugin-system/api/runtimeApi';
 import { waitForWailsBridge } from '@shared/api/wails';
 import { EventsOn } from '../../../../wailsjs/runtime/runtime';
 

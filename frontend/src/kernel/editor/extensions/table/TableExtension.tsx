@@ -1,1 +1,1 @@
-export { TableControls } from '@widgets/workspace-shell/editor-panel/extensions/TableControls';
+export { TableControls } from '@kernel/editor/internal/extensions/TableControls';

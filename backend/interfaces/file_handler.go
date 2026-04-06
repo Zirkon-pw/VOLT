@@ -13,30 +13,30 @@ func NewFileHandler(service *appfile.Service) *FileHandler {
 	return &FileHandler{service: service}
 }
 
-func (h *FileHandler) ReadFile(voltPath, filePath string) (string, error) {
-	return h.service.Read(voltPath, filePath)
+func (h *FileHandler) Read(rootPath, path string) (string, error) {
+	return h.service.Read(rootPath, path)
 }
 
-func (h *FileHandler) WriteFile(voltPath, filePath, content string) error {
-	return h.service.Write(voltPath, filePath, content)
+func (h *FileHandler) Write(rootPath, path, content string) error {
+	return h.service.Write(rootPath, path, content)
 }
 
-func (h *FileHandler) ListTree(voltPath, dirPath string) ([]domain.FileEntry, error) {
-	return h.service.ListTree(voltPath, dirPath)
+func (h *FileHandler) ListTree(rootPath, path string) ([]domain.FileEntry, error) {
+	return h.service.ListTree(rootPath, path)
 }
 
-func (h *FileHandler) CreateFile(voltPath, filePath, content string) error {
-	return h.service.CreateFile(voltPath, filePath, content)
+func (h *FileHandler) CreateFile(rootPath, path, content string) error {
+	return h.service.CreateFile(rootPath, path, content)
 }
 
-func (h *FileHandler) CreateDirectory(voltPath, dirPath string) error {
-	return h.service.CreateDirectory(voltPath, dirPath)
+func (h *FileHandler) CreateDirectory(rootPath, path string) error {
+	return h.service.CreateDirectory(rootPath, path)
 }
 
-func (h *FileHandler) DeletePath(voltPath, filePath string) error {
-	return h.service.Delete(voltPath, filePath)
+func (h *FileHandler) Delete(rootPath, path string) error {
+	return h.service.Delete(rootPath, path)
 }
 
-func (h *FileHandler) RenamePath(voltPath, oldPath, newPath string) error {
-	return h.service.Rename(voltPath, oldPath, newPath)
+func (h *FileHandler) Rename(rootPath, oldPath, newPath string) error {
+	return h.service.Rename(rootPath, oldPath, newPath)
 }

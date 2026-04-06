@@ -3,6 +3,8 @@
 import {json} from '../models';
 import {storage} from '../models';
 
+export function ConfigDir():Promise<string>;
+
 export function Delete(arg1:string,arg2:string):Promise<void>;
 
 export function Get(arg1:string,arg2:string):Promise<json.RawMessage>;

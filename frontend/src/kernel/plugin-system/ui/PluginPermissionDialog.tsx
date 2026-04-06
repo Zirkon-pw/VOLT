@@ -1,1 +1,1 @@
-export { PermissionDialog as PluginPermissionDialog } from '@features/plugin-permission';
+export { PermissionDialog as PluginPermissionDialog } from './permission';

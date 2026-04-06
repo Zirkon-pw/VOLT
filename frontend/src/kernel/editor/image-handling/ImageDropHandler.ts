@@ -1,1 +1,1 @@
-export { useImageHandlers as useImageDropHandler } from '@widgets/workspace-shell/editor-panel/hooks/useImageHandlers';
+export { useImageHandlers as useImageDropHandler } from '@kernel/editor/internal/hooks/useImageHandlers';

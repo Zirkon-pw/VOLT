@@ -14,6 +14,10 @@ func NewService(repo domain.Repository) *Service {
 	return &Service{repo: repo}
 }
 
+func (s *Service) ConfigDir() string {
+	return s.repo.ConfigDir()
+}
+
 func (s *Service) Get(namespace, key string) (json.RawMessage, error) {
 	return s.repo.Get(namespace, key)
 }

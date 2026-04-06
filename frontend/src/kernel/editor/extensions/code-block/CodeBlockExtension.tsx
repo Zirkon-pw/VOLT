@@ -1,1 +1,1 @@
-export { CodeBlockWithLanguage } from '@widgets/workspace-shell/editor-panel/extensions/CodeBlockWithLanguage';
+export { CodeBlockWithLanguage } from '@kernel/editor/internal/extensions/CodeBlockWithLanguage';

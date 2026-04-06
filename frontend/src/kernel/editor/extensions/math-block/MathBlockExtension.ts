@@ -1,1 +1,1 @@
-export { MathBlock } from '@widgets/workspace-shell/editor-panel/extensions/MathBlock';
+export { MathBlock } from '@kernel/editor/internal/extensions/MathBlock';

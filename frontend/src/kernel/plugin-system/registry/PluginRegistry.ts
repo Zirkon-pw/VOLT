@@ -26,4 +26,4 @@ export {
   type RegisteredSidebarPanel,
   type RegisteredSlashCommand,
   type RegisteredToolbarButton,
-} from '@entities/plugin';
+} from '@kernel/plugin-system/model';

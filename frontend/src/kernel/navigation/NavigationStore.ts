@@ -1,1 +1,1 @@
-export { useNavigationStore } from '@entities/navigation';
+export { useNavigationStore } from './model';

@@ -1,1 +1,1 @@
-export { useTabStore as useDirtyTrackerStore } from '@entities/tab';
+export { useTabStore as useDirtyTrackerStore } from '@kernel/workspace/tabs/model';

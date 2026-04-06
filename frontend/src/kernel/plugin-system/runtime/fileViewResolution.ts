@@ -1,4 +1,4 @@
-import type { RegisteredFileViewer } from '@entities/plugin';
+import type { RegisteredFileViewer } from '@kernel/plugin-system/model';
 import { isImagePath, isMarkdownPath } from '@shared/lib/fileTypes';
 
 export interface BuiltInFileViewTarget {

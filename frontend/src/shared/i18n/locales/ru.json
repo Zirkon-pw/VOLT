@@ -194,6 +194,8 @@
     "settings.plugins.permissions.process.description": "Позволяет плагину запускать локальные процессы внутри активного workspace через host broker.",
     "settings.plugins.permissions.external.label": "Внешний доступ",
     "settings.plugins.permissions.external.description": "Позволяет плагину открывать внешние URL и запрашивать у вас файлы вне активного workspace.",
+    "settings.plugins.permissions.interPlugin.label": "Межплагинные сообщения",
+    "settings.plugins.permissions.interPlugin.description": "Позволяет плагину обмениваться сериализованными сообщениями с другими включёнными плагинами.",
     "settings.about.title": "О Volt",
     "settings.about.version": "Версия 0.0.1",
     "settings.about.description": "Управление знаниями для продвинутых пользователей.",

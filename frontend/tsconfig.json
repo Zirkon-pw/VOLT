@@ -19,11 +19,6 @@
     "paths": {
       "@app/*": ["src/app/*"],
       "@pages/*": ["src/pages/*"],
-      "@entities/*": ["src/kernel/compat/entities/*"],
-      "@features/*": ["src/kernel/compat/features/*"],
-      "@widgets/*": ["src/kernel/compat/widgets/*"],
-      "@shared/lib/plugin-runtime": ["src/kernel/plugin-system/runtime/index.ts"],
-      "@shared/lib/plugin-runtime/*": ["src/kernel/plugin-system/runtime/*"],
       "@shared/*": ["src/shared/*"],
       "@kernel/*": ["src/kernel/*"],
       "@plugins/*": ["src/plugins/*"]

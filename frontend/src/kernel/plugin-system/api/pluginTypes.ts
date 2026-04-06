@@ -36,6 +36,7 @@ export interface PluginSettingsSection {
 }
 
 export interface PluginManifestSettings {
+  customUI?: boolean;
   sections?: PluginSettingsSection[];
 }
 

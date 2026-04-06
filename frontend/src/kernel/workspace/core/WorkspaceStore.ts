@@ -1,1 +1,1 @@
-export { useWorkspaceStore, type WorkspaceTab } from '@entities/workspace';
+export { useWorkspaceStore, type WorkspaceTab } from './model';

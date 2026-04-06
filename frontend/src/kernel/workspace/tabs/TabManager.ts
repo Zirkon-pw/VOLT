@@ -1,1 +1,1 @@
-export { useTabStore } from '@entities/tab';
+export { useTabStore } from './model';

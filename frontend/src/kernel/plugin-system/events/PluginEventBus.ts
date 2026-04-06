@@ -4,4 +4,4 @@ export {
   emit,
   on,
   onTracked,
-} from '@shared/lib/plugin-runtime/pluginEventBus';
+} from '@kernel/plugin-system/runtime/pluginEventBus';

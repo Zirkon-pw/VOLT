@@ -5,4 +5,4 @@ export {
   getEditorSessionSourceInfo,
   openEditorSession,
   type PluginEditorSession,
-} from '@shared/lib/plugin-runtime/editorSessionManager';
+} from '@kernel/plugin-system/runtime/editorSessionManager';

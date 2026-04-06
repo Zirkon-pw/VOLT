@@ -13,6 +13,7 @@ import {
   registerContextMenuItem,
   registerFileViewer,
   registerPluginPage,
+  registerSettingsPage,
   registerSearchProvider,
   registerSidebarButton,
   registerSidebarPanel,
@@ -20,19 +21,21 @@ import {
   registerToolbarButton,
   usePluginLogStore,
   usePluginRegistryStore,
-} from '@entities/plugin';
+} from '@kernel/plugin-system/model';
 import { onTracked } from './pluginEventBus';
 import { createFile as createWorkspaceFile, listTree, readFile, type FileEntry, writeFile } from '@shared/api/file';
 import { copyImage, pickImage, readImageBase64, saveImageBase64 } from '@plugins/image-service';
-import { copyPluginAsset, getPluginData, pickPluginFiles, setPluginData } from '@kernel/plugin-system/api/PluginRuntime';
-import { openPluginPrompt } from '@features/plugin-prompt';
-import { useWorkspaceStore } from '@entities/workspace';
-import { openFileInActivePane } from '@entities/workspace-view';
-import { useFileTreeStore } from '@plugins/file-tree';
-import { useTabStore } from '@entities/tab';
+import { getCachedPlugins } from '@kernel/plugin-system/api/catalogApi';
+import { copyPluginAsset, getPluginData, pickPluginFiles, setPluginData } from '@kernel/plugin-system/api/runtimeApi';
+import { openPluginPrompt } from '@kernel/plugin-system/ui/prompt';
+import { useWorkspaceStore } from '@kernel/workspace/core/model';
+import { openFileInActivePane } from '@kernel/workspace/panes/model';
+import { useFileTreeStore } from '@plugins/file-tree/model';
+import { useTabStore } from '@kernel/workspace/tabs/model';
 import { useToastStore } from '@shared/ui/toast';
 import { isIconName } from '@shared/ui/icon/icons';
 import type { IconSource } from '@shared/ui/icon';
+import { emitInterPluginMessage, onInterPluginMessage } from '@kernel/plugin-system/events/InterPluginMessenger';
 import {
   captureActiveEditorSession,
   openEditorSession,
@@ -50,15 +53,18 @@ import {
 import {
   createPluginTaskStatus,
   type PluginTaskStatusHandle,
-} from '@features/plugin-task-status';
+} from '@kernel/plugin-system/ui/task-status';
 import { reportPluginError, safeExecute, safeExecuteMaybeAsync } from './safeExecute';
 import {
   getAllPluginSettings,
   getPluginSettingValue,
   setPluginSettingValue,
   subscribePluginSettings,
-} from '@entities/plugin';
+} from '@kernel/plugin-system/model';
 import { openExternalUrl } from '@shared/api/runtime/browser';
+import { clearStorageNamespace, deleteStorageValue } from '@shared/api/storage';
+import { searchFiles } from '@plugins/search';
+import { builtinPlugins } from '@plugins/registry';
 
 function normalizePluginIcon(icon?: PluginIcon): IconSource {
   if (typeof icon === 'string' && isIconName(icon)) {
@@ -76,6 +82,53 @@ function normalizeExtensions(extensions: string[]): string[] {
   return extensions.map((extension) => extension.trim().toLowerCase()).filter(Boolean);
 }
 
+interface InterPluginEnvelope {
+  sourcePluginId: string;
+  targetPluginId?: string;
+  requestId?: string;
+  payload: unknown;
+  type: 'message' | 'response';
+}
+
+function normalizePluginPath(path: string, pluginId: string, action: string): string {
+  const normalized = path.trim().replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+/g, '/');
+  if (!normalized) {
+    throw reportPluginError(pluginId, action, new Error('File path is required'));
+  }
+
+  const segments = normalized.split('/');
+  if (segments.some((segment) => !segment || segment === '.' || segment === '..')) {
+    throw reportPluginError(pluginId, action, new Error('Path traversal is not allowed'));
+  }
+
+  return segments.join('/');
+}
+
+async function getWorkspaceEntry(
+  voltPath: string,
+  pluginId: string,
+  action: string,
+  path: string,
+): Promise<FileEntry | null> {
+  const normalizedPath = normalizePluginPath(path, pluginId, action);
+  const segments = normalizedPath.split('/');
+  const entryName = segments.pop() ?? normalizedPath;
+  const parentPath = segments.join('/');
+  const parentEntries = await listTree(voltPath, parentPath);
+
+  return parentEntries.find((entry) => (
+    entry.path === normalizedPath || (!entry.isDir && entry.name === entryName)
+  )) ?? null;
+}
+
+function createInterPluginRequestId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 export function createPluginAPI(
   pluginId: string,
   voltPath: string,
@@ -83,6 +136,14 @@ export function createPluginAPI(
   settingsSections: PluginSettingsSection[] = [],
 ): VoltPluginAPI {
   const declaredPermissions = new Set(permissions);
+  const allKnownPlugins = () => [
+    ...builtinPlugins.map((plugin) => ({
+      manifest: plugin.manifest,
+      enabled: true,
+      dirPath: 'builtin',
+    })),
+    ...getCachedPlugins(),
+  ];
 
   const namespaceId = (configId: string) => `${pluginId}:${configId}`;
   const notifyFsMutation = async (): Promise<void> => {
@@ -94,7 +155,7 @@ export function createPluginAPI(
     await useFileTreeStore.getState().notifyFsMutation(voltId, voltPath);
   };
 
-  const requirePermission = (permission: 'read' | 'write' | 'editor' | 'process' | 'external', action: string) => {
+  const requirePermission = (permission: 'read' | 'write' | 'editor' | 'process' | 'external' | 'inter-plugin', action: string) => {
     if (declaredPermissions.has(permission)) {
       return;
     }
@@ -274,26 +335,51 @@ export function createPluginAPI(
     fs: {
       async read(path: string): Promise<string> {
         requirePermission('read', 'fs.read');
-        return readFile(voltPath, path);
+        return readFile(voltPath, normalizePluginPath(path, pluginId, 'fs.read'));
       },
       async write(path: string, content: string): Promise<void> {
         requirePermission('write', 'fs.write');
-        return writeFile(voltPath, path, content);
+        return writeFile(voltPath, normalizePluginPath(path, pluginId, 'fs.write'), content);
       },
       async create(path: string, content = ''): Promise<void> {
         requirePermission('write', 'fs.create');
-
-        const normalizedPath = path.trim();
-        if (!normalizedPath) {
-          throw reportPluginError(pluginId, 'fs.create', new Error('File path is required'));
-        }
+        const normalizedPath = normalizePluginPath(path, pluginId, 'fs.create');
 
         await createWorkspaceFile(voltPath, normalizedPath, content);
         await notifyFsMutation();
       },
       async list(dirPath?: string): Promise<FileEntry[]> {
         requirePermission('read', 'fs.list');
-        return listTree(voltPath, dirPath ?? '');
+        return listTree(
+          voltPath,
+          dirPath == null || dirPath.trim() === ''
+            ? ''
+            : normalizePluginPath(dirPath, pluginId, 'fs.list'),
+        );
+      },
+      async exists(path: string): Promise<boolean> {
+        requirePermission('read', 'fs.exists');
+        try {
+          return (await getWorkspaceEntry(voltPath, pluginId, 'fs.exists', path)) != null;
+        } catch {
+          return false;
+        }
+      },
+      async stat(path: string) {
+        requirePermission('read', 'fs.stat');
+        const entry = await getWorkspaceEntry(voltPath, pluginId, 'fs.stat', path);
+        if (!entry) {
+          throw reportPluginError(pluginId, 'fs.stat', new Error(`Path "${path}" does not exist`));
+        }
+
+        return {
+          name: entry.name,
+          path: entry.path,
+          isDir: entry.isDir,
+        };
+      },
+      safePath(path: string): string {
+        return normalizePluginPath(path, pluginId, 'fs.safePath');
       },
     },
     workspace: {
@@ -322,6 +408,10 @@ export function createPluginAPI(
           extensions: normalizeExtensions(config.extensions),
           extractText: wrapSearchProvider(config.id, config.extractText),
         });
+      },
+      query(text: string) {
+        requirePermission('read', 'search.query');
+        return searchFiles(voltPath, text);
       },
     },
     assets: {
@@ -378,6 +468,95 @@ export function createPluginAPI(
 
         const handle = await startPluginProcess(pluginId, voltPath, config);
         return wrapProcessHandle(handle);
+      },
+    },
+    plugins: {
+      send(targetOrChannel: string, channelOrPayload: unknown, payload?: unknown) {
+        requirePermission('inter-plugin', 'plugins.send');
+
+        const directTarget = payload === undefined ? undefined : targetOrChannel;
+        const channel = String(payload === undefined ? targetOrChannel : channelOrPayload);
+        const messagePayload = payload === undefined ? channelOrPayload : payload;
+
+        emitInterPluginMessage<InterPluginEnvelope>(channel, {
+          sourcePluginId: pluginId,
+          targetPluginId: directTarget,
+          payload: messagePayload,
+          requestId: createInterPluginRequestId(),
+          type: 'message',
+        });
+      },
+      on(sourceOrChannel: string, channelOrCallback: unknown, callback?: (payload: unknown) => void | Promise<void>) {
+        requirePermission('inter-plugin', 'plugins.on');
+
+        const sourcePluginId = callback ? sourceOrChannel : undefined;
+        const channel = String(callback ? channelOrCallback : sourceOrChannel);
+        const listener = (callback ?? channelOrCallback) as ((payload: unknown) => void | Promise<void>);
+
+        return onInterPluginMessage<InterPluginEnvelope>(channel, (message) => {
+          if (message.type !== 'message') {
+            return;
+          }
+          if (message.targetPluginId && message.targetPluginId !== pluginId) {
+            return;
+          }
+          if (sourcePluginId && message.sourcePluginId !== sourcePluginId) {
+            return;
+          }
+
+          safeExecuteMaybeAsync(pluginId, `plugins.on:${channel}`, () => listener(message.payload));
+        });
+      },
+      respond(channelOrSource: string, requestIdOrChannel: string, payloadOrHandler: unknown) {
+        requirePermission('inter-plugin', 'plugins.respond');
+
+        if (typeof payloadOrHandler === 'function') {
+          const sourcePluginId = channelOrSource;
+          const channel = requestIdOrChannel;
+          const handler = payloadOrHandler as (payload: unknown) => unknown | Promise<unknown>;
+
+          return onInterPluginMessage<InterPluginEnvelope>(channel, (message) => {
+            if (message.type !== 'message') {
+              return;
+            }
+            if (message.sourcePluginId !== sourcePluginId) {
+              return;
+            }
+            if (message.targetPluginId && message.targetPluginId !== pluginId) {
+              return;
+            }
+
+            safeExecuteMaybeAsync(pluginId, `plugins.respond:${channel}`, async () => {
+              const responsePayload = await handler(message.payload);
+              emitInterPluginMessage<InterPluginEnvelope>(channel, {
+                sourcePluginId: pluginId,
+                targetPluginId: message.sourcePluginId,
+                payload: responsePayload,
+                requestId: message.requestId,
+                type: 'response',
+              });
+            });
+          });
+        }
+
+        const channel = channelOrSource;
+        const requestId = requestIdOrChannel;
+        const responsePayload = payloadOrHandler;
+
+        emitInterPluginMessage<InterPluginEnvelope>(channel, {
+          sourcePluginId: pluginId,
+          payload: responsePayload,
+          requestId,
+          type: 'response',
+        });
+
+        return undefined;
+      },
+      list() {
+        return allKnownPlugins();
+      },
+      isEnabled(targetPluginId: string) {
+        return allKnownPlugins().some((plugin) => plugin.manifest.id === targetPluginId && plugin.enabled);
       },
     },
     ui: {
@@ -502,6 +681,25 @@ export function createPluginAPI(
           callback: wrapCallback(`sidebarButton:${config.id}`, config.callback),
         });
       },
+      registerSettingsPage(config) {
+        registerSettingsPage({
+          id: namespaceId(config.id),
+          pluginId,
+          title: config.title,
+          render: (container) => {
+            safeExecute(pluginId, `settingsPage:${config.id}:render`, () => {
+              config.render(container);
+            });
+          },
+          cleanup: config.cleanup
+            ? () => {
+              safeExecute(pluginId, `settingsPage:${config.id}:cleanup`, () => {
+                config.cleanup!();
+              });
+            }
+            : undefined,
+        });
+      },
       openPluginPage(pageId: string) {
         const voltId = useWorkspaceStore.getState().activeWorkspaceId;
         if (!voltId) {
@@ -609,6 +807,12 @@ export function createPluginAPI(
       },
       async set(key: string, value: unknown): Promise<void> {
         await setPluginData(pluginId, key, JSON.stringify(value));
+      },
+      async delete(key: string): Promise<void> {
+        await deleteStorageValue(`plugin-data:${pluginId}`, key);
+      },
+      async clear(): Promise<void> {
+        await clearStorageNamespace(`plugin-data:${pluginId}`);
       },
     },
     settings: {

@@ -6,9 +6,9 @@ import { Button } from '@shared/ui/button';
 import { TextInput } from '@shared/ui/text-input';
 import { Modal } from '@shared/ui/modal';
 import { Icon } from '@shared/ui/icon';
-import { VoltLogo } from '@shared/ui/volt-logo';
+import { VoltLogo } from '@shared/ui/volt-logo/VoltLogo';
 import { useI18n } from '@app/providers/I18nProvider';
-import { VoltCard } from '@shared/ui/volt-card';
+import { VoltCard } from '@shared/ui/volt-card/VoltCard';
 import styles from './HomePage.module.scss';
 
 type HomeModalMode = 'create' | 'attach' | null;

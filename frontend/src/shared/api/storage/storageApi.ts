@@ -56,6 +56,14 @@ export async function getStorageValue<T>(namespace: string, key: string): Promis
   }
 }
 
+export async function getStorageConfigDir(): Promise<string> {
+  return invokeWailsSafe(
+    loadStorageHandler,
+    (mod) => mod.ConfigDir(),
+    'storage.configDir',
+  );
+}
+
 export async function setStorageValue(namespace: string, key: string, value: unknown): Promise<void> {
   return invokeWailsSafe(
     loadStorageHandler,
@@ -83,4 +91,9 @@ export async function listStorageValues<T>(namespace: string): Promise<StorageEn
     key: entry.key,
     value: parseStoredValue<T>(entry.value),
   }));
+}
+
+export async function clearStorageNamespace(namespace: string): Promise<void> {
+  const entries = await listStorageValues(namespace);
+  await Promise.all(entries.map((entry) => deleteStorageValue(namespace, entry.key)));
 }

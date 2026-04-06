@@ -1,1 +1,1 @@
-export { WorkspaceToolbar as Toolbar } from '@widgets/workspace-shell/workspace-toolbar/WorkspaceToolbar';
+export { WorkspaceToolbar as Toolbar } from './internal/workspace-toolbar/WorkspaceToolbar';

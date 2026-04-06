@@ -1,4 +1,4 @@
-import { preprocessMarkdown } from '@widgets/workspace-shell/editor-panel/lib/markdownPreprocessor';
+import { preprocessMarkdown } from '@kernel/editor/internal/lib/markdownPreprocessor';
 
 export function parseMarkdown(markdown: string): string {
   return preprocessMarkdown(markdown);

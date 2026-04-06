@@ -1,1 +1,1 @@
-export { createPluginAPI } from '@shared/lib/plugin-runtime/pluginApiFactory';
+export { createPluginAPI } from '@kernel/plugin-system/runtime/pluginApiFactory';

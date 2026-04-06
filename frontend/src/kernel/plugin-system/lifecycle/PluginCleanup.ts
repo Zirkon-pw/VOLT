@@ -1,16 +1,16 @@
 export {
   cleanupAllEditorSessions,
   cleanupPluginEditorSessions,
-} from '@shared/lib/plugin-runtime/editorSessionManager';
+} from '@kernel/plugin-system/runtime/editorSessionManager';
 export {
   cleanupAllHostEditors,
   cleanupPluginHostEditors,
-} from '@shared/lib/plugin-runtime/hostEditorService';
+} from '@kernel/plugin-system/runtime/hostEditorService';
 export {
   cleanupAllPluginProcesses,
   cleanupPluginProcesses,
-} from '@shared/lib/plugin-runtime/pluginProcessManager';
+} from '@kernel/plugin-system/runtime/pluginProcessManager';
 export {
   cleanupAllPluginTaskStatuses,
   cleanupPluginTaskStatuses,
-} from '@features/plugin-task-status';
+} from '@kernel/plugin-system/ui/task-status';

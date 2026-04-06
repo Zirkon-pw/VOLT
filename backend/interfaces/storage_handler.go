@@ -15,6 +15,10 @@ func NewStorageHandler(service *appstorage.Service) *StorageHandler {
 	return &StorageHandler{service: service}
 }
 
+func (h *StorageHandler) ConfigDir() string {
+	return h.service.ConfigDir()
+}
+
 func (h *StorageHandler) Get(namespace, key string) (json.RawMessage, error) {
 	return h.service.Get(namespace, key)
 }

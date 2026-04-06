@@ -1,1 +1,1 @@
-export { getEditorSessionSourceInfo } from '@shared/lib/plugin-runtime/editorSessionManager';
+export { getEditorSessionSourceInfo } from '@kernel/plugin-system/runtime/editorSessionManager';

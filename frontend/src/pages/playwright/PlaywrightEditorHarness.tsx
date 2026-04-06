@@ -5,9 +5,9 @@ import { SIDEBAR } from '@shared/config/constants';
 import { useNavigationStore } from '@kernel/navigation/NavigationStore';
 import { WorkspaceShell } from '@kernel/workspace/ui/WorkspaceShell';
 import { useWorkspaceViewStore } from '@kernel/workspace/panes/PaneStore';
-import { useFileTreeStore } from '@plugins/file-tree';
-import { getEditor } from '@shared/lib/plugin-runtime';
-import { useTabStore } from '@entities/tab';
+import { useFileTreeStore } from '@plugins/file-tree/model';
+import { getEditor } from '@kernel/plugin-system/runtime';
+import { useTabStore } from '@kernel/workspace/tabs/model';
 
 declare global {
   interface Window {
@@ -37,7 +37,7 @@ declare global {
 }
 
 const VOLT_ID = 'playwright-volt';
-const VOLT_PATH = '/playwright/volt';
+const VOLT_PATH = '/playwright/vault-manager/model';
 const FILE_PATH = 'notes/test.md';
 
 const INITIAL_FILE_TREE: FileEntry[] = [
@@ -129,17 +129,17 @@ export function PlaywrightEditorHarness() {
       wailshandler: {
         ...(window.go?.wailshandler ?? {}),
         FileHandler: {
-          ReadFile: async (_voltPath: string, filePath: string) => savedFiles.get(filePath) ?? '',
-          WriteFile: async (_voltPath: string, filePath: string, content: string) => {
+          Read: async (_rootPath: string, filePath: string) => savedFiles.get(filePath) ?? '',
+          Write: async (_rootPath: string, filePath: string, content: string) => {
             savedFiles.set(filePath, content);
           },
           ListTree: async () => cloneTree(INITIAL_FILE_TREE),
           CreateDirectory: async () => undefined,
-          CreateFile: async (_voltPath: string, filePath: string, content: string) => {
+          CreateFile: async (_rootPath: string, filePath: string, content: string) => {
             savedFiles.set(filePath, content);
           },
-          DeletePath: async () => undefined,
-          RenamePath: async () => undefined,
+          Delete: async () => undefined,
+          Rename: async () => undefined,
         },
         DialogHandler: {
           SelectDirectory: async () => '',
@@ -151,6 +151,7 @@ export function PlaywrightEditorHarness() {
           Cancel: async () => undefined,
         },
         StorageHandler: {
+          ConfigDir: async () => '/playwright/.volt',
           Get: async (namespace: string, key: string) => {
             const storageKey = `${namespace}:${key}`;
             if (!storageEntries.has(storageKey)) {

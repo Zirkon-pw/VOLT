@@ -1,4 +1,4 @@
-import { useNavigationStore } from '@entities/navigation';
+import { useNavigationStore } from './model';
 
 export const NavigationHistory = {
   push: useNavigationStore.getState().push,

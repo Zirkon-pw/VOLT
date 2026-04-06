@@ -2,22 +2,22 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { createRoot, type Root } from 'react-dom/client';
 import { useI18n } from '@app/providers/I18nProvider';
 import { useAppSettingsStore } from '@plugins/settings/SettingsStore';
-import { useActiveFileStore } from '@entities/editor-session';
-import type { RegisteredHostEditorFileViewer } from '@entities/plugin';
-import { useFileTreeStore } from '@plugins/file-tree';
-import { useTabStore } from '@entities/tab';
-import { PluginTaskStatusBanner } from '@features/plugin-task-status';
+import { useActiveFileStore } from '@kernel/editor/sessions/model';
+import type { RegisteredHostEditorFileViewer } from '@kernel/plugin-system/model';
+import { useFileTreeStore } from '@plugins/file-tree/model';
+import { useTabStore } from '@kernel/workspace/tabs/model';
+import { PluginTaskStatusBanner } from '@kernel/plugin-system/ui/task-status';
 import { readFile, writeFile } from '@shared/api/file';
 import { dataUrlToBlobUrl, readImageBase64 } from '@plugins/image-service';
 import { isMarkdownPath } from '@shared/lib/fileTypes';
-import { MarkdownEditorSurface } from '@widgets/workspace-shell/editor-panel/MarkdownEditorSurface';
-import { useAutoSave } from '@widgets/workspace-shell/editor-panel/hooks/useAutoSave';
-import { resetEditorHistory, useEditorSetup } from '@widgets/workspace-shell/editor-panel/hooks/useEditorSetup';
-import { useImageHandlers } from '@widgets/workspace-shell/editor-panel/hooks/useImageHandlers';
-import { useImageResolver } from '@widgets/workspace-shell/editor-panel/hooks/useImageResolver';
-import { useImageDrag } from '@widgets/workspace-shell/image-viewer/useImageDrag';
-import { useImageZoom } from '@widgets/workspace-shell/image-viewer/useImageZoom';
-import { preprocessMarkdown } from '@widgets/workspace-shell/editor-panel/lib/markdownPreprocessor';
+import { MarkdownEditorSurface } from '@kernel/editor/ui/MarkdownEditorSurface';
+import { useAutoSave } from '@kernel/editor/internal/hooks/useAutoSave';
+import { resetEditorHistory, useEditorSetup } from '@kernel/editor/internal/hooks/useEditorSetup';
+import { useImageHandlers } from '@kernel/editor/internal/hooks/useImageHandlers';
+import { useImageResolver } from '@kernel/editor/internal/hooks/useImageResolver';
+import { useImageDrag } from '@plugins/file-viewer/internal/image-viewer/useImageDrag';
+import { useImageZoom } from '@plugins/file-viewer/internal/image-viewer/useImageZoom';
+import { preprocessMarkdown } from '@kernel/editor/internal/lib/markdownPreprocessor';
 import { emit } from './pluginEventBus';
 import {
   getHostEditorCapabilities,

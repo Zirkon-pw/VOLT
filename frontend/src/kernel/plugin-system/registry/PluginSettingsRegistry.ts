@@ -10,4 +10,4 @@ export {
   clearPluginSettingsRuntime,
   usePluginSettingsStore,
   type PluginSettingsStoreState,
-} from '@entities/plugin';
+} from '@kernel/plugin-system/model';

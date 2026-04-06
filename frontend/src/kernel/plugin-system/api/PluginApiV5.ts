@@ -9,9 +9,13 @@ export type {
   EditorSessionRange,
   PluginEventMap,
   PluginFileViewerConfig,
+  PluginFileStat,
   PluginSettingChangeEvent,
+  PluginSearchQueryResult,
+  PluginSettingsPageConfig,
   PluginTaskStatusHandle,
+  PluginWorkspaceInfo,
   SearchFileTextProvider,
   SearchFileTextProviderInput,
   VoltPluginAPI,
-} from '@shared/lib/plugin-runtime/pluginApi';
+} from '@kernel/plugin-system/runtime/pluginApi';

@@ -17,13 +17,13 @@ export function installPlaywrightBootstrap() {
     wailshandler: {
       ...(window.go?.wailshandler ?? {}),
       FileHandler: {
-        ReadFile: async () => '',
-        WriteFile: async () => undefined,
+        Read: async () => '',
+        Write: async () => undefined,
         ListTree: async () => [],
         CreateFile: async () => undefined,
         CreateDirectory: async () => undefined,
-        DeletePath: async () => undefined,
-        RenamePath: async () => undefined,
+        Delete: async () => undefined,
+        Rename: async () => undefined,
       },
       DialogHandler: {
         SelectDirectory: async () => '',
@@ -35,6 +35,7 @@ export function installPlaywrightBootstrap() {
         Cancel: async () => undefined,
       },
       StorageHandler: {
+        ConfigDir: async () => '/playwright/.volt',
         Get: async (namespace: string, key: string) => {
           const storageKey = `${namespace}:${key}`;
           if (!storageEntries.has(storageKey)) {

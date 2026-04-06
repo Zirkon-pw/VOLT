@@ -1,5 +1,5 @@
-export { PluginTaskStatusBanner } from '@features/plugin-task-status';
-export { PluginTaskStatusController } from '@features/plugin-task-status';
+export { PluginTaskStatusBanner } from './task-status';
+export { PluginTaskStatusController } from './task-status';
 export {
   cleanupAllPluginTaskStatuses,
   cleanupPluginTaskStatuses,
@@ -11,4 +11,4 @@ export {
   type PluginTaskStatusScope,
   type PluginTaskStatusState,
   type PluginTaskStatusSurface,
-} from '@features/plugin-task-status';
+} from './task-status';

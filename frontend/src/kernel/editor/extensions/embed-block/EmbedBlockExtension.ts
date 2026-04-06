@@ -1,1 +1,1 @@
-export { EmbedBlock } from '@widgets/workspace-shell/editor-panel/extensions/EmbedBlock';
+export { EmbedBlock } from '@kernel/editor/internal/extensions/EmbedBlock';

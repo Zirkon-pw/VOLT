@@ -1,4 +1,4 @@
-import { usePluginLogStore } from '@entities/plugin/model/pluginLogStore';
+import { usePluginLogStore } from '@kernel/plugin-system/model/pluginLogStore';
 import { useToastStore } from '@shared/ui/toast';
 
 export class PluginHandledError extends Error {

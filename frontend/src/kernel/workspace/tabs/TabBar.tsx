@@ -1,1 +1,1 @@
-export { FileTabs as TabBar } from '@widgets/workspace-shell/file-tabs/FileTabs';
+export { FileTabs as TabBar } from './internal/file-tabs/FileTabs';

@@ -15,20 +15,20 @@ func NewFileRepository() *FileRepository {
 	return &FileRepository{}
 }
 
-// safePath resolves the full path and validates it stays within the volt root.
-func safePath(voltPath, relativePath string) (string, error) {
-	absVolt, err := filepath.Abs(voltPath)
+// safePath resolves the full path and validates it stays within the provided root.
+func safePath(rootPath, relativePath string) (string, error) {
+	absRoot, err := filepath.Abs(rootPath)
 	if err != nil {
 		return "", corefile.ErrPathTraversal
 	}
 
-	full := filepath.Join(absVolt, relativePath)
+	full := filepath.Join(absRoot, relativePath)
 	full, err = filepath.Abs(full)
 	if err != nil {
 		return "", corefile.ErrPathTraversal
 	}
 
-	rel, err := filepath.Rel(absVolt, full)
+	rel, err := filepath.Rel(absRoot, full)
 	if err != nil {
 		return "", corefile.ErrPathTraversal
 	}
@@ -40,8 +40,8 @@ func safePath(voltPath, relativePath string) (string, error) {
 	return full, nil
 }
 
-func (r *FileRepository) ReadFile(voltPath, filePath string) (string, error) {
-	full, err := safePath(voltPath, filePath)
+func (r *FileRepository) Read(rootPath, path string) (string, error) {
+	full, err := safePath(rootPath, path)
 	if err != nil {
 		return "", err
 	}
@@ -60,8 +60,8 @@ func (r *FileRepository) ReadFile(voltPath, filePath string) (string, error) {
 	return string(data), nil
 }
 
-func (r *FileRepository) WriteFile(voltPath, filePath, content string) (err error) {
-	full, err := safePath(voltPath, filePath)
+func (r *FileRepository) Write(rootPath, path, content string) (err error) {
+	full, err := safePath(rootPath, path)
 	if err != nil {
 		return err
 	}
@@ -84,8 +84,8 @@ func (r *FileRepository) WriteFile(voltPath, filePath, content string) (err erro
 	return nil
 }
 
-func (r *FileRepository) ListDirectory(voltPath, dirPath string) ([]corefile.FileEntry, error) {
-	full, err := safePath(voltPath, dirPath)
+func (r *FileRepository) ListTree(rootPath, path string) ([]corefile.FileEntry, error) {
+	full, err := safePath(rootPath, path)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (r *FileRepository) ListDirectory(voltPath, dirPath string) ([]corefile.Fil
 		return nil, err
 	}
 
-	absVolt, _ := filepath.Abs(voltPath)
+	absRoot, _ := filepath.Abs(rootPath)
 	result := make([]corefile.FileEntry, 0, len(entries))
 
 	for _, e := range entries {
@@ -111,7 +111,7 @@ func (r *FileRepository) ListDirectory(voltPath, dirPath string) ([]corefile.Fil
 		}
 
 		entryFull := filepath.Join(full, e.Name())
-		relPath, _ := filepath.Rel(absVolt, entryFull)
+		relPath, _ := filepath.Rel(absRoot, entryFull)
 
 		fe := corefile.FileEntry{
 			Name:  e.Name(),
@@ -120,7 +120,7 @@ func (r *FileRepository) ListDirectory(voltPath, dirPath string) ([]corefile.Fil
 		}
 
 		if e.IsDir() {
-			children, err := r.ListDirectory(voltPath, relPath)
+			children, err := r.ListTree(rootPath, relPath)
 			if err != nil {
 				return nil, err
 			}
@@ -141,8 +141,8 @@ func (r *FileRepository) ListDirectory(voltPath, dirPath string) ([]corefile.Fil
 	return result, nil
 }
 
-func (r *FileRepository) CreateFile(voltPath, filePath string) error {
-	full, err := safePath(voltPath, filePath)
+func (r *FileRepository) CreateFile(rootPath, path string) error {
+	full, err := safePath(rootPath, path)
 	if err != nil {
 		return err
 	}
@@ -169,8 +169,8 @@ func (r *FileRepository) CreateFile(voltPath, filePath string) error {
 	return f.Close()
 }
 
-func (r *FileRepository) CreateDirectory(voltPath, dirPath string) error {
-	full, err := safePath(voltPath, dirPath)
+func (r *FileRepository) CreateDirectory(rootPath, path string) error {
+	full, err := safePath(rootPath, path)
 	if err != nil {
 		return err
 	}
@@ -189,8 +189,8 @@ func (r *FileRepository) CreateDirectory(voltPath, dirPath string) error {
 	return nil
 }
 
-func (r *FileRepository) DeletePath(voltPath, filePath string) error {
-	full, err := safePath(voltPath, filePath)
+func (r *FileRepository) Delete(rootPath, path string) error {
+	full, err := safePath(rootPath, path)
 	if err != nil {
 		return err
 	}
@@ -209,13 +209,13 @@ func (r *FileRepository) DeletePath(voltPath, filePath string) error {
 	return nil
 }
 
-func (r *FileRepository) RenamePath(voltPath, oldPath, newPath string) error {
-	fullOld, err := safePath(voltPath, oldPath)
+func (r *FileRepository) Rename(rootPath, oldPath, newPath string) error {
+	fullOld, err := safePath(rootPath, oldPath)
 	if err != nil {
 		return err
 	}
 
-	fullNew, err := safePath(voltPath, newPath)
+	fullNew, err := safePath(rootPath, newPath)
 	if err != nil {
 		return err
 	}

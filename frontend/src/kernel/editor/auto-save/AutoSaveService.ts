@@ -1,1 +1,1 @@
-export { useAutoSave as useAutoSaveService } from '@widgets/workspace-shell/editor-panel/hooks/useAutoSave';
+export { useAutoSave as useAutoSaveService } from '@kernel/editor/internal/hooks/useAutoSave';

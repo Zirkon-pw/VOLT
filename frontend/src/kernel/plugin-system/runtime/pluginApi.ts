@@ -1,5 +1,5 @@
 import type { FileEntry } from '@shared/api/file';
-import type { PluginSettingsSection } from '@kernel/plugin-system/api/pluginTypes';
+import type { PluginInfo, PluginSettingsSection } from '@kernel/plugin-system/api/pluginTypes';
 
 export interface EditorSessionRange {
   from: number;
@@ -10,6 +10,12 @@ export interface PluginSettingChangeEvent {
   key: string;
   value: unknown;
   values: Record<string, unknown>;
+}
+
+export interface PluginWorkspaceInfo {
+  voltId: string;
+  voltPath: string;
+  rootPath: string;
 }
 
 export interface WorkspacePathRenamedEvent {
@@ -27,6 +33,12 @@ export interface SearchFileTextProvider {
   id: string;
   extensions: string[];
   extractText(input: SearchFileTextProviderInput): string | null | undefined | Promise<string | null | undefined>;
+}
+
+export interface PluginFileStat {
+  name: string;
+  path: string;
+  isDir: boolean;
 }
 
 export interface PluginFilePickerConfig {
@@ -200,12 +212,30 @@ export type PluginFileViewerConfig =
   | PluginCustomFileViewerConfig
   | PluginHostEditorFileViewerConfig;
 
+export interface PluginSettingsPageConfig {
+  id: string;
+  title: string;
+  render: (container: HTMLElement) => void;
+  cleanup?: () => void;
+}
+
+export interface PluginSearchQueryResult {
+  filePath: string;
+  fileName: string;
+  snippet: string;
+  line: number;
+  isName: boolean;
+}
+
 export interface VoltPluginAPI {
   fs: {
     read(path: string): Promise<string>;
     write(path: string, content: string): Promise<void>;
     create(path: string, content?: string): Promise<void>;
     list(dirPath?: string): Promise<FileEntry[]>;
+    exists(path: string): Promise<boolean>;
+    stat(path: string): Promise<PluginFileStat>;
+    safePath(path: string): string;
   };
   workspace: {
     getActivePath(): string | null;
@@ -213,6 +243,7 @@ export interface VoltPluginAPI {
   };
   search: {
     registerTextProvider(config: SearchFileTextProvider): void;
+    query(text: string): Promise<PluginSearchQueryResult[]>;
   };
   assets: {
     pickImage(): Promise<string>;
@@ -231,6 +262,19 @@ export interface VoltPluginAPI {
       stdoutMode?: 'raw' | 'lines';
       stderrMode?: 'raw' | 'lines';
     }): Promise<DesktopProcessHandle>;
+  };
+  plugins: {
+    send(channel: string, payload: unknown): void;
+    send(targetPluginId: string, channel: string, payload: unknown): void;
+    on(channel: string, callback: (payload: unknown) => void | Promise<void>): () => void;
+    on(sourcePluginId: string, channel: string, callback: (payload: unknown) => void | Promise<void>): () => void;
+    respond(
+      channelOrSourcePluginId: string,
+      requestIdOrChannel: string,
+      payloadOrHandler: unknown | ((payload: unknown) => unknown | Promise<unknown>),
+    ): void | (() => void);
+    list(): PluginInfo[];
+    isEnabled(pluginId: string): boolean;
   };
   ui: {
     promptText(config: {
@@ -296,6 +340,7 @@ export interface VoltPluginAPI {
       icon: PluginIcon;
       callback: () => void | Promise<void>;
     }): void;
+    registerSettingsPage(config: PluginSettingsPageConfig): void;
     openPluginPage(pageId: string): void;
     openFile(path: string): void;
     openExternalUrl(url: string): void;
@@ -317,6 +362,8 @@ export interface VoltPluginAPI {
   storage: {
     get(key: string): Promise<unknown>;
     set(key: string, value: unknown): Promise<void>;
+    delete(key: string): Promise<void>;
+    clear(): Promise<void>;
   };
   settings: {
     get<T = unknown>(key: string): Promise<T | undefined>;

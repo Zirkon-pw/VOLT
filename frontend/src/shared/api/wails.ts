@@ -11,10 +11,10 @@ declare global {
 let pendingWailsReady: Promise<void> | null = null;
 
 const REQUIRED_WAILS_HANDLERS = {
-  FileHandler: ['ReadFile', 'WriteFile', 'ListTree', 'CreateFile', 'CreateDirectory', 'DeletePath', 'RenamePath'],
+  FileHandler: ['Read', 'Write', 'ListTree', 'CreateFile', 'CreateDirectory', 'Delete', 'Rename'],
   DialogHandler: ['SelectDirectory', 'PickFiles', 'PickImage'],
   ProcessHandler: ['Start', 'Cancel'],
-  StorageHandler: ['Get', 'Set', 'Delete', 'List'],
+  StorageHandler: ['ConfigDir', 'Get', 'Set', 'Delete', 'List'],
 } as const;
 
 function hasHandlerMethods(target: unknown, methods: readonly string[]): boolean {

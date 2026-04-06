@@ -1,1 +1,1 @@
-export { SlashCommand } from '@widgets/workspace-shell/editor-panel/extensions/slashCommand';
+export { SlashCommand } from '@kernel/editor/internal/extensions/slashCommand';

@@ -1,1 +1,1 @@
-export { PluginPageHost } from '@widgets/plugin-page/PluginPageHost';
+export { PluginPageHost } from './plugin-page/PluginPageHost';

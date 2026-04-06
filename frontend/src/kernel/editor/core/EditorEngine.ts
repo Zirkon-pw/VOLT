@@ -1,1 +1,1 @@
-export { resetEditorHistory, useEditorSetup as useEditorEngine } from '@widgets/workspace-shell/editor-panel/hooks/useEditorSetup';
+export { resetEditorHistory, useEditorSetup as useEditorEngine } from '@kernel/editor/internal/hooks/useEditorSetup';

@@ -1,4 +1,4 @@
-export type PluginPermission = 'read' | 'write' | 'editor' | 'process' | 'external';
+export type PluginPermission = 'read' | 'write' | 'editor' | 'process' | 'external' | 'inter-plugin';
 
 export function hasPluginPermission(
   permissions: string[],

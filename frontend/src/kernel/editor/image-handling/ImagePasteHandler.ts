@@ -1,1 +1,1 @@
-export { useImageHandlers as useImagePasteHandler } from '@widgets/workspace-shell/editor-panel/hooks/useImageHandlers';
+export { useImageHandlers as useImagePasteHandler } from '@kernel/editor/internal/hooks/useImageHandlers';

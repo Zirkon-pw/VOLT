@@ -1,1 +1,1 @@
-export type { PaneId, WorkspaceViewState } from '@entities/workspace-view';
+export type { PaneId, WorkspaceViewState } from './model';
