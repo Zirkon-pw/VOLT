@@ -46,6 +46,8 @@ interface SidebarProps {
   onSearchClick: () => void;
   collapsed: boolean;
   onToggleCollapse: () => void;
+  variant?: 'desktop' | 'drawer';
+  onFileOpen?: () => void;
 }
 
 interface SidebarButtonItem {
@@ -55,8 +57,17 @@ interface SidebarButtonItem {
   onClick: () => void | Promise<void>;
 }
 
-export function Sidebar({ voltId, locator, onSearchClick, collapsed, onToggleCollapse }: SidebarProps) {
+export function Sidebar({
+  voltId,
+  locator,
+  onSearchClick,
+  collapsed,
+  onToggleCollapse,
+  variant = 'desktop',
+  onFileOpen,
+}: SidebarProps) {
   const { t } = useI18n();
+  const isDrawer = variant === 'drawer';
   const startCreate = useFileTreeStore((state) => state.startCreate);
   const sidebarPanels = usePluginRegistryStore((s) => s.sidebarPanels);
   const sidebarButtons = usePluginRegistryStore((s) => s.sidebarButtons);
@@ -96,6 +107,10 @@ export function Sidebar({ voltId, locator, onSearchClick, collapsed, onToggleCol
   ), [sidebarButtons]);
 
   const [orderedButtons, dragHandlers] = useSidebarButtonOrder([...builtInButtons, ...pluginButtons]);
+  const drawerActionButtons = useMemo(
+    () => orderedButtons.filter((button) => button.id !== 'builtin:search'),
+    [orderedButtons],
+  );
 
   const startResize = useCallback((clientX: number) => {
     const sidebarEl = sidebarRef.current;
@@ -166,6 +181,43 @@ export function Sidebar({ voltId, locator, onSearchClick, collapsed, onToggleCol
   useEffect(() => {
     localStorage.setItem(SIDEBAR.STORAGE_KEY, String(width));
   }, [width]);
+
+  if (isDrawer) {
+    return (
+      <div className={styles.drawerPane}>
+        <div className={styles.mobileActions}>
+          {drawerActionButtons.map((button) => (
+            <button
+              key={button.id}
+              type="button"
+              data-button-id={button.id}
+              className={styles.mobileActionButton}
+              onClick={() => { void button.onClick(); }}
+              title={button.title}
+              aria-label={button.title}
+            >
+              <span className={styles.mobileActionIcon}>
+                <Icon name={button.icon} size={18} />
+              </span>
+              <span>{button.title}</span>
+            </button>
+          ))}
+        </div>
+        <div className={styles.drawerBody}>
+          <div className={styles.treeContainer}>
+            <FileTree voltId={voltId} locator={locator} onFileOpen={onFileOpen} />
+          </div>
+          {sidebarPanels.length > 0 && (
+            <div className={styles.pluginPanels}>
+              {sidebarPanels.map((panel) => (
+                <PluginPanelSlot key={panel.id} panel={panel} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <aside ref={sidebarRef} className={styles.sidebar}>

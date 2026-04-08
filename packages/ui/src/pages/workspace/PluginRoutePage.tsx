@@ -30,7 +30,19 @@ export function PluginRoutePage() {
   }
 
   return (
-    <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+    <div
+      style={{
+        display: 'flex',
+        flex: 1,
+        minHeight: 0,
+        minWidth: 0,
+        width: '100%',
+        maxWidth: '100%',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        padding: '0 0 calc(var(--safe-area-bottom) + var(--space-2))',
+      }}
+    >
       <PluginPageHost
         pageId={pageId}
         className=""

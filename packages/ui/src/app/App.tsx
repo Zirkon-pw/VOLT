@@ -5,6 +5,7 @@ import { I18nProvider } from './providers/I18nProvider';
 import { AppRouter } from './routes/AppRouter';
 import { PluginPromptDialog } from '@kernel/plugin-system/ui/PluginPrompt';
 import { PluginTaskStatusController } from '@kernel/plugin-system/ui/PluginTaskStatus';
+import { ShellLayoutProvider } from '@shared/responsive';
 import { ToastController } from '@shared/ui/toast';
 import './styles/globals.scss';
 
@@ -26,16 +27,18 @@ export function AppContent() {
   }, []);
 
   return (
-    <ErrorBoundary>
-      <I18nProvider>
-        <ThemeProvider>
-          <AppRouter />
-          <PluginTaskStatusController />
-          <ToastController />
-          <PluginPromptDialog />
-        </ThemeProvider>
-      </I18nProvider>
-    </ErrorBoundary>
+    <ShellLayoutProvider>
+      <ErrorBoundary>
+        <I18nProvider>
+          <ThemeProvider>
+            <AppRouter />
+            <PluginTaskStatusController />
+            <ToastController />
+            <PluginPromptDialog />
+          </ThemeProvider>
+        </I18nProvider>
+      </ErrorBoundary>
+    </ShellLayoutProvider>
   );
 }
 

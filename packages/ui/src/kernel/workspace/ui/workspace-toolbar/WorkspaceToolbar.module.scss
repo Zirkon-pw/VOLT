@@ -4,14 +4,21 @@
   gap: var(--space-1);
   padding: 0 var(--space-2) var(--space-2);
   background: transparent;
+  min-width: 0;
+}
+
+.toolbar-mobile {
+  padding: 0;
+  gap: var(--space-1);
+  flex-shrink: 0;
 }
 
 .button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: max(32px, var(--touch-target-min));
+  height: max(32px, var(--touch-target-min));
   border: none;
   border-radius: 12px;
   background: transparent;
@@ -24,4 +31,51 @@
     color: var(--color-text-primary);
     box-shadow: none;
   }
+}
+
+.button-mobile {
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--surface-border-primary) 72%, transparent);
+  background: color-mix(in srgb, var(--surface-solid-secondary) 92%, transparent);
+}
+
+.overflow-trigger {
+  background: color-mix(in srgb, var(--surface-solid-primary) 96%, var(--surface-solid-secondary));
+}
+
+.mobile-sheet-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.mobile-sheet-action {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-solid-secondary) 84%, transparent);
+  color: var(--color-text-primary);
+  text-align: left;
+}
+
+.mobile-sheet-action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-solid-primary) 96%, transparent);
+  color: var(--color-icon);
+}
+
+.mobile-sheet-action-label {
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
 }

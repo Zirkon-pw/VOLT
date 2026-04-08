@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '@app/providers/I18nProvider';
 import { useWorkspaceStore } from '@kernel/workspace/core/WorkspaceStore';
+import { useShellLayoutMode } from '@shared/responsive';
 import { Icon } from '@shared/ui/icon';
 import styles from './WorkspaceTabs.module.scss';
 
 export function WorkspaceTabs() {
+  const layoutMode = useShellLayoutMode();
   const { t } = useI18n();
   const { workspaces, activeWorkspaceId, setActiveWorkspace, closeWorkspace, reorderWorkspaces } =
     useWorkspaceStore();
@@ -13,6 +15,10 @@ export function WorkspaceTabs() {
 
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  if (layoutMode === 'mobile') {
+    return null;
+  }
 
   const handleClick = (id: string) => {
     setActiveWorkspace(id);

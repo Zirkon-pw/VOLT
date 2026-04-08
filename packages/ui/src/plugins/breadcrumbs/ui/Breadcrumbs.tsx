@@ -2,6 +2,7 @@ import { Fragment, useCallback } from 'react';
 import { useTabStore } from '@kernel/workspace/tabs/model';
 import { useNavigationStore } from '@kernel/navigation/model';
 import { openFileInActivePane } from '@kernel/workspace/panes/model';
+import { useShellLayoutMode } from '@shared/responsive';
 import { Icon } from '@shared/ui/icon';
 import styles from './Breadcrumbs.module.scss';
 
@@ -10,6 +11,8 @@ interface BreadcrumbsProps {
 }
 
 export function Breadcrumbs({ voltId }: BreadcrumbsProps) {
+  const layoutMode = useShellLayoutMode();
+  const isMobile = layoutMode === 'mobile';
   const activeTabs = useTabStore((state) => state.activeTabs);
   const allTabs = useTabStore((state) => state.tabs);
   const canGoBack = useNavigationStore((state) => state.canGoBack(voltId));
@@ -23,6 +26,7 @@ export function Breadcrumbs({ voltId }: BreadcrumbsProps) {
   const filePath = activeTab?.type === 'file' ? activeTab.filePath : null;
 
   const segments = filePath ? filePath.split('/').filter(Boolean) : [];
+  const displaySegments = isMobile ? segments.slice(-1) : segments;
 
   const navigateBack = useCallback(() => {
     const target = goBack(voltId);
@@ -39,6 +43,24 @@ export function Breadcrumbs({ voltId }: BreadcrumbsProps) {
   }, [goForward, voltId]);
 
   if (!filePath) return null;
+
+  if (isMobile) {
+    const currentLabel = displaySegments[displaySegments.length - 1] ?? activeTab?.fileName ?? '';
+
+    return (
+      <div className={`${styles.bar} ${styles.barMobile}`} data-testid="breadcrumbs">
+        <div className={`${styles.crumbs} ${styles.crumbsMobile}`} data-testid="breadcrumbs-capsule">
+          <span
+            className={styles.mobileCurrent}
+            data-testid="breadcrumb-active"
+            title={currentLabel}
+          >
+            {currentLabel}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.bar} data-testid="breadcrumbs">
@@ -61,12 +83,12 @@ export function Breadcrumbs({ voltId }: BreadcrumbsProps) {
         </button>
       </div>
       <div className={styles.crumbs} data-testid="breadcrumbs-capsule">
-        {segments.map((segment, i) => (
+        {displaySegments.map((segment, i) => (
           <Fragment key={i}>
             {i > 0 && <Icon name="chevronRight" size={10} className={styles.separator} />}
             <span
-              className={i === segments.length - 1 ? styles.activeCrumb : styles.crumb}
-              data-testid={i === segments.length - 1 ? 'breadcrumb-active' : 'breadcrumb-segment'}
+              className={i === displaySegments.length - 1 ? styles.activeCrumb : styles.crumb}
+              data-testid={i === displaySegments.length - 1 ? 'breadcrumb-active' : 'breadcrumb-segment'}
               title={segment}
             >
               {segment}

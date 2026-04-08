@@ -113,6 +113,12 @@
   }
 }
 
+@media (max-width: 820px) {
+  .inline-input {
+    font-size: 16px;
+  }
+}
+
 .empty {
   padding: var(--space-4);
   text-align: center;

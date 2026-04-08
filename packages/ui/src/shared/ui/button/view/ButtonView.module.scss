@@ -93,19 +93,19 @@
 
 // Sizes
 .sm {
-  height: 30px;
+  height: max(30px, var(--touch-target-min));
   padding: 0 var(--space-3);
   font-size: var(--font-size-sm);
 }
 
 .md {
-  height: 34px;
+  height: max(34px, var(--touch-target-min));
   padding: 0 var(--space-4);
   font-size: var(--font-size-base);
 }
 
 .lg {
-  height: 40px;
+  height: max(40px, var(--touch-target-min));
   padding: 0 var(--space-5);
   font-size: var(--font-size-md);
 }

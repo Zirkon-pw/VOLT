@@ -18,9 +18,16 @@ interface FileTreeItemProps {
   locator: string;
   entry: FileEntry;
   depth: number;
+  onFileOpen?: () => void;
 }
 
-export const FileTreeItem = memo(function FileTreeItem({ voltId, locator, entry, depth }: FileTreeItemProps) {
+export const FileTreeItem = memo(function FileTreeItem({
+  voltId,
+  locator,
+  entry,
+  depth,
+  onFileOpen,
+}: FileTreeItemProps) {
   const { t } = useI18n();
   const state = useFileTreeItemState(voltId, entry.path, entry.isDir);
   const actions = useFileTreeItemActions();
@@ -41,6 +48,7 @@ export const FileTreeItem = memo(function FileTreeItem({ voltId, locator, entry,
       } else {
         openFileInActivePane(voltId, entry.path, displayName);
       }
+      onFileOpen?.();
     }
   };
 
@@ -142,6 +150,7 @@ export const FileTreeItem = memo(function FileTreeItem({ voltId, locator, entry,
               locator={locator}
               entry={child}
               depth={depth + 1}
+              onFileOpen={onFileOpen}
             />
           ))}
         </div>

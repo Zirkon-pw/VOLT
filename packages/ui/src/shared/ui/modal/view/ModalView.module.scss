@@ -17,8 +17,7 @@
   margin: var(--space-4);
   padding: var(--space-5);
   isolation: isolate;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-solid-primary) 96%, var(--color-bg-primary)) 0%, var(--surface-solid-primary) 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface-solid-primary) 98%, var(--color-bg-primary)) 0%, color-mix(in srgb, var(--surface-solid-primary) 94%, var(--surface-shell-root)) 100%);
   border: 1px solid var(--surface-border-primary);
   border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-popup);
@@ -33,6 +32,27 @@
     pointer-events: none;
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-border) 18%, transparent);
   }
+}
+
+.modal-mobile {
+  padding-top: var(--space-2);
+  padding-bottom: calc(var(--space-4) + var(--safe-area-bottom));
+  border-bottom: none;
+}
+
+.drag-handle-area {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-1) 0 var(--space-2);
+  margin: calc(var(--space-2) * -1) 0 0;
+  touch-action: none;
+}
+
+.drag-handle {
+  width: 44px;
+  height: 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-text-tertiary) 40%, transparent);
 }
 
 .header {
@@ -54,8 +74,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: max(28px, var(--touch-target-min));
+  height: max(28px, var(--touch-target-min));
   padding: 0;
   border: none;
   border-radius: var(--radius-sm);
@@ -105,9 +125,13 @@
 
   .modal {
     max-width: none;
-    max-height: min(72vh, 560px);
+    max-height: var(--shell-mobile-sheet-max-height);
     margin: 0;
     padding: var(--space-4);
-    border-radius: calc(var(--radius-2xl) + 2px) calc(var(--radius-2xl) + 2px) 0 0;
+    border-radius: 28px 28px 0 0;
+  }
+
+  .header {
+    gap: var(--space-2);
   }
 }

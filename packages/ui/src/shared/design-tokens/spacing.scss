@@ -10,3 +10,14 @@
   --space-12: 48px;
   --space-16: 64px;
 }
+
+:root[data-shell-layout='mobile'] {
+  --space-3: 10px;
+  --space-4: 14px;
+  --space-5: 18px;
+  --space-6: 20px;
+  --space-8: 28px;
+  --space-10: 32px;
+  --space-12: 40px;
+  --space-16: 52px;
+}

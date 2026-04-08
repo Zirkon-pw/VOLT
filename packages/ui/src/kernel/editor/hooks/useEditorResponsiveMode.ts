@@ -6,8 +6,16 @@ export interface EditorResponsiveModeOptions {
   element: HTMLElement | null;
 }
 
+function getShellLayoutMode() {
+  if (typeof document === 'undefined') {
+    return 'desktop';
+  }
+
+  return document.documentElement.dataset.shellLayout ?? 'desktop';
+}
+
 export function resolveEditorResponsiveMode(width: number, viewportWidth: number, isCoarsePointer: boolean) {
-  if (isCoarsePointer || viewportWidth <= 768) {
+  if (getShellLayoutMode() === 'mobile' || isCoarsePointer || viewportWidth <= 820) {
     return 'touch' as const;
   }
 
@@ -35,7 +43,7 @@ function getIsCoarsePointer() {
 }
 
 export function getFloatingMenuPresentation(): 'popover' | 'sheet' {
-  return 'popover';
+  return getShellLayoutMode() === 'mobile' ? 'sheet' : 'popover';
 }
 
 export function useEditorResponsiveMode({ element }: EditorResponsiveModeOptions): EditorResponsiveMode {

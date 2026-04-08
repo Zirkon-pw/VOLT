@@ -24,9 +24,10 @@ import styles from './FileTree.module.scss';
 interface FileTreeProps {
   voltId: string;
   locator: string;
+  onFileOpen?: () => void;
 }
 
-export function FileTree({ voltId, locator }: FileTreeProps) {
+export function FileTree({ voltId, locator, onFileOpen }: FileTreeProps) {
   const { t } = useI18n();
   const tree = useFileTreeStore(selectTree(voltId));
   const loading = useFileTreeStore(selectLoading(voltId));
@@ -127,6 +128,7 @@ export function FileTree({ voltId, locator }: FileTreeProps) {
                 locator={locator}
                 entry={entry}
                 depth={0}
+                onFileOpen={onFileOpen}
               />
             ))}
 

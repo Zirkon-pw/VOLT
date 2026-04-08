@@ -4,7 +4,7 @@
   min-height: 72px;
   padding: var(--space-3);
   font-family: var(--font-family);
-  font-size: var(--font-size-base);
+  font-size: max(16px, var(--font-size-base));
   color: var(--color-text-primary);
   background: var(--surface-solid-secondary);
   border: 1px solid var(--surface-border-secondary);

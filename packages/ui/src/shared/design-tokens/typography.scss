@@ -18,3 +18,17 @@
   --letter-spacing-display: -0.03em;
   --letter-spacing-caps: 0.14em;
 }
+
+:root[data-shell-layout='mobile'] {
+  --font-size-xs: 11px;
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 20px;
+  --font-size-xl: 26px;
+  --font-size-2xl: 32px;
+  --font-size-3xl: 42px;
+  --font-size-4xl: 52px;
+  --line-height: 1.56;
+  --line-height-snug: 1.46;
+}
