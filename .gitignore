@@ -1,9 +1,15 @@
 # Build
 build/bin/
 frontend/dist/
-frontend/node_modules/
 
 /plugins/
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Vite cache
+**/.vite/
 
 # IDE
 .idea/

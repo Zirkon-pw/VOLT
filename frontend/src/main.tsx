@@ -3,8 +3,10 @@ import { createRoot } from 'react-dom/client';
 import '@fontsource/source-serif-4/400.css';
 import '@fontsource/source-serif-4/600.css';
 import '@fontsource/source-serif-4/700.css';
-import App from './app/App';
-import { installPlaywrightBootstrap } from './pages/playwright/installPlaywrightBootstrap';
+import App from '@app/App';
+import { installPlaywrightBootstrap } from '@pages/playwright/installPlaywrightBootstrap';
+import { AdapterProvider } from '@shared/platform';
+import { wailsAdapter } from './platform/adapters/wails';
 
 function normalizeStartupPath() {
   const { pathname, search, hash } = window.location;
@@ -24,6 +26,8 @@ const root = createRoot(container!);
 
 root.render(
   <React.StrictMode>
-    <App />
+    <AdapterProvider adapter={wailsAdapter}>
+      <App />
+    </AdapterProvider>
   </React.StrictMode>
 );

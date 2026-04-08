@@ -1,0 +1,12 @@
+{
+  "name": "volt-core",
+  "private": true,
+  "version": "0.0.1",
+  "workspaces": [
+    "packages/ui",
+    "packages/web-shell"
+  ],
+  "scripts": {
+    "install:all": "npm install && cd frontend && npm install"
+  }
+}

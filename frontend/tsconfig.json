@@ -17,11 +17,13 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@app/*": ["src/app/*"],
-      "@pages/*": ["src/pages/*"],
-      "@shared/*": ["src/shared/*"],
-      "@kernel/*": ["src/kernel/*"],
-      "@plugins/*": ["src/plugins/*"]
+      "@app/*":     ["../packages/ui/src/app/*"],
+      "@pages/*":   ["../packages/ui/src/pages/*"],
+      "@shared/*":  ["../packages/ui/src/shared/*"],
+      "@kernel/*":  ["../packages/ui/src/kernel/*"],
+      "@plugins/*": ["../packages/ui/src/plugins/*"],
+      "@common/*":  ["../common/*"],
+      "@wailsjs/*": ["./wailsjs/*"]
     }
   },
   "include": ["src"],
